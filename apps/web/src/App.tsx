@@ -105,7 +105,7 @@ export default function App() {
           onOpenMistakes={() => setView('mistakes')}
         />
       )}
-      {view === 'race' && <RaceView key={raceKey} settings={settings} nickname={profile.nickname} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && <RaceView key={raceKey} settings={settings} nickname={profile.nickname} grade={profile.grade} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'result' && record && (
         <ResultView
           record={record}

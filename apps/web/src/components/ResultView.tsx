@@ -7,6 +7,7 @@ import { starsFor, totalStars, petStage } from '../lib/adventure'
 import { sfx } from '../lib/sound'
 import { useEffect } from 'react'
 import BattleBoard from './BattleBoard'
+import Sprite from './Sprite'
 import { burst } from '../lib/particles'
 import { useRef } from 'react'
 import type { LearnerProfile } from '../lib/types'
@@ -94,10 +95,13 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
       )}
 
       {review ? (
-        <div className="review-card">
-          <b>✨ 老师点评</b>
-          <p>{review}</p>
-        </div>
+        <>
+          <Sprite grade={profile.grade} bubble={review} />
+          <div className="review-card">
+            <b>✨ 老师点评</b>
+            <p>{review}</p>
+          </div>
+        </>
       ) : (
         <button className="primary" onClick={askReview} disabled={reviewState === 'loading'}>
           {reviewState === 'loading' ? '老师正在看错题…' : reviewState === 'error' ? '点评失败，再试一次' : '✨ AI 点评'}

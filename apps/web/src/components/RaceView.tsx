@@ -7,10 +7,12 @@ import { encodeRaceCode } from '../lib/raceCode'
 import { sfx } from '../lib/sound'
 import { burst } from '../lib/particles'
 import StageArt from './StageArt'
+import Sprite, { quickHint } from './Sprite'
 
 interface Props {
   settings: RaceSettings
   nickname: string
+  grade: 2 | 3 | 4 | 5
   onAbandon: () => void   // 放弃退出：不记录任何数据（误闯关卡场景）
   onFinish: (result: {
     answers: Array<number | string | null>
@@ -21,7 +23,7 @@ interface Props {
   }) => void
 }
 
-export default function RaceView({ settings, nickname, onAbandon, onFinish }: Props) {
+export default function RaceView({ settings, nickname, grade, onAbandon, onFinish }: Props) {
   const code = encodeRaceCode(settings)
   const [confirmQuit, setConfirmQuit] = useState(false)
   const questions = useMemo<Question[]>(
@@ -40,6 +42,7 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
   const [streak, setStreak] = useState(0)
   const [flash, setFlash] = useState<'ok' | 'no' | null>(null)
   const [cheer, setCheer] = useState(0)  // 连击里程碑弹层计数
+  const [lastWrong, setLastWrong] = useState<{ q: Question; given: number | string } | null>(null)
   const fxRef = useRef<HTMLCanvasElement>(null)
   const answersRef = useRef<Array<number | string | null>>(Array(questions.length).fill(null))
   const perQuestionRef = useRef<number[]>([])
@@ -108,6 +111,7 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
       setStreak(0)
       setFlash('no')
       sfx.wrong()
+      setLastWrong({ q, given: value })   // 答错：小精灵出即时提示
     }
     setTimeout(() => setFlash(null), 350)
     battleScore(settings, nickname, correctRef.current, idx + 1, 0)  // 进度上报；交卷时由 App 带 usedMs 覆盖
@@ -187,6 +191,13 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
       )}
 
       <button className="ghost danger" onClick={() => finish('submit')}>提前交卷</button>
+
+      <Sprite
+        question={lastWrong?.q ?? questions[idx]}
+        wrongGiven={lastWrong?.given ?? null}
+        grade={grade}
+        bubble={lastWrong ? quickHint(lastWrong.q) : null}
+      />
     </div>
   )
 }

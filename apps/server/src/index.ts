@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { config } from './config.ts'
 import { buildReview, type ReviewRequest } from './routes/review.ts'
+import { buildHint, type HintRequest } from './routes/hint.ts'
 import { getRoom, joinRoom, reportScore } from './routes/battle.ts'
 import { loadProfile, saveProfile, type ProfileDoc } from './routes/profile.ts'
 
@@ -31,6 +32,16 @@ const server = createServer(async (req, res) => {
         return
       }
       const text = await buildReview(body)
+      json(res, 200, { text })
+      return
+    }
+    if (req.method === 'POST' && req.url === '/api/hint') {
+      const body = (await readBody(req)) as HintRequest
+      if (!body?.question || body.correctAnswer === undefined) {
+        json(res, 400, { error: 'bad_request' })
+        return
+      }
+      const text = await buildHint(body)
       json(res, 200, { text })
       return
     }

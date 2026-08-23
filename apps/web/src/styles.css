@@ -288,3 +288,21 @@ input[type="range"] { width: 100%; }
   border-radius: 14px; padding: 10px 16px; font-size: 15px; cursor: pointer;
 }
 .recommend:hover { background: rgba(255, 215, 106, .3); }
+/* 辅助小精灵 */
+.sprite { position: fixed; right: 16px; bottom: 16px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.sprite-avatar {
+  width: 60px; height: 60px; border-radius: 50%; border: 3px solid #ffd76a;
+  background: #fffdf5; font-size: 32px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2); transition: transform .15s;
+}
+.sprite-avatar:hover { transform: scale(1.1); }
+.sprite-bubble {
+  max-width: 260px; background: #fffdf5; border: 2px solid #ffd76a;
+  border-radius: 14px 14px 4px 14px; padding: 10px 12px; font-size: 14px;
+  color: #4a3a1a; line-height: 1.6; box-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+.sprite-bubble p { margin: 0; }
+.sprite-ask {
+  margin-top: 6px; border: none; background: #4a90e2; color: #fff;
+  border-radius: 8px; padding: 4px 10px; font-size: 13px; cursor: pointer;
+}
