@@ -33,15 +33,34 @@ function randInt(min: number, max: number, rng: () => number): number {
   return Math.floor(rng() * (max - min + 1)) + min
 }
 
-function genQuestion(index: number, op: Op, max: number, rng: () => number): Question {
-  let a: number
-  let b: number
-  if (op === 'add') {
-    a = randInt(0, max, rng)
-    b = randInt(0, max - a, rng)
-  } else {
-    a = randInt(0, max, rng)
-    b = randInt(0, a, rng)
+// 质量约束：过滤无训练价值的琐碎题（保证确定性：拒绝采样走同一条 RNG 序列）
+function isTrivial(a: number, b: number, op: Op): boolean {
+  if (a < 5 || b < 5) return true        // 操作数过小，如 3 + 2、99 + 1
+  if (a % 10 === 0 || b % 10 === 0) return true  // 整十口算，如 40 + 30、57 - 40
+  if (op === 'sub' && a === b) return true       // 同数相减得 0，如 16 - 16
+  return false
+}
+
+// 加法是否进位 / 减法是否退位（二年级训练重点）
+export function isCarry(a: number, b: number, op: Op): boolean {
+  if (op === 'add') return (a % 10) + (b % 10) >= 10
+  return (a % 10) < (b % 10)
+}
+
+function genQuestion(index: number, op: Op, max: number, rng: () => number, wantCarry: boolean): Question {
+  let a = 0
+  let b = 0
+  for (let tries = 0; tries < 100; tries += 1) {
+    if (op === 'add') {
+      a = randInt(0, max, rng)
+      b = randInt(0, max - a, rng)
+    } else {
+      a = randInt(0, max, rng)
+      b = randInt(0, a, rng)
+    }
+    if (isTrivial(a, b, op)) continue
+    if (isCarry(a, b, op) !== wantCarry) continue
+    break
   }
   return {
     index,
@@ -56,8 +75,9 @@ function genQuestion(index: number, op: Op, max: number, rng: () => number): Que
 export function generateQuestions(options: GenOptions): Question[] {
   const rng = mulberry32(options.seed)
   const ops: Op[] = options.ops.length > 0 ? options.ops : ['add', 'sub']
+  // 约 60% 的题目要求进位/退位（训练重点），其余为非进退位基础题
   return Array.from({ length: options.count }, (_, i) =>
-    genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng),
+    genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng, rng() < 0.6),
   )
 }
 
