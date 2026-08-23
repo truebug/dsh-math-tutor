@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { STAGES, SUBJECTS, currentSubject, setSubject, isUnlocked, loadAdventure, consumeUnlock, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import { sfx } from '../lib/sound'
+import TreasureMapBg from './TreasureMapBg'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
 interface SceneTheme {
@@ -207,7 +208,8 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   return (
     <div className="adventure" ref={scrollRef}>
       {/* 顶部信息栏（随卷轴滚动） */}
-      <header className="adv-hero">
+      <header className="adv-hero parchment">
+        <TreasureMapBg />
         <h1>🗺️ 寻宝探险</h1>
         <div className="pet-row">
           <span className="pet">{pet.emoji}</span>
