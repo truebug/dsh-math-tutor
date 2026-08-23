@@ -91,6 +91,7 @@ dsh-math-tutor/
 ├── docs/
 │   ├── curriculum/            # 沪教版 2~5 年级语数英知识点对照表
 │   ├── guide/                 # 用户指南
+│   ├── architecture.md        # 技术架构基线（coding 前必读）
 │   ├── deployment.md          # nginx 部署指南
 │   └── development.md         # 开发指南
 ├── cordis.yml                 # DSH 插件加载覆盖层
