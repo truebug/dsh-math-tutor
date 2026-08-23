@@ -1,0 +1,10 @@
+# DSH 插件加载覆盖层（官方机制：insert 列表 + 插件模块绝对路径）
+# 用法：npx @deepseek-ai/dsh@0.1.1-rc.2 web --config cordis.yml
+# 注意：name 字段必须是绝对路径，请替换 <REPO_ROOT> 为本仓库实际路径
+- insert:
+    - id: math-generator
+      name: "<REPO_ROOT>/packages/math-generator/src/index.ts"
+    - id: grade-mapper
+      name: "<REPO_ROOT>/packages/grade-mapper/src/index.ts"
+    - id: progress-tracker
+      name: "<REPO_ROOT>/packages/progress-tracker/src/index.ts"

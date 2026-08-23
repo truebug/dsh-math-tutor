@@ -1,90 +1,113 @@
 # dsh-math-tutor
 
-> 基于 DeepSeek Harness 的小学数学智能随堂练习助手 —— 沪教版 2~5 年级
+> 基于 DeepSeek Harness 的小学语数英辅助教学 AI 助手（沪教版 2~5 年级），从数学随堂练习起步
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/Powered%20by-DeepSeek%20Harness-orange)](https://github.com/deepseek-ai/deepseek-harness)
+[![dsh](https://img.shields.io/badge/dsh-0.1.1--rc.2-red)](https://www.npmjs.com/package/@deepseek-ai/dsh)
 
-## 📖 项目简介
+## 项目简介
 
-**dsh-math-tutor** 是一个面向小学二年级至五年级（沪教版）学生的 AI 辅助教学工具，基于 DeepSeek Harness (`dsh`) 智能体框架构建。项目从 **100以内加减法速算** 起步，逐步扩展至沪教版小学数学全知识点体系，为孩子提供**随年龄增长不断更新的智能随堂练习**。
+**dsh-math-tutor** 面向小学二年级至五年级（沪教版）学生，基于 DeepSeek Harness (`dsh`) 智能体框架构建，以 Web 网页形式对外提供服务。项目从 **100 以内加减法速算** 起步，逐步扩展至沪教版小学数学全知识点体系，后续按「数学 → 语文 → 英语」顺序扩展，为孩子提供随年级增长不断更新的智能随堂练习。
 
-### ✨ 核心特性
+### 核心特性
 
-- 🎯 **沪教版同步**：知识点覆盖沪教版 2~5 年级数学教材
-- 🧠 **AI 智能出题**：基于 DeepSeek 动态生成个性化练习题
-- 📈 **渐进式学习**：从 100 以内加减法起步，随年级自动升级难度
-- 📊 **学习追踪**：错题本、练习记录、成长轨迹
+- 🎯 **沪教版同步**：知识点覆盖沪教版 2~5 年级教材（见 `docs/curriculum/`）
+- ⚡ **确定性出题**：算术题由代码确定性生成与判分，零成本、零延迟、永不出错
+- 🧠 **AI 辅助讲解**：DeepSeek 负责解题思路讲解、错题归因与鼓励反馈，不参与出题判分
+- 📈 **渐进式学习**：随年级自动升级难度，练习记录与错题本追踪成长轨迹
 - 👶 **儿童友好**：大字体、清晰反馈、温和激励
-- 🌐 **纯 Web 运行**：浏览器即可使用，无需安装
+- 🔒 **隐私优先**：练习数据默认仅存储于浏览器 localStorage，不上传服务器
 
-### 🗺️ 路线图
+### 设计原则
 
-- [x] Phase 1: 100以内加减法速算（二年级）
-- [ ] Phase 2: 表内乘除法（二年级~三年级）
-- [ ] Phase 3: 多位数加减法（三年级）
-- [ ] Phase 4: 小数初步认识与计算（四年级）
-- [ ] Phase 5: 简易方程与几何（五年级）
-- [ ] Phase 6: 语文/英语辅助模块（待规划）
+1. **确定性与 AI 分工**：凡是代码能可靠完成的（出题、判分、计时、统计），不交给 LLM；LLM 只做讲解、归因、鼓励等开放性任务。
+2. **一切皆插件**：功能以 DSH 插件形式组织（`packages/`），插件 = 导出 `name` + `apply(ctx)` 的 TS 模块，通过 `cordis.yml` 覆盖层加载。
+3. **纯 Web 交付**：最终产物必须能以静态页面 + 轻量 API 的形式部署到普通 nginx 服务器。
 
-## 🛠️ 技术栈
+## Web 部署约束
+
+本项目目标环境为已有 nginx 服务器（coolje00/coolje01 类），架构与技术选型必须满足以下约束：
+
+- **前端纯静态化**：`apps/web` 必须 `vite build` 产出纯静态文件，直接放入 nginx 站点目录即可运行，不依赖 Node 运行时。
+- **后端轻量可反代**：`apps/server` 以普通 HTTP 服务监听 `127.0.0.1:<port>`，由 nginx 反向代理转发（如 `/api/` → `127.0.0.1:8787`）；用 systemd 守护，不占用 80/443。
+- **API Key 不出服务端**：DeepSeek API Key 只存在于服务器环境变量中，前端永不接触；所有 LLM 调用必须经由后端转发。
+- **DSH Web UI 不直接暴露**：`dsh web` 自带的 `http://127.0.0.1:3080` 仅用于开发调试，线上不对外开放。
+- **慎用 WebSocket**：MVP 阶段只使用普通 HTTP 请求/响应（轮询可接受）；若后续引入 WebSocket/SSE，需同步更新 nginx 配置（`Upgrade`/`Connection` 头或 `proxy_buffering off`）。
+- **部署路径可配置**：前端 base path 与 API 前缀通过环境变量注入，支持部署到子路径（如 `/dsh-math-tutor/`）。
+
+## 技术栈
 
 | 层 | 技术 | 用途 |
 |---|---|---|
-| AI 框架 | DeepSeek Harness (`dsh`) | Agent 运行时与插件系统 |
-| 前端 | React 19 + TypeScript | UI 框架 |
-| 构建 | Vite | 构建工具 |
-| 样式 | Tailwind CSS | 样式方案 |
-| 后端 | Node.js + Express | API 服务 |
-| 存储 | localStorage / JSON | 数据持久化 |
+| AI 框架 | DeepSeek Harness `@deepseek-ai/dsh@0.1.1-rc.2`（精确锁定） | Agent 运行时与插件系统（Cordis） |
+| 前端 | React 19 + TypeScript + Vite + Tailwind CSS | 纯静态构建产物 |
+| 后端 | Node.js（原生 http 或轻量框架） | API 转发与业务逻辑，nginx 反代 |
+| 存储 | localStorage（MVP）→ 服务端 JSON/SQLite（后续） | 练习记录与错题本 |
+| 部署 | nginx 静态托管 + reverse proxy + systemd | 复用现有服务器 |
 
-## 🚀 快速开始
+## 快速开始
 
 ### 前置要求
-- Node.js ≥ 22[reference:9]
-- npm 或 pnpm
 
-### 安装与运行
+- Node.js 22.19+ 或 24+
+- pnpm（建议 `corepack enable`，锁定 `pnpm@11.7.0`）
+- DeepSeek API Key（仅后端需要）
+
+### 开发模式
 
 ```bash
-# 克隆仓库
-git clone https://github.com/your-username/dsh-math-tutor.git
+git clone https://github.com/truebug/dsh-math-tutor.git
 cd dsh-math-tutor
-
-# 安装依赖
 pnpm install
 
-# 构建 DeepSeek Harness
-pnpm run build
+# 启动 DSH Web UI 并加载本项目插件（cordis.yml 覆盖层）
+npx @deepseek-ai/dsh@0.1.1-rc.2 web --config cordis.yml
 
-# 启动 Web 服务
-pnpm dsh web
+# 另开终端，启动前端开发服务器
+pnpm --filter web dev
 ```
 
-浏览器打开 `http://127.0.0.1:3080` 即可开始使用[reference:12]。
+DSH Web UI 默认运行在 `http://127.0.0.1:3080`（仅本地调试用）。
 
-## 📁 项目结构
+## 项目结构
 
 ```
 dsh-math-tutor/
-├── packages/              # DSH 插件包
-│   ├── math-generator/    # 数学题目生成插件
-│   ├── progress-tracker/  # 学习进度追踪插件
-│   └── grade-mapper/      # 沪教版知识点映射插件
+├── packages/                  # DSH 插件包
+│   ├── math-generator/        # 数学题目确定性生成插件（defineTool）
+│   ├── progress-tracker/      # 学习进度追踪插件
+│   └── grade-mapper/          # 沪教版知识点映射插件
 ├── apps/
-│   ├── web/               # React 前端
-│   └── server/            # Node.js 后端
-├── docs/                  # 文档
-├── assets/                # 静态资源（图片、图标等）
-├── examples/              # 示例与测试用例
-├── LICENSE
-└── README.md
+│   ├── web/                   # React 前端（纯静态构建，nginx 托管）
+│   └── server/                # 轻量后端（API Key 保管 + LLM 转发，nginx 反代）
+├── docs/
+│   ├── curriculum/            # 沪教版 2~5 年级语数英知识点对照表
+│   ├── guide/                 # 用户指南
+│   ├── deployment.md          # nginx 部署指南
+│   └── development.md         # 开发指南
+├── cordis.yml                 # DSH 插件加载覆盖层
+├── examples/                  # 示例与测试用例
+├── assets/                    # 静态资源
+└── .github/workflows/         # CI/CD（构建 → 部署到 nginx 服务器）
 ```
 
-## 🤝 贡献指南
+## 路线图
 
-欢迎提交 Issue 和 Pull Request！请参考 [CONTRIBUTING.md](CONTRIBUTING.md)。
+- [ ] Phase 1: 100 以内加减法速算（二年级）— 确定性出题 + 判分 + 计时
+- [ ] Phase 2: 表内乘除法（二~三年级）
+- [ ] Phase 3: 多位数加减法（三年级）
+- [ ] Phase 4: 小数初步认识与计算（四年级）
+- [ ] Phase 5: 简易方程与几何（五年级）
+- [ ] Phase 6: 语文 / 英语辅助模块（待规划）
+- [ ] 数学插件稳定后拆分为独立仓库，并打 `dsh-plugin` topic 便于社区发现
 
-## 📄 许可证
+> ⚠️ DeepSeek Harness 处于 developer preview，官方声明存在兼容性破坏变更，因此 package.json 中必须精确锁定 `@deepseek-ai/dsh@0.1.1-rc.2`。
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+## 许可证
 
 [MIT](LICENSE)

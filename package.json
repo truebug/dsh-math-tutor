@@ -1,0 +1,20 @@
+{
+  "name": "dsh-math-tutor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "基于 DeepSeek Harness 的沪教版小学语数英辅助教学 AI 助手（数学先行）",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:server": "pnpm --filter server dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh": "0.1.1-rc.2",
+    "typescript": "~5.9.0"
+  }
+}
