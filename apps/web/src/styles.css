@@ -95,3 +95,9 @@ input[type="range"] { width: 100%; }
 .chart { width: 100%; height: auto; background: #f9fbfe; border-radius: 12px; }
 .chart-range { display: flex; justify-content: space-between; font-size: 12px; color: #8a97a8; }
 .chart-title { margin: 8px 0 0; font-size: 15px; color: #445; }
+.review-card {
+  background: #fffbe8; border: 1px solid #f0e0b0; border-radius: 14px;
+  padding: 14px 16px; font-size: 16px; line-height: 1.7;
+}
+.review-card b { color: #b8860b; }
+.review-card p { margin: 6px 0 0; white-space: pre-wrap; }

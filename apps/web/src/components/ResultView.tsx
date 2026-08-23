@@ -1,8 +1,13 @@
+import { useState } from 'react'
 import { encodeRaceCode } from '../lib/raceCode'
+import { fetchReview } from '../api/review'
+import { saveReview } from '../lib/profile'
+import type { LearnerProfile } from '../lib/types'
 import type { RaceSettings, SessionRecord } from '../lib/types'
 
 interface Props {
   record: SessionRecord
+  profile: LearnerProfile
   onRetry: (settings: RaceSettings) => void
   onHome: () => void
   onOpenMistakes: () => void
@@ -13,7 +18,32 @@ function fmt(ms: number): string {
   return `${Math.floor(s / 60)}分${s % 60}秒`
 }
 
-export default function ResultView({ record, onRetry, onHome, onOpenMistakes }: Props) {
+export default function ResultView({ record, profile, onRetry, onHome, onOpenMistakes }: Props) {
+  const [review, setReview] = useState<string | null>(null)
+  const [reviewState, setReviewState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  const askReview = async () => {
+    setReviewState('loading')
+    try {
+      const carryWrong = record.wrong.filter((w) => w.question.carry).length
+      const text = await fetchReview({
+        grade: profile.grade,
+        level: record.settings.level,
+        total: record.total,
+        correct: record.correct,
+        usedSec: Math.round(record.usedMs / 1000),
+        carryWrong,
+        plainWrong: record.wrong.length - carryWrong,
+        wrongExamples: record.wrong.slice(0, 5).map((w) =>
+          `${w.question.text} 正确${w.question.answer}，孩子答 ${w.given ?? '未作答'}`),
+      })
+      setReview(text)
+      setReviewState('idle')
+      saveReview(record.id, text)   // 点评落本地画像（agent 记忆基础数据）
+    } catch {
+      setReviewState('error')
+    }
+  }
   const { settings } = record
   const avg = record.answered > 0 ? Math.round(record.usedMs / record.answered / 100) / 10 : 0
   const praise =
@@ -44,6 +74,17 @@ export default function ResultView({ record, onRetry, onHome, onOpenMistakes }: 
             </div>
           ))}
         </div>
+      )}
+
+      {review ? (
+        <div className="review-card">
+          <b>✨ 老师点评</b>
+          <p>{review}</p>
+        </div>
+      ) : (
+        <button className="primary" onClick={askReview} disabled={reviewState === 'loading'}>
+          {reviewState === 'loading' ? '老师正在看错题…' : reviewState === 'error' ? '点评失败，再试一次' : '✨ AI 点评'}
+        </button>
       )}
 
       <div className="btn-row">

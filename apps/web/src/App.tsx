@@ -9,7 +9,8 @@ import Menu from './components/Menu'
 import { defaultSettings } from './lib/raceCode'
 import { loadProfile, saveProfile, saveSession } from './lib/storage'
 import type { LearnerProfile, RaceSettings, SessionRecord, View } from './lib/types'
-import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core' // Question 用于错题重练
+import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core'
+import { accumulateSession } from './lib/profile'
 import './styles.css'
 
 export default function App() {
@@ -65,6 +66,7 @@ export default function App() {
       finishedBy: r.finishedBy,
     }
     saveSession(rec)
+    accumulateSession(r.questions, graded.wrongIndexes)  // 画像积累（确定性统计）
     setRecord(rec)
     setView('result')
   }
@@ -87,6 +89,7 @@ export default function App() {
       {view === 'result' && record && (
         <ResultView
           record={record}
+          profile={profile}
           onRetry={startRace}
           onHome={() => setView('setup')}
           onOpenMistakes={() => setView('mistakes')}

@@ -1,0 +1,63 @@
+// 本地学习者画像：agent 记忆的基础数据（积累层）。
+// 确定性统计 + AI 点评历史，全部仅存 localStorage（上传需监护人同意，见 docs/vision.md）。
+
+export interface ProfileData {
+  carryWrong: number      // 进位/退位题累计错误
+  carryTotal: number      // 进位/退位题累计作答
+  plainWrong: number
+  plainTotal: number
+  sessions: number
+  reviews: Array<{ date: string; sessionId: string; text: string }>  // AI 点评历史
+}
+
+const KEY = 'dsh-math-tutor:profile-data'
+
+export function loadProfileData(): ProfileData {
+  try {
+    const raw = localStorage.getItem(KEY)
+    if (raw) return JSON.parse(raw)
+  } catch { /* fallthrough */ }
+  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, sessions: 0, reviews: [] }
+}
+
+export function saveProfileData(p: ProfileData): void {
+  localStorage.setItem(KEY, JSON.stringify(p))
+}
+
+// 每次练习后增量更新画像（确定性，不走 LLM）
+export function accumulateSession(
+  questions: Array<{ carry: boolean }>,
+  wrongIndexes: number[],
+): ProfileData {
+  const p = loadProfileData()
+  const wrong = new Set(wrongIndexes)
+  questions.forEach((q, i) => {
+    if (q.carry) {
+      p.carryTotal += 1
+      if (wrong.has(i)) p.carryWrong += 1
+    } else {
+      p.plainTotal += 1
+      if (wrong.has(i)) p.plainWrong += 1
+    }
+  })
+  p.sessions += 1
+  saveProfileData(p)
+  return p
+}
+
+// AI 点评结果落记忆（最近保留 50 条）
+export function saveReview(sessionId: string, text: string): void {
+  const p = loadProfileData()
+  p.reviews.unshift({ date: new Date().toISOString(), sessionId, text })
+  p.reviews = p.reviews.slice(0, 50)
+  saveProfileData(p)
+}
+
+// 画像摘要：将来注入 LLM prompt / agent.inject() 的同一份资产
+export function profileSummary(): string {
+  const p = loadProfileData()
+  if (p.sessions === 0) return '尚无练习记录'
+  const carryAcc = p.carryTotal > 0 ? Math.round((1 - p.carryWrong / p.carryTotal) * 100) : null
+  const plainAcc = p.plainTotal > 0 ? Math.round((1 - p.plainWrong / p.plainTotal) * 100) : null
+  return `累计练习${p.sessions}次；进退位题正确率${carryAcc ?? '-'}%，基础题正确率${plainAcc ?? '-'}%`
+}
