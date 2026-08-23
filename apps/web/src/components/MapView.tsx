@@ -52,20 +52,23 @@ export default function MapView({ profile, onStartStage, onFreePractice }: Props
           return (
             <button
               key={st.id}
-              className={unlocked ? 'stage' : 'stage locked'}
+              className={unlocked ? 'stage open' : 'stage locked'}
               disabled={!unlocked}
               onClick={() => onStartStage(stageSettings(i))}
             >
-              {unlocked
-                ? <StageArt stageId={st.id} height={64} />
-                : <span className="stage-emoji">🔒</span>}
-              <span className="stage-info">
-                <b>第{i + 1}关 · {st.name}</b>
-                <small>{st.desc}</small>
-              </span>
-              <span className="stage-stars">
-                {'⭐'.repeat(got)}{'☆'.repeat(3 - got)}
-              </span>
+              {unlocked && (
+                <div className="stage-art"><StageArt stageId={st.id} height={64} /></div>
+              )}
+              <div className="stage-row">
+                {!unlocked && <span className="stage-emoji">🔒</span>}
+                <span className="stage-info">
+                  <b>第{i + 1}关 · {st.name}</b>
+                  <small>{st.desc}</small>
+                </span>
+                <span className="stage-stars">
+                  {'⭐'.repeat(got)}{'☆'.repeat(3 - got)}
+                </span>
+              </div>
             </button>
           )
         })}
