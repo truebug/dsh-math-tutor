@@ -1,55 +1,45 @@
-# 部署指南（nginx + 现有服务器）
+# 部署指南（coolje00 · 复用 2008 端口）
 
-目标环境：coolje00/coolje01 类服务器，nginx 作为唯一对外入口。
+> 线上地址：**http://120.27.200.203:2008/dsh-math-tutor/**
+> 原则：不新增安全组端口，复用 2008（nginx default server）。
 
-## 架构
+## 架构（已上线）
 
 ```
-浏览器
-  │ 443/80
-  ▼
-nginx ── 静态站点：/var/www/dsh-math-tutor/        ← apps/web 的 vite build 产物
-   └── 反向代理：/api/ → http://127.0.0.1:8787     ← apps/server（systemd 守护）
+浏览器 → http://120.27.200.203:2008/
+  ├─ /dsh-math-tutor/   → alias /var/www/html/dsh-math-tutor/（SPA，try_files fallback）
+  └─ /api/              → proxy_pass http://127.0.0.1:8787（node 服务，systemd 守护）
 ```
 
-## 前端（纯静态）
+## 服务器现状（coolje00）
+
+- Node：`/opt/node22/bin/node`（v22.19.0，npmmirror 手动安装）
+- 后端：`/opt/dsh-math-tutor/server/`（src + .env，`.env` 含 LLM key，仅服务端）
+- 服务：`systemctl status dsh-math-tutor`（Restart=always）
+- nginx 配置：`/etc/nginx/sites-enabled/default`（2008 server 块内新增两个 location）
+- 备份：`/root/default.bak.*`（注意：备份勿放 sites-enabled，会被 nginx 加载）
+
+## 更新部署流程
 
 ```bash
-pnpm --filter web build          # 产物在 apps/web/dist/
-rsync -avz --delete apps/web/dist/ user@server:/var/www/dsh-math-tutor/
+# 本地（仓库根目录）
+cd apps/web && VITE_BASE_PATH=/dsh-math-tutor/ pnpm build
+scp -r dist coolje00:/tmp/dsh-web
+scp -r apps/server/src coolje00:/tmp/src   # 仅后端变更时
+
+# coolje00
+ssh coolje00 "rm -rf /var/www/html/dsh-math-tutor && mv /tmp/dsh-web /var/www/html/dsh-math-tutor"
+ssh coolje00 "rm -rf /opt/dsh-math-tutor/server/src && mv /tmp/src /opt/dsh-math-tutor/server/src && systemctl restart dsh-math-tutor"
 ```
 
-- 子路径部署：构建前设置 `VITE_BASE_PATH=/dsh-math-tutor/`。
-- API 前缀默认 `/api/`，可用 `VITE_API_BASE` 覆盖。
+## 验证
 
-## 后端（systemd 守护）
-
-```ini
-# /etc/systemd/system/dsh-math-tutor.service
-[Service]
-Environment=SERVER_PORT=8787
-Environment=DEEPSEEK_API_KEY=sk-xxx   # 仅存于服务端
-ExecStart=/usr/bin/node --experimental-strip-types /opt/dsh-math-tutor/server/src/index.ts
-Restart=always
-```
-
-## nginx 配置要点
-
-```nginx
-location /dsh-math-tutor/ {
-  alias /var/www/dsh-math-tutor/;
-  try_files $uri $uri/ /dsh-math-tutor/index.html;   # SPA fallback
-}
-location /api/ {
-  proxy_pass http://127.0.0.1:8787;
-  proxy_set_header Host $host;
-  # 未来若引入 SSE/WebSocket：
-  # proxy_buffering off;                            # SSE
-  # proxy_set_header Upgrade $http_upgrade;         # WebSocket
-  # proxy_set_header Connection "upgrade";
-}
+```bash
+curl http://120.27.200.203:2008/api/health          # {"ok":true}
+curl -I http://120.27.200.203:2008/dsh-math-tutor/  # 200 text/html
 ```
 
 ## 红线
 
-- DeepSeek API Key 不进入前端产物；`dsh web` 的 3080 端口仅本地调试，不对外开放。
+- DeepSeek API Key 仅存 `/opt/dsh-math-tutor/server/.env`，不进前端产物、不进 git。
+- `dsh web` 的 3080 端口仅本地调试，线上不部署、不开放。
