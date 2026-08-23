@@ -234,3 +234,8 @@ input[type="range"] { width: 100%; }
 .consent { display: flex; gap: 8px; font-size: 13px; color: #556; line-height: 1.6; }
 .consent input { margin-top: 3px; flex-shrink: 0; }
 .adv-sub code { background: #eef4fb; padding: 2px 6px; border-radius: 6px; }
+.quit-btn {
+  border: none; background: transparent; color: #9aa8b8; font-size: 14px;
+  cursor: pointer; padding: 4px 8px; border-radius: 8px;
+}
+.quit-btn.confirm { color: #c05050; background: #fdf0ee; font-weight: 600; }

@@ -10,6 +10,7 @@ import { encodeRaceCode } from '../lib/raceCode'
 interface Props {
   settings: RaceSettings
   nickname: string
+  onAbandon: () => void   // 放弃退出：不记录任何数据（误闯关卡场景）
   onFinish: (result: {
     answers: Array<number | null>
     perQuestionMs: number[]
@@ -19,7 +20,8 @@ interface Props {
   }) => void
 }
 
-export default function RaceView({ settings, nickname, onFinish }: Props) {
+export default function RaceView({ settings, nickname, onAbandon, onFinish }: Props) {
+  const [confirmQuit, setConfirmQuit] = useState(false)
   const code = encodeRaceCode(settings)
   const questions = useMemo(
     () => settings.customQuestions
@@ -70,6 +72,16 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
     inputRef.current?.focus()
   }, [idx])
 
+  const quit = () => {
+    if (!confirmQuit) {
+      setConfirmQuit(true)
+      setTimeout(() => setConfirmQuit(false), 3000)
+      return
+    }
+    finishedRef.current = true   // 阻止计时器/交卷再触发 onFinish
+    onAbandon()
+  }
+
   const submit = () => {
     const value = normalizeAnswer(input)
     if (value === null) return
@@ -113,6 +125,9 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
       <canvas ref={fxRef} className="fx-canvas" aria-hidden />
       {settings.stageId && <StageArt stageId={settings.stageId} height={54} />}
       <div className="race-top">
+        <button className={confirmQuit ? 'quit-btn confirm' : 'quit-btn'} onClick={quit}>
+          {confirmQuit ? '再点一次退出' : '✕ 退出'}
+        </button>
         <span className="progress-text">第 {idx + 1} / {questions.length} 题</span>
         {streak >= 3 && <span className="streak">🔥 连对 {streak}</span>}
         <span className={urgent ? 'timer urgent' : 'timer'}>⏱ {mm}:{ss}</span>
