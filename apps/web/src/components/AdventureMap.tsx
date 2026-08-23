@@ -26,6 +26,9 @@ const SCENES: Record<string, SceneTheme> = {
   meadow:  { sky: ['#3a6ea5', '#7fb3d5', '#c9e4f5'], layers: ['#5a8fc0', '#3b6a99', '#234a70'], glow: '#e8f4ff', emoji: '🌤️' },
   desert:  { sky: ['#b8651e', '#e0984a', '#f2c98a'], layers: ['#c98a4a', '#9a6428', '#6b4212'], glow: '#ffe4b0', emoji: '🏜️' },
   volcano: { sky: ['#3d0c0c', '#8a2a1e', '#e0662a'], layers: ['#a83a24', '#5c1a10', '#330d07'], glow: '#ffb38a', emoji: '🌋' },
+  rainbow: { sky: ['#7a4a9e', '#c96a9e', '#f2a56a'], layers: ['#9a5a8e', '#6b3a72', '#3f2148'], glow: '#ffd6f5', emoji: '🌈' },
+  galaxy:  { sky: ['#0b1026', '#232a52', '#4a5a9e'], layers: ['#323a6b', '#1c2145', '#0e1129'], glow: '#c9d6ff', emoji: '🌌' },
+  moon:    { sky: ['#1c1f26', '#3a4048', '#6b7480'], layers: ['#4a525c', '#2c323a', '#161a20'], glow: '#f5f0d0', emoji: '🌙' },
 }
 
 function rng(seed: number) {
@@ -196,7 +199,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
     const st = STAGES[i]
     return {
       mode: 'G2A', count: st.count, durationSec: st.durationSec, level: st.level,
-      ops: st.ops, max: st.max, seed: Math.floor(Math.random() * 1e9), stageId: st.id,
+      ops: st.ops, max: st.max, domain: st.domain, seed: Math.floor(Math.random() * 1e9), stageId: st.id,
     }
   }
 

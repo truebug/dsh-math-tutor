@@ -3,7 +3,7 @@
 import type { RaceSettings } from './types'
 import type { Op } from '@dsh-math-tutor/math-generator/core'
 
-export const MODES: Record<string, { max: number; ops: Op[]; label: string }> = {
+export const MODES: Record<string, { max: number; ops: Op[]; label: string; domain?: 'int' | 'dec' }> = {
   G2A: { max: 100, ops: ['add', 'sub'], label: '100以内加减法' },
   G2P: { max: 100, ops: ['add'], label: '100以内加法' },
   G2S: { max: 100, ops: ['sub'], label: '100以内减法' },
@@ -11,6 +11,7 @@ export const MODES: Record<string, { max: number; ops: Op[]; label: string }> = 
   G2D: { max: 81, ops: ['div'], label: '表内除法' },
   G2X: { max: 81, ops: ['mul', 'div'], label: '乘除混合' },
   G3A: { max: 1000, ops: ['add', 'sub'], label: '1000以内加减法' },
+  G4A: { max: 100, ops: ['add', 'sub'], label: '小数加减法', domain: 'dec' },
 }
 
 export function encodeRaceCode(s: RaceSettings): string {
@@ -30,6 +31,7 @@ export function decodeRaceCode(code: string): RaceSettings | null {
     seed: Number(m[5]) >>> 0,
     max: preset.max,
     ops: preset.ops,
+    domain: preset.domain,
     imported: true,
   }
 }

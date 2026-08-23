@@ -11,12 +11,15 @@ export const LEVELS: Record<Level, { carryRatio: number; minOperand: number; lab
   3: { carryRatio: 0.9, minOperand: 10, label: '挑战' },
 }
 
+export type Domain = 'int' | 'dec'
+
 export interface GenOptions {
   count: number
   max: number
   ops: Op[]
   seed: number
   level?: Level
+  domain?: Domain  // dec = 小数加减（L1/L2 一位小数，L3 两位小数）
   carryRatio?: number  // 画像自适应可覆盖档位默认值（对战/竞赛码场景不得使用）
 }
 
@@ -67,13 +70,17 @@ export function isCarry(a: number, b: number, op: Op): boolean {
 // 难度→九九表范围：基础 2~5，进阶/挑战 2~9
 const tableMax = (level: Level) => (level === 1 ? 5 : 9)
 
+const fmt = (scaled: number, scale: number): string => {
+  const v = scaled / scale
+  return scale === 1 ? String(v) : String(Math.round(v * 100) / 100)
+}
+
 function genQuestion(
   index: number, op: Op, max: number, rng: () => number,
-  wantCarry: boolean, minOperand: number, level: Level,
+  wantCarry: boolean, minOperand: number, level: Level, scale = 1,
 ): Question {
   let a = 0
   let b = 0
-  let answer = 0
   for (let tries = 0; tries < 100; tries += 1) {
     if (op === 'mul') {
       a = randInt(2, tableMax(level), rng)
@@ -83,23 +90,25 @@ function genQuestion(
       const q = randInt(2, tableMax(level), rng)     // 商
       a = b * q                                       // 被除数（保证整除）
     } else if (op === 'add') {
-      a = randInt(0, max, rng)
-      b = randInt(0, max - a, rng)
+      a = randInt(0, max * scale, rng)
+      b = randInt(0, max * scale - a, rng)
     } else {
-      a = randInt(0, max, rng)
+      a = randInt(0, max * scale, rng)
       b = randInt(0, a, rng)
     }
-    const effMin = max >= 1000 && (op === 'add' || op === 'sub') ? Math.max(minOperand, 10) : minOperand
+    const effMin = (max >= 1000 && scale === 1 && (op === 'add' || op === 'sub')
+      ? Math.max(minOperand, 10) : minOperand) * (scale > 1 && (op === 'add' || op === 'sub') ? scale : 1)
     if (isTrivial(a, b, op, effMin, level)) continue
     if ((op === 'add' || op === 'sub') && isCarry(a, b, op) !== wantCarry) continue
     break
   }
+  let answer: number
   if (op === 'mul') answer = a * b
   else if (op === 'div') answer = a / b
-  else answer = op === 'add' ? a + b : a - b
+  else answer = Math.round(((op === 'add' ? a + b : a - b) * 100) / scale) / 100
   return {
-    index, a, b, op,
-    text: `${a} ${OP_GLYPH[op]} ${b} =`,
+    index, a: a / scale, b: b / scale, op,
+    text: `${fmt(a, scale)} ${OP_GLYPH[op]} ${fmt(b, scale)} =`,
     answer,
     carry: op === 'add' || op === 'sub' ? isCarry(a, b, op) : false,
   }
@@ -111,8 +120,9 @@ export function generateQuestions(options: GenOptions): Question[] {
   const level: Level = options.level ?? 2
   const { carryRatio: levelRatio, minOperand } = LEVELS[level]
   const carryRatio = options.carryRatio ?? levelRatio
+  const scale = options.domain === 'dec' ? (level === 3 ? 100 : 10) : 1
   return Array.from({ length: options.count }, (_, i) =>
-    genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng, rng() < carryRatio, minOperand, level),
+    genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng, rng() < carryRatio, minOperand, level, scale),
   )
 }
 
@@ -120,7 +130,8 @@ export function generateQuestions(options: GenOptions): Question[] {
 export function generateSimilar(q: Question, rng: () => number, index: number): Question {
   const level: Level = 2
   const { minOperand } = LEVELS[level]
-  return genQuestion(index, q.op, 100, rng, q.carry, minOperand, level)
+  const scale = Number.isInteger(q.a) && Number.isInteger(q.b) ? 1 : 10
+  return genQuestion(index, q.op, 100, rng, q.carry, minOperand, level, scale)
 }
 
 // 输入归一化：全角数字/负号转半角，去空白；非法输入返回 null
@@ -129,8 +140,8 @@ export function normalizeAnswer(raw: string): number | null {
     .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
     .replace(/[−–]/g, '-')
     .trim()
-  if (s === '' || !/^-?\d+$/.test(s)) return null
-  return Number(s)
+  if (s === '' || !/^-?\d+(\.\d+)?$/.test(s)) return null
+  return Math.round(Number(s) * 100) / 100
 }
 
 export interface GradeResult {

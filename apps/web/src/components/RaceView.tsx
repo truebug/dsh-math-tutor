@@ -25,7 +25,7 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
   const code = encodeRaceCode(settings)
   const questions = useMemo(
     () => settings.customQuestions
-      ?? generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio }),
+      ?? generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio, domain: settings.domain }),
     [settings],
   )
   const [idx, setIdx] = useState(0)

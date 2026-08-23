@@ -12,6 +12,7 @@ export interface StageDef {
   level: Level
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
+  domain?: 'int' | 'dec'  // dec = 小数加减
 }
 
 // 寻宝地图：从森林出发，一路到宝藏岛
@@ -29,6 +30,9 @@ export const STAGES: StageDef[] = [
   { id: 'meadow',  name: '云端草原', emoji: '🌤️', desc: '30题 · 4分钟 · 千以内加减', count: 30, durationSec: 240, level: 1, ops: ['add', 'sub'], max: 1000 },
   { id: 'desert',  name: '沙漠绿洲', emoji: '🏜️', desc: '40题 · 4分钟 · 千以内进阶', count: 40, durationSec: 240, level: 2, ops: ['add', 'sub'], max: 1000 },
   { id: 'volcano', name: '烈焰火山', emoji: '🌋', desc: '50题 · 5分钟 · 千以内挑战', count: 50, durationSec: 300, level: 3, ops: ['add', 'sub'], max: 1000 },
+  { id: 'rainbow', name: '彩虹泉',   emoji: '🌈', desc: '20题 · 4分钟 · 一位小数', count: 20, durationSec: 240, level: 1, ops: ['add', 'sub'], max: 100, domain: 'dec' },
+  { id: 'galaxy',  name: '星空驿站', emoji: '🌌', desc: '30题 · 4分钟 · 小数进阶', count: 30, durationSec: 240, level: 2, ops: ['add', 'sub'], max: 100, domain: 'dec' },
+  { id: 'moon',    name: '月面城',   emoji: '🌙', desc: '40题 · 5分钟 · 两位小数挑战', count: 40, durationSec: 300, level: 3, ops: ['add', 'sub'], max: 100, domain: 'dec' },
 ]
 
 export interface AdventureState {
