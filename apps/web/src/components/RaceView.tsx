@@ -15,7 +15,8 @@ interface Props {
 
 export default function RaceView({ settings, onFinish }: Props) {
   const questions = useMemo(
-    () => generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed }),
+    () => settings.customQuestions
+      ?? generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level }),
     [settings],
   )
   const [idx, setIdx] = useState(0)

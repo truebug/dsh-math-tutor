@@ -2,12 +2,21 @@
 // 多人竞技的基础：同一 seed + 同一参数 = 同一份题目（确定性）。
 
 export type Op = 'add' | 'sub'
+export type Level = 1 | 2 | 3
+
+// 难度分级：进退位占比 + 最小操作数（二年级进退位是训练重点）
+export const LEVELS: Record<Level, { carryRatio: number; minOperand: number; label: string }> = {
+  1: { carryRatio: 0.15, minOperand: 2, label: '基础' },
+  2: { carryRatio: 0.6, minOperand: 5, label: '进阶' },
+  3: { carryRatio: 0.9, minOperand: 10, label: '挑战' },
+}
 
 export interface GenOptions {
   count: number
   max: number
   ops: Op[]
   seed: number
+  level?: Level
 }
 
 export interface Question {
@@ -17,6 +26,7 @@ export interface Question {
   op: Op
   text: string
   answer: number
+  carry: boolean
 }
 
 export function mulberry32(seed: number): () => number {
@@ -33,21 +43,24 @@ function randInt(min: number, max: number, rng: () => number): number {
   return Math.floor(rng() * (max - min + 1)) + min
 }
 
-// 质量约束：过滤无训练价值的琐碎题（保证确定性：拒绝采样走同一条 RNG 序列）
-function isTrivial(a: number, b: number, op: Op): boolean {
-  if (a < 5 || b < 5) return true        // 操作数过小，如 3 + 2、99 + 1
-  if (a % 10 === 0 || b % 10 === 0) return true  // 整十口算，如 40 + 30、57 - 40
-  if (op === 'sub' && a === b) return true       // 同数相减得 0，如 16 - 16
+// 质量约束：过滤无训练价值的琐碎题
+function isTrivial(a: number, b: number, op: Op, minOperand: number, level: Level): boolean {
+  if (a < minOperand || b < minOperand) return true    // 操作数过小，如 3 + 2、99 + 1
+  if (op === 'sub' && a === b) return true             // 同数相减得 0，如 16 - 16
+  if (level >= 2 && (a % 10 === 0 || b % 10 === 0)) return true  // 进阶以上剔除整十口算
   return false
 }
 
-// 加法是否进位 / 减法是否退位（二年级训练重点）
+// 加法是否进位 / 减法是否退位
 export function isCarry(a: number, b: number, op: Op): boolean {
   if (op === 'add') return (a % 10) + (b % 10) >= 10
   return (a % 10) < (b % 10)
 }
 
-function genQuestion(index: number, op: Op, max: number, rng: () => number, wantCarry: boolean): Question {
+function genQuestion(
+  index: number, op: Op, max: number, rng: () => number,
+  wantCarry: boolean, minOperand: number, level: Level,
+): Question {
   let a = 0
   let b = 0
   for (let tries = 0; tries < 100; tries += 1) {
@@ -58,27 +71,33 @@ function genQuestion(index: number, op: Op, max: number, rng: () => number, want
       a = randInt(0, max, rng)
       b = randInt(0, a, rng)
     }
-    if (isTrivial(a, b, op)) continue
+    if (isTrivial(a, b, op, minOperand, level)) continue
     if (isCarry(a, b, op) !== wantCarry) continue
     break
   }
   return {
-    index,
-    a,
-    b,
-    op,
+    index, a, b, op,
     text: `${a} ${op === 'add' ? '+' : '−'} ${b} =`,
     answer: op === 'add' ? a + b : a - b,
+    carry: isCarry(a, b, op),
   }
 }
 
 export function generateQuestions(options: GenOptions): Question[] {
   const rng = mulberry32(options.seed)
   const ops: Op[] = options.ops.length > 0 ? options.ops : ['add', 'sub']
-  // 约 60% 的题目要求进位/退位（训练重点），其余为非进退位基础题
+  const level: Level = options.level ?? 2
+  const { carryRatio, minOperand } = LEVELS[level]
   return Array.from({ length: options.count }, (_, i) =>
-    genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng, rng() < 0.6),
+    genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng, rng() < carryRatio, minOperand, level),
   )
+}
+
+// 错题重练：生成「同运算符、同进退位性质」的新题（换数字）
+export function generateSimilar(q: Question, rng: () => number, index: number): Question {
+  const level: Level = 2
+  const { minOperand } = LEVELS[level]
+  return genQuestion(index, q.op, 100, rng, q.carry, minOperand, level)
 }
 
 // 输入归一化：全角数字/负号转半角，去空白；非法输入返回 null

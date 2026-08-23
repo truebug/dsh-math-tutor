@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { MODES, decodeRaceCode, encodeRaceCode, newSeed } from '../lib/raceCode'
+import { LEVELS } from '@dsh-math-tutor/math-generator/core'
+import type { Level } from '@dsh-math-tutor/math-generator/core'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
 interface Props {
@@ -18,7 +20,7 @@ export default function SetupView({ profile, settings, onChange, onStart, onOpen
   const importCode = () => {
     const decoded = decodeRaceCode(codeInput)
     if (!decoded) {
-      setCodeError('竞赛码格式不正确（示例：G2A-60-300-839201）')
+      setCodeError('竞赛码格式不正确（示例：G2A-L2-60-300-839201）')
       return
     }
     setCodeError('')
@@ -40,6 +42,21 @@ export default function SetupView({ profile, settings, onChange, onStart, onOpen
               onClick={() => onChange({ ...settings, mode: id, max: m.max, ops: m.ops })}
             >
               {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="field">
+        <label>难度</label>
+        <div className="seg">
+          {([1, 2, 3] as Level[]).map((lv) => (
+            <button
+              key={lv}
+              className={lv === settings.level ? 'seg-btn active' : 'seg-btn'}
+              onClick={() => onChange({ ...settings, level: lv })}
+            >
+              {'⭐'.repeat(lv)} {LEVELS[lv].label}
             </button>
           ))}
         </div>

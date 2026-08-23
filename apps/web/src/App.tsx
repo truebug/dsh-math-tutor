@@ -7,7 +7,7 @@ import MistakeBook from './components/MistakeBook'
 import { defaultSettings } from './lib/raceCode'
 import { loadProfile, saveProfile, saveSession } from './lib/storage'
 import type { LearnerProfile, RaceSettings, SessionRecord, View } from './lib/types'
-import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core'
+import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core' // Question 用于错题重练
 import './styles.css'
 
 export default function App() {
@@ -29,6 +29,15 @@ export default function App() {
     setSettings(s)
     setRaceKey((k) => k + 1)
     setView('race')
+  }
+
+  const startMistakeRetry = (questions: Question[]) => {
+    startRace({
+      ...settings,
+      count: questions.length,
+      durationSec: Math.max(60, questions.length * 5),  // 每题 5 秒，至少 1 分钟
+      customQuestions: questions,
+    })
   }
 
   const handleFinish = (r: {
@@ -78,7 +87,7 @@ export default function App() {
           onOpenMistakes={() => setView('mistakes')}
         />
       )}
-      {view === 'mistakes' && <MistakeBook onBack={() => setView('setup')} />}
+      {view === 'mistakes' && <MistakeBook onBack={() => setView('setup')} onRetryMistakes={startMistakeRetry} />}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import type { Op, Question } from '@dsh-math-tutor/math-generator/core'
+import type { Level, Op, Question } from '@dsh-math-tutor/math-generator/core'
 
 export interface RaceSettings {
   mode: string        // 如 'G2A'：二年级·加减
@@ -7,6 +7,8 @@ export interface RaceSettings {
   ops: Op[]
   durationSec: number // 限时秒数，默认 300
   seed: number
+  level: Level        // 难度：1 基础 / 2 进阶 / 3 挑战
+  customQuestions?: Question[]  // 错题重练：直接使用给定题集（忽略 seed）
 }
 
 export interface WrongItem {
