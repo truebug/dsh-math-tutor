@@ -17,6 +17,7 @@ export interface GenOptions {
   ops: Op[]
   seed: number
   level?: Level
+  carryRatio?: number  // 画像自适应可覆盖档位默认值（对战/竞赛码场景不得使用）
 }
 
 export interface Question {
@@ -87,7 +88,8 @@ export function generateQuestions(options: GenOptions): Question[] {
   const rng = mulberry32(options.seed)
   const ops: Op[] = options.ops.length > 0 ? options.ops : ['add', 'sub']
   const level: Level = options.level ?? 2
-  const { carryRatio, minOperand } = LEVELS[level]
+  const { carryRatio: levelRatio, minOperand } = LEVELS[level]
+  const carryRatio = options.carryRatio ?? levelRatio
   return Array.from({ length: options.count }, (_, i) =>
     genQuestion(i, ops[Math.floor(rng() * ops.length)], options.max, rng, rng() < carryRatio, minOperand, level),
   )

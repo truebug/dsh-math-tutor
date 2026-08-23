@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MODES, decodeRaceCode, encodeRaceCode, newSeed } from '../lib/raceCode'
 import { LEVELS } from '@dsh-math-tutor/math-generator/core'
+import { adaptiveCarryRatio } from '../lib/profile'
 import type { Level } from '@dsh-math-tutor/math-generator/core'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
@@ -77,6 +78,11 @@ export default function SetupView({ profile, settings, onChange, onStart, onOpen
           onChange={(e) => onChange({ ...settings, durationSec: Number(e.target.value) })}
         />
       </div>
+
+      {!settings.imported && (() => {
+        const hint = adaptiveCarryRatio(LEVELS[settings.level].carryRatio)
+        return hint.applied ? <p className="adaptive-hint">🧠 {hint.reason}</p> : null
+      })()}
 
       <button className="primary big" onClick={onStart}>开始挑战 🚀</button>
 

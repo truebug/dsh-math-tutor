@@ -61,3 +61,20 @@ export function profileSummary(): string {
   const plainAcc = p.plainTotal > 0 ? Math.round((1 - p.plainWrong / p.plainTotal) * 100) : null
   return `累计练习${p.sessions}次；进退位题正确率${carryAcc ?? '-'}%，基础题正确率${plainAcc ?? '-'}%`
 }
+
+// 画像反哺出题：根据进退位题历史正确率调整下一组的进退位占比。
+// 样本不足（<20 道进退位题）不动；仅在个人日常练习启用，竞赛码对战锁定档位默认。
+export function adaptiveCarryRatio(base: number): { ratio: number; applied: boolean; reason: string } {
+  const p = loadProfileData()
+  if (p.carryTotal < 20) return { ratio: base, applied: false, reason: '' }
+  const acc = 1 - p.carryWrong / p.carryTotal
+  if (acc < 0.8) {
+    const ratio = Math.min(0.85, base + 0.25)
+    return { ratio, applied: true, reason: `进退位正确率 ${Math.round(acc * 100)}%，已增加进退位题加强练习` }
+  }
+  if (acc > 0.95 && base > 0.4) {
+    const ratio = Math.max(0.3, base - 0.2)
+    return { ratio, applied: true, reason: '进退位已熟练掌握，适当增加基础题保持手感' }
+  }
+  return { ratio: base, applied: false, reason: '' }
+}

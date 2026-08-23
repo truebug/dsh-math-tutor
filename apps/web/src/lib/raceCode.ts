@@ -26,6 +26,7 @@ export function decodeRaceCode(code: string): RaceSettings | null {
     seed: Number(m[5]) >>> 0,
     max: preset.max,
     ops: preset.ops,
+    imported: true,
   }
 }
 

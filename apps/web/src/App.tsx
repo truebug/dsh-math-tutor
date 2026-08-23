@@ -7,10 +7,11 @@ import MistakeBook from './components/MistakeBook'
 import DashboardView from './components/DashboardView'
 import Menu from './components/Menu'
 import { defaultSettings } from './lib/raceCode'
+import { LEVELS } from '@dsh-math-tutor/math-generator/core'
 import { loadProfile, saveProfile, saveSession } from './lib/storage'
 import type { LearnerProfile, RaceSettings, SessionRecord, View } from './lib/types'
 import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core'
-import { accumulateSession } from './lib/profile'
+import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
 import './styles.css'
 
 export default function App() {
@@ -29,6 +30,11 @@ export default function App() {
   }
 
   const startRace = (s: RaceSettings) => {
+    // 画像反哺出题：仅个人日常练习启用；竞赛码导入/错题重练锁定参数
+    if (!s.imported && !s.customQuestions) {
+      const { ratio, applied, reason } = adaptiveCarryRatio(LEVELS[s.level].carryRatio)
+      if (applied) s = { ...s, carryRatio: ratio, adaptiveReason: reason }
+    }
     setSettings(s)
     setRaceKey((k) => k + 1)
     setView('race')

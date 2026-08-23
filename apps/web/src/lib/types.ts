@@ -8,6 +8,9 @@ export interface RaceSettings {
   durationSec: number // 限时秒数，默认 300
   seed: number
   level: Level        // 难度：1 基础 / 2 进阶 / 3 挑战
+  carryRatio?: number     // 画像自适应的进退位占比（覆盖档位默认；竞赛码导入时不设置）
+  adaptiveReason?: string // 自适应说明文案（设置页展示）
+  imported?: boolean      // 是否来自竞赛码导入（导入=锁定参数，不做自适应，保证同码同题）
   customQuestions?: Question[]  // 错题重练：直接使用给定题集（忽略 seed）
 }
 

@@ -101,3 +101,7 @@ input[type="range"] { width: 100%; }
 }
 .review-card b { color: #b8860b; }
 .review-card p { margin: 6px 0 0; white-space: pre-wrap; }
+.adaptive-hint {
+  margin: 0; font-size: 13px; color: #7a6a2f; background: #fffbe8;
+  border-radius: 10px; padding: 8px 12px;
+}
