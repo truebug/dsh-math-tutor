@@ -5,6 +5,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: process.env.VITE_BASE_PATH ?? '/',
   plugins: [react()],
+  resolve: {
+    alias: {
+      // 直接引用 DSH 插件的纯函数核心，浏览器端本地出题（零延迟、离线可用）
+      '@dsh-math-tutor/math-generator/core': new URL(
+        '../../packages/math-generator/src/core.ts', import.meta.url,
+      ).pathname,
+    },
+  },
   server: {
     proxy: {
       // 开发时把 /api 代理到本地后端；线上由 nginx 反代

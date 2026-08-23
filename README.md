@@ -58,7 +58,7 @@
 ### 前置要求
 
 - Node.js 22.19+ 或 24+
-- pnpm（建议 `corepack enable`，锁定 `pnpm@11.7.0`）
+- pnpm（建议 `corepack enable`，锁定 `pnpm@10.34.5`）
 - DeepSeek API Key（仅后端需要）
 
 ### 开发模式
@@ -67,15 +67,18 @@
 git clone https://github.com/truebug/dsh-math-tutor.git
 cd dsh-math-tutor
 pnpm install
-
-# 启动 DSH Web UI 并加载本项目插件（cordis.yml 覆盖层）
-npx @deepseek-ai/dsh@0.1.1-rc.2 web --config cordis.yml
-
-# 另开终端，启动前端开发服务器
-pnpm --filter web dev
+pnpm dev:web        # 速算挑战页：http://localhost:5173
 ```
 
-DSH Web UI 默认运行在 `http://127.0.0.1:3080`（仅本地调试用）。
+MVP 已可用：首次访问填写「我是谁」（昵称/性别/年龄/年级/科目，仅存本地），
+随后进入 100 以内加减法计时挑战（默认 60 题 / 5 分钟），自动判分出成绩报告，
+错题自动进错题本；出题由浏览器本地确定性完成（`packages/math-generator` 核心），
+**竞赛码**（如 `G2A-60-300-839201`）= 参数 + 种子，同码同题，是多人对战的基础。
+
+```bash
+# 可选：DSH Web UI 调试插件（cordis.yml 覆盖层，需替换 <REPO_ROOT>）
+npx @deepseek-ai/dsh@0.1.1-rc.2 web --config cordis.yml
+```
 
 ## 项目结构
 
@@ -102,12 +105,13 @@ dsh-math-tutor/
 
 ## 路线图
 
-- [ ] Phase 1: 100 以内加减法速算（二年级）— 确定性出题 + 判分 + 计时
+- [x] Phase 1: 100 以内加减法速算（二年级）— 确定性出题 + 判分 + 计时（MVP 单机版）
 - [ ] Phase 2: 表内乘除法（二~三年级）
 - [ ] Phase 3: 多位数加减法（三年级）
 - [ ] Phase 4: 小数初步认识与计算（四年级）
 - [ ] Phase 5: 简易方程与几何（五年级）
 - [ ] Phase 6: 语文 / 英语辅助模块（待规划）
+- [ ] Phase 6.5: 多人竞技（server relay 对战房间，基于竞赛码同题竞速）
 - [ ] Phase 7: 学习者画像与自适应推荐（错题模式识别 → 难度/进度动态匹配）
 - [ ] 数学插件稳定后拆分为独立仓库，并打 `dsh-plugin` topic 便于社区发现
 

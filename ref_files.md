@@ -57,7 +57,7 @@ dsh-math-tutor/
 
 - **插件加载**：不使用每包 `cordis.patch.yml`；官方做法是根目录一份 `cordis.yml`，用 `insert` 列表注入插件模块（绝对路径），启动时 `npx @deepseek-ai/dsh web --config cordis.yml`。
 - **工具定义**：面向模型的工具用 `defineTool`（`@deepseek-ai/dsh-tools`）+ `ctx.tools.register()`；math-generator 的出题/判分为确定性代码，仅在需要讲解时调用 LLM。
-- **版本锁定**：DSH 处于 developer preview（官方声明有破坏性变更），所有依赖精确锁定，pnpm 用 corepack 固定 `pnpm@11.7.0`。
+- **版本锁定**：DSH 处于 developer preview（官方声明有破坏性变更），所有依赖精确锁定，pnpm 用 corepack 固定 `pnpm@10.34.5`。
 - **生态**：数学插件稳定后可拆分为独立仓库并添加 `dsh-plugin` topic。
 
 ## 参考

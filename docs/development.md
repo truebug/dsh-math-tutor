@@ -2,7 +2,7 @@
 
 ## 环境
 
-- Node.js 22.19+ / 24+；`corepack enable` 固定 `pnpm@11.7.0`
+- Node.js 22.19+ / 24+；`corepack enable` 固定 `pnpm@10.34.5`
 - DeepSeek Harness 精确锁定 `@deepseek-ai/dsh@0.1.1-rc.2`（developer preview，存在破坏性变更，升级前需回归测试）
 
 ## 常用命令
