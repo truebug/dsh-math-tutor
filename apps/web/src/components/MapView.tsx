@@ -1,3 +1,4 @@
+import StageArt from './StageArt'
 import { STAGES, isUnlocked, loadAdventure, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
@@ -55,7 +56,9 @@ export default function MapView({ profile, onStartStage, onFreePractice }: Props
               disabled={!unlocked}
               onClick={() => onStartStage(stageSettings(i))}
             >
-              <span className="stage-emoji">{unlocked ? st.emoji : '🔒'}</span>
+              {unlocked
+                ? <StageArt stageId={st.id} height={64} />
+                : <span className="stage-emoji">🔒</span>}
               <span className="stage-info">
                 <b>第{i + 1}关 · {st.name}</b>
                 <small>{st.desc}</small>

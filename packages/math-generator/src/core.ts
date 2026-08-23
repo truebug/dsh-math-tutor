@@ -1,7 +1,7 @@
 // 纯函数出题核心：框架无关，可在浏览器与 DSH 插件中复用。
 // 多人竞技的基础：同一 seed + 同一参数 = 同一份题目（确定性）。
 
-export type Op = 'add' | 'sub'
+export type Op = 'add' | 'sub' | 'mul' | 'div'
 export type Level = 1 | 2 | 3
 
 // 难度分级：进退位占比 + 最小操作数（二年级进退位是训练重点）
@@ -46,11 +46,17 @@ function randInt(min: number, max: number, rng: () => number): number {
 
 // 质量约束：过滤无训练价值的琐碎题
 function isTrivial(a: number, b: number, op: Op, minOperand: number, level: Level): boolean {
+  if (op === 'mul' || op === 'div') {
+    return a <= 1 || b <= 1                          // ×1 / ÷1 无训练价值
+  }
   if (a < minOperand || b < minOperand) return true    // 操作数过小，如 3 + 2、99 + 1
   if (op === 'sub' && a === b) return true             // 同数相减得 0，如 16 - 16
   if (level >= 2 && (a % 10 === 0 || b % 10 === 0)) return true  // 进阶以上剔除整十口算
   return false
 }
+
+const OP_GLYPH: Record<Op, string> = { add: '+', sub: '−', mul: '×', div: '÷' }
+export const OP_GLYPHS: Record<Op, string> = OP_GLYPH
 
 // 加法是否进位 / 减法是否退位
 export function isCarry(a: number, b: number, op: Op): boolean {
@@ -58,14 +64,25 @@ export function isCarry(a: number, b: number, op: Op): boolean {
   return (a % 10) < (b % 10)
 }
 
+// 难度→九九表范围：基础 2~5，进阶/挑战 2~9
+const tableMax = (level: Level) => (level === 1 ? 5 : 9)
+
 function genQuestion(
   index: number, op: Op, max: number, rng: () => number,
   wantCarry: boolean, minOperand: number, level: Level,
 ): Question {
   let a = 0
   let b = 0
+  let answer = 0
   for (let tries = 0; tries < 100; tries += 1) {
-    if (op === 'add') {
+    if (op === 'mul') {
+      a = randInt(2, tableMax(level), rng)
+      b = randInt(2, tableMax(level), rng)
+    } else if (op === 'div') {
+      b = randInt(2, tableMax(level), rng)           // 除数
+      const q = randInt(2, tableMax(level), rng)     // 商
+      a = b * q                                       // 被除数（保证整除）
+    } else if (op === 'add') {
       a = randInt(0, max, rng)
       b = randInt(0, max - a, rng)
     } else {
@@ -73,14 +90,17 @@ function genQuestion(
       b = randInt(0, a, rng)
     }
     if (isTrivial(a, b, op, minOperand, level)) continue
-    if (isCarry(a, b, op) !== wantCarry) continue
+    if ((op === 'add' || op === 'sub') && isCarry(a, b, op) !== wantCarry) continue
     break
   }
+  if (op === 'mul') answer = a * b
+  else if (op === 'div') answer = a / b
+  else answer = op === 'add' ? a + b : a - b
   return {
     index, a, b, op,
-    text: `${a} ${op === 'add' ? '+' : '−'} ${b} =`,
-    answer: op === 'add' ? a + b : a - b,
-    carry: isCarry(a, b, op),
+    text: `${a} ${OP_GLYPH[op]} ${b} =`,
+    answer,
+    carry: op === 'add' || op === 'sub' ? isCarry(a, b, op) : false,
   }
 }
 

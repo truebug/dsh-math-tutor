@@ -155,3 +155,5 @@ input[type="range"] { width: 100%; }
 }
 .stars-line { text-align: center; font-size: 30px; margin: 0; }
 .stars-line small { font-size: 14px; color: #8a97a8; margin-left: 8px; }
+.fx-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
+.stage svg { flex-shrink: 0; width: 110px; }

@@ -19,6 +19,11 @@ export const STAGES: StageDef[] = [
   { id: 'lake',    name: '水晶湖底', emoji: '💧', desc: '40题 · 4分钟 · 进阶', count: 40, durationSec: 240, level: 2, ops: ['add', 'sub'] },
   { id: 'snow',    name: '雪山之巅', emoji: '🏔️', desc: '50题 · 4分钟 · 进阶', count: 50, durationSec: 240, level: 2, ops: ['add', 'sub'] },
   { id: 'island',  name: '宝藏岛',   emoji: '🏝️', desc: '60题 · 5分钟 · 挑战', count: 60, durationSec: 300, level: 3, ops: ['add', 'sub'] },
+  { id: 'vine',    name: '藤蔓山谷', emoji: '🌿', desc: '20题 · 3分钟 · 乘法入门', count: 20, durationSec: 180, level: 1, ops: ['mul'] },
+  { id: 'bamboo',  name: '蜂蜜竹林', emoji: '🎋', desc: '30题 · 3分钟 · 九九乘法', count: 30, durationSec: 180, level: 2, ops: ['mul'] },
+  { id: 'falls',   name: '瀑布峡谷', emoji: '🌊', desc: '30题 · 3分钟 · 表内除法', count: 30, durationSec: 180, level: 2, ops: ['div'] },
+  { id: 'thunder', name: '雷鸣峰',   emoji: '⛰️', desc: '40题 · 4分钟 · 乘除混合', count: 40, durationSec: 240, level: 2, ops: ['mul', 'div'] },
+  { id: 'temple',  name: '黄金圣殿', emoji: '🏆', desc: '50题 · 5分钟 · 乘除挑战', count: 50, durationSec: 300, level: 3, ops: ['mul', 'div'] },
 ]
 
 export interface AdventureState {

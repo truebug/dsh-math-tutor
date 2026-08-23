@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { generateQuestions, normalizeAnswer, type Question } from '@dsh-math-tutor/math-generator/core'
+import { generateQuestions, normalizeAnswer, OP_GLYPHS, type Question } from '@dsh-math-tutor/math-generator/core'
 import type { RaceSettings } from '../lib/types'
 import { battleJoin, battleScore } from '../api/battle'
 import { sfx } from '../lib/sound'
+import { burst } from '../lib/particles'
+import StageArt from './StageArt'
 import { encodeRaceCode } from '../lib/raceCode'
 
 interface Props {
@@ -30,6 +32,7 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
   const [streak, setStreak] = useState(0)
   const [flash, setFlash] = useState<'ok' | 'no' | null>(null)
   const [cheer, setCheer] = useState(0)  // 连击里程碑弹层计数
+  const fxRef = useRef<HTMLCanvasElement>(null)
   const answersRef = useRef<Array<number | null>>(Array(questions.length).fill(null))
   const perQuestionRef = useRef<number[]>([])
   const questionStartRef = useRef(Date.now())
@@ -78,7 +81,11 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
       const next = streak + 1
       setStreak(next)
       setFlash('ok')
-      if (next > 0 && next % 5 === 0) { sfx.streak(); setCheer(next) }
+      if (next > 0 && next % 5 === 0) {
+        sfx.streak()
+        setCheer(next)
+        if (fxRef.current) burst(fxRef.current, 'embers', 24)
+      }
       else sfx.correct()
     } else {
       setStreak(0)
@@ -103,6 +110,8 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
 
   return (
     <div className="card race">
+      <canvas ref={fxRef} className="fx-canvas" aria-hidden />
+      {settings.stageId && <StageArt stageId={settings.stageId} height={54} />}
       <div className="race-top">
         <span className="progress-text">第 {idx + 1} / {questions.length} 题</span>
         {streak >= 3 && <span className="streak">🔥 连对 {streak}</span>}
@@ -118,7 +127,7 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
         </div>
       )}
       <div className={flash === 'ok' ? 'question flash-ok' : flash === 'no' ? 'question flash-no' : 'question'}>
-        {q.a} {q.op === 'add' ? '+' : '−'} {q.b} =
+        {q.a} {OP_GLYPHS[q.op]} {q.b} =
       </div>
 
       <input
