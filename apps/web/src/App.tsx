@@ -12,6 +12,7 @@ import { loadProfile, saveProfile, saveSession } from './lib/storage'
 import type { LearnerProfile, RaceSettings, SessionRecord, View } from './lib/types'
 import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core'
 import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
+import { battleScore } from './api/battle'
 import './styles.css'
 
 export default function App() {
@@ -72,7 +73,8 @@ export default function App() {
       finishedBy: r.finishedBy,
     }
     saveSession(rec)
-    accumulateSession(r.questions, graded.wrongIndexes)  // 画像积累（确定性统计）
+    accumulateSession(r.questions, graded.wrongIndexes, r.answers)  // 画像积累（确定性统计）
+    battleScore(settings, profile.nickname, graded.correct, graded.answered, r.usedMs)  // 交卷上报
     setRecord(rec)
     setView('result')
   }
@@ -91,7 +93,7 @@ export default function App() {
           onOpenMistakes={() => setView('mistakes')}
         />
       )}
-      {view === 'race' && <RaceView key={raceKey} settings={settings} onFinish={handleFinish} />}
+      {view === 'race' && <RaceView key={raceKey} settings={settings} nickname={profile.nickname} onFinish={handleFinish} />}
       {view === 'result' && record && (
         <ResultView
           record={record}

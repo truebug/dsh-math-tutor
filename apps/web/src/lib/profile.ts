@@ -1,11 +1,15 @@
 // 本地学习者画像：agent 记忆的基础数据（积累层）。
 // 确定性统计 + AI 点评历史，全部仅存 localStorage（上传需监护人同意，见 docs/vision.md）。
 
+import { classifyError, type PatternStat } from './errorPatterns'
+import type { Question } from '@dsh-math-tutor/math-generator/core'
+
 export interface ProfileData {
   carryWrong: number      // 进位/退位题累计错误
   carryTotal: number      // 进位/退位题累计作答
   plainWrong: number
   plainTotal: number
+  patterns: PatternStat   // 错因聚类：看错符号/进退位失误/计算错误
   sessions: number
   reviews: Array<{ date: string; sessionId: string; text: string }>  // AI 点评历史
 }
@@ -17,7 +21,7 @@ export function loadProfileData(): ProfileData {
     const raw = localStorage.getItem(KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* fallthrough */ }
-  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, sessions: 0, reviews: [] }
+  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, patterns: { sign: 0, carry: 0, calc: 0 }, sessions: 0, reviews: [] }
 }
 
 export function saveProfileData(p: ProfileData): void {
@@ -26,10 +30,12 @@ export function saveProfileData(p: ProfileData): void {
 
 // 每次练习后增量更新画像（确定性，不走 LLM）
 export function accumulateSession(
-  questions: Array<{ carry: boolean }>,
+  questions: Question[],
   wrongIndexes: number[],
+  answers: Array<number | null>,
 ): ProfileData {
   const p = loadProfileData()
+  p.patterns ??= { sign: 0, carry: 0, calc: 0 }
   const wrong = new Set(wrongIndexes)
   questions.forEach((q, i) => {
     if (q.carry) {
@@ -38,6 +44,10 @@ export function accumulateSession(
     } else {
       p.plainTotal += 1
       if (wrong.has(i)) p.plainWrong += 1
+    }
+    if (wrong.has(i)) {
+      const kind = classifyError(q, answers[i] ?? null)
+      if (kind) p.patterns[kind] += 1
     }
   })
   p.sessions += 1

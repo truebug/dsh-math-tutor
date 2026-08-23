@@ -1,4 +1,6 @@
 import { loadSessions } from '../lib/storage'
+import { loadProfileData } from '../lib/profile'
+import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 
 function LineChart({ values, format, color }: { values: number[]; format: (v: number) => string; color: string }) {
   if (values.length === 0) return <p className="subtitle">还没有数据</p>
@@ -46,6 +48,28 @@ export default function DashboardView() {
         <div className="stat"><b>{Math.round(overallAcc * 100)}%</b><span>总正确率</span></div>
         <div className="stat"><b>{avgSpeed.toFixed(1)}s</b><span>平均每题</span></div>
       </div>
+
+      {(() => {
+        const pd = loadProfileData()
+        const total = pd.patterns.sign + pd.patterns.carry + pd.patterns.calc
+        if (total === 0) return null
+        const advice = dominantAdvice(pd.patterns)
+        return (
+          <div className="pattern-card">
+            <h3 className="chart-title">错因分析（累计 {total} 次错题）</h3>
+            <div className="pattern-bars">
+              {(Object.entries(pd.patterns) as Array<[keyof typeof pd.patterns, number]>).map(([k, n]) => (
+                <div key={k} className="pattern-row">
+                  <span className="pattern-label">{PATTERN_LABELS[k]}</span>
+                  <div className="pattern-bar"><div style={{ width: `${(n / total) * 100}%` }} /></div>
+                  <span>{n} 次</span>
+                </div>
+              ))}
+            </div>
+            {advice && <p className="adaptive-hint">💡 {advice}</p>}
+          </div>
+        )
+      })()}
 
       <h3 className="chart-title">正确率趋势（最近 {recent.length} 次）</h3>
       <LineChart

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { encodeRaceCode } from '../lib/raceCode'
 import { fetchReview } from '../api/review'
 import { saveReview } from '../lib/profile'
+import BattleBoard from './BattleBoard'
 import type { LearnerProfile } from '../lib/types'
 import type { RaceSettings, SessionRecord } from '../lib/types'
 
@@ -94,6 +95,8 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
         <button className="ghost" onClick={onOpenMistakes}>错题本 📒</button>
         <button className="ghost" onClick={onHome}>返回首页</button>
       </div>
+
+      <BattleBoard code={encodeRaceCode(settings)} me={profile.nickname} />
 
       <p className="race-code-line">
         本次竞赛码：<code>{encodeRaceCode(settings)}</code>

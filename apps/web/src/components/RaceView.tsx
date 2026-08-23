@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { generateQuestions, normalizeAnswer, type Question } from '@dsh-math-tutor/math-generator/core'
 import type { RaceSettings } from '../lib/types'
+import { battleJoin, battleScore } from '../api/battle'
+import { encodeRaceCode } from '../lib/raceCode'
 
 interface Props {
   settings: RaceSettings
+  nickname: string
   onFinish: (result: {
     answers: Array<number | null>
     perQuestionMs: number[]
@@ -13,7 +16,8 @@ interface Props {
   }) => void
 }
 
-export default function RaceView({ settings, onFinish }: Props) {
+export default function RaceView({ settings, nickname, onFinish }: Props) {
+  const code = encodeRaceCode(settings)
   const questions = useMemo(
     () => settings.customQuestions
       ?? generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio }),
@@ -21,6 +25,7 @@ export default function RaceView({ settings, onFinish }: Props) {
   )
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
+  const correctRef = useRef(0)
   const answersRef = useRef<Array<number | null>>(Array(questions.length).fill(null))
   const perQuestionRef = useRef<number[]>([])
   const questionStartRef = useRef(Date.now())
@@ -42,6 +47,10 @@ export default function RaceView({ settings, onFinish }: Props) {
   }
 
   useEffect(() => {
+    battleJoin(settings, nickname)   // 加入对战房间（server 不在时静默降级）
+  }, [])
+
+  useEffect(() => {
     const t = setInterval(() => {
       const left = settings.durationSec - Math.floor((Date.now() - startRef.current) / 1000)
       setRemain(Math.max(left, 0))
@@ -59,6 +68,8 @@ export default function RaceView({ settings, onFinish }: Props) {
     if (value === null) return
     answersRef.current[idx] = value
     perQuestionRef.current[idx] = Date.now() - questionStartRef.current
+    if (value === q.answer) correctRef.current += 1
+    battleScore(settings, nickname, correctRef.current, idx + 1, 0)  // 进度上报；交卷时由 App 带 usedMs 覆盖
     if (idx + 1 >= questions.length) {
       finish('submit')
     } else {

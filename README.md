@@ -111,9 +111,10 @@ dsh-math-tutor/
 - [ ] Phase 4: 小数初步认识与计算（四年级）
 - [ ] Phase 5: 简易方程与几何（五年级）
 - [ ] Phase 6: 语文 / 英语辅助模块（待规划）
-- [ ] Phase 6.5: 多人竞技（server relay 对战房间，基于竞赛码同题竞速）
+- [x] Phase 6.5: 多人竞技（server relay 对战房间，竞赛码即房间号，2s 轮询排行榜，server 不在时静默降级单机）
 - [x] Phase 7a: 画像反哺出题雏形——进退位正确率 <80% 自动加强进退位题（个人练习；竞赛码对战锁定参数保证同题）
-- [ ] Phase 7b: 完整学习者画像与自适应推荐（错因聚类 → 知识点级动态匹配）
+- [x] Phase 7b-1: 错因聚类（看错符号/进退位失误/计算错误，看板可视化 + 针对性建议）
+- [ ] Phase 7b-2: 知识点级动态推荐
 - [ ] 数学插件稳定后拆分为独立仓库，并打 `dsh-plugin` topic 便于社区发现
 
 > ⚠️ DeepSeek Harness 处于 developer preview，官方声明存在兼容性破坏变更，因此 package.json 中必须精确锁定 `@deepseek-ai/dsh@0.1.1-rc.2`。
