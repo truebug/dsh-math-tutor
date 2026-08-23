@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import OnboardingView from './components/OnboardingView'
 import SetupView from './components/SetupView'
-import MapView from './components/MapView'
+import MapView from './components/AdventureMap'
 import RaceView from './components/RaceView'
 import ResultView from './components/ResultView'
 import MistakeBook from './components/MistakeBook'

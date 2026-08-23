@@ -161,3 +161,60 @@ input[type="range"] { width: 100%; }
 .stars-line small { font-size: 14px; color: #8a97a8; margin-left: 8px; }
 .fx-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
 
+/* ===== 寻宝卷轴地图 ===== */
+.adventure {
+  position: fixed; inset: 0; overflow-y: auto; scroll-behavior: smooth;
+  background: #0d1b2a;
+}
+.adv-hero {
+  min-height: 62vh; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; color: #fff; padding: 24px;
+  background: radial-gradient(ellipse at 50% 0%, #2a4a6b 0%, #0d1b2a 70%);
+}
+.adv-hero h1 { margin: 0; }
+.adv-hero .pet-row { color: #fff; }
+.adv-sub { color: #b8c6d8; font-size: 13px; margin: 0; }
+.scene {
+  position: relative; height: 78vh; overflow: hidden;
+  display: flex; align-items: center;
+}
+.scene .layer {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 46%;
+  will-change: transform; pointer-events: none;
+}
+.scene .layer.far  { height: 60%; }
+.scene .layer.mid  { height: 52%; }
+.scene .layer.near { height: 44%; }
+.scene-glow { position: absolute; inset: 0; pointer-events: none; transition: opacity .3s; }
+.scene.locked { filter: saturate(.45) brightness(.7); }
+.scene.locked::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(13,27,42,.15), rgba(13,27,42,.55));
+  pointer-events: none;
+}
+.scene-node {
+  position: relative; z-index: 2; width: 100%; display: flex;
+  padding: 0 8%; 
+}
+.node {
+  display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+  background: rgba(10, 20, 32, .55); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.22); border-radius: 20px;
+  color: #fff; cursor: pointer; text-align: left; transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35);
+}
+.node:not(.locked):hover { transform: scale(1.04); box-shadow: 0 10px 32px rgba(0,0,0,.45), 0 0 24px rgba(255,224,138,.25); }
+.node.locked { opacity: .65; cursor: not-allowed; }
+.node-emoji { font-size: 38px; }
+.node-label { display: flex; flex-direction: column; gap: 2px; }
+.node-label small { color: #c8d4e0; }
+.node-stars { font-size: 15px; }
+.adv-foot {
+  min-height: 30vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #0d1b2a, #050b12);
+}
+.ghost.light { border-color: rgba(255,255,255,.3); color: #c8d4e0; }
+@media (prefers-reduced-motion: reduce) {
+  .adventure { scroll-behavior: auto; }
+  .scene .layer { transform: none !important; }
+}
