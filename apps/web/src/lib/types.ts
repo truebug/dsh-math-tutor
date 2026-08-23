@@ -11,6 +11,8 @@ export interface RaceSettings {
   carryRatio?: number     // 画像自适应的进退位占比（覆盖档位默认；竞赛码导入时不设置）
   adaptiveReason?: string // 自适应说明文案（设置页展示）
   imported?: boolean      // 是否来自竞赛码导入（导入=锁定参数，不做自适应，保证同码同题）
+  stageId?: string      // 闯关 ID（成绩用于记星）
+  daily?: boolean       // 每日挑战（成绩记入 daily 星）
   customQuestions?: Question[]  // 错题重练：直接使用给定题集（忽略 seed）
 }
 
@@ -34,7 +36,7 @@ export interface SessionRecord {
   finishedBy: 'submit' | 'timeout'
 }
 
-export type View = 'setup' | 'race' | 'result' | 'mistakes' | 'dashboard'
+export type View = 'map' | 'setup' | 'race' | 'result' | 'mistakes' | 'dashboard'
 
 export type Gender = 'boy' | 'girl' | 'secret'
 export type Subject = 'math' | 'chinese' | 'english'

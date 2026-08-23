@@ -7,7 +7,8 @@ interface Props {
 }
 
 const ITEMS: Array<{ view: View; label: string }> = [
-  { view: 'setup', label: '⚡ 速算挑战' },
+  { view: 'map', label: '🗺️ 寻宝地图' },
+  { view: 'setup', label: '⚡ 自由练习' },
   { view: 'dashboard', label: '📊 成长看板' },
   { view: 'mistakes', label: '📒 错题本' },
 ]

@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { encodeRaceCode } from '../lib/raceCode'
 import { fetchReview } from '../api/review'
 import { saveReview } from '../lib/profile'
+import { starsFor, totalStars, petStage } from '../lib/adventure'
+import { sfx } from '../lib/sound'
+import { useEffect } from 'react'
 import BattleBoard from './BattleBoard'
 import type { LearnerProfile } from '../lib/types'
 import type { RaceSettings, SessionRecord } from '../lib/types'
@@ -20,6 +23,9 @@ function fmt(ms: number): string {
 }
 
 export default function ResultView({ record, profile, onRetry, onHome, onOpenMistakes }: Props) {
+  const stars = starsFor(record.correct, record.total)
+  useEffect(() => { if (stars > 0) sfx.win() }, [])
+  const pet = petStage(totalStars())
   const [review, setReview] = useState<string | null>(null)
   const [reviewState, setReviewState] = useState<'idle' | 'loading' | 'error'>('idle')
 
@@ -56,6 +62,7 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
     <div className="card">
       <h1>📊 成绩报告</h1>
       <p className="praise">{praise}</p>
+      <p className="stars-line">{'⭐'.repeat(stars)}{'☆'.repeat(3 - stars)} <small>{pet.emoji} {pet.name}</small></p>
 
       <div className="stats">
         <div className="stat"><b>{record.correct}</b><span>答对 / {record.total} 题</span></div>

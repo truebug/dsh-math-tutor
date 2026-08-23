@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { generateQuestions, normalizeAnswer, type Question } from '@dsh-math-tutor/math-generator/core'
 import type { RaceSettings } from '../lib/types'
 import { battleJoin, battleScore } from '../api/battle'
+import { sfx } from '../lib/sound'
 import { encodeRaceCode } from '../lib/raceCode'
 
 interface Props {
@@ -26,6 +27,9 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
   const correctRef = useRef(0)
+  const [streak, setStreak] = useState(0)
+  const [flash, setFlash] = useState<'ok' | 'no' | null>(null)
+  const [cheer, setCheer] = useState(0)  // 连击里程碑弹层计数
   const answersRef = useRef<Array<number | null>>(Array(questions.length).fill(null))
   const perQuestionRef = useRef<number[]>([])
   const questionStartRef = useRef(Date.now())
@@ -68,7 +72,20 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
     if (value === null) return
     answersRef.current[idx] = value
     perQuestionRef.current[idx] = Date.now() - questionStartRef.current
-    if (value === q.answer) correctRef.current += 1
+    const hit = value === q.answer
+    if (hit) {
+      correctRef.current += 1
+      const next = streak + 1
+      setStreak(next)
+      setFlash('ok')
+      if (next > 0 && next % 5 === 0) { sfx.streak(); setCheer(next) }
+      else sfx.correct()
+    } else {
+      setStreak(0)
+      setFlash('no')
+      sfx.wrong()
+    }
+    setTimeout(() => setFlash(null), 350)
     battleScore(settings, nickname, correctRef.current, idx + 1, 0)  // 进度上报；交卷时由 App 带 usedMs 覆盖
     if (idx + 1 >= questions.length) {
       finish('submit')
@@ -88,13 +105,19 @@ export default function RaceView({ settings, nickname, onFinish }: Props) {
     <div className="card race">
       <div className="race-top">
         <span className="progress-text">第 {idx + 1} / {questions.length} 题</span>
+        {streak >= 3 && <span className="streak">🔥 连对 {streak}</span>}
         <span className={urgent ? 'timer urgent' : 'timer'}>⏱ {mm}:{ss}</span>
       </div>
       <div className="progress-bar">
         <div className="progress-fill" style={{ width: `${(idx / questions.length) * 100}%` }} />
       </div>
 
-      <div className="question">
+      {cheer > 0 && (
+        <div className="cheer" onAnimationEnd={() => setCheer(0)}>
+          🎉 连对 {cheer} 题！
+        </div>
+      )}
+      <div className={flash === 'ok' ? 'question flash-ok' : flash === 'no' ? 'question flash-no' : 'question'}>
         {q.a} {q.op === 'add' ? '+' : '−'} {q.b} =
       </div>
 

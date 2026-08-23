@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import OnboardingView from './components/OnboardingView'
 import SetupView from './components/SetupView'
+import MapView from './components/MapView'
 import RaceView from './components/RaceView'
 import ResultView from './components/ResultView'
 import MistakeBook from './components/MistakeBook'
@@ -13,11 +14,12 @@ import type { LearnerProfile, RaceSettings, SessionRecord, View } from './lib/ty
 import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core'
 import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
 import { battleScore } from './api/battle'
+import { recordStars, starsFor } from './lib/adventure'
 import './styles.css'
 
 export default function App() {
   const [profile, setProfile] = useState<LearnerProfile | null>(() => loadProfile())
-  const [view, setView] = useState<View>('setup')
+  const [view, setView] = useState<View>('map')
   const [settings, setSettings] = useState<RaceSettings>(defaultSettings())
   const [record, setRecord] = useState<SessionRecord | null>(null)
   const [raceKey, setRaceKey] = useState(0)
@@ -75,6 +77,9 @@ export default function App() {
     saveSession(rec)
     accumulateSession(r.questions, graded.wrongIndexes, r.answers)  // 画像积累（确定性统计）
     battleScore(settings, profile.nickname, graded.correct, graded.answered, r.usedMs)  // 交卷上报
+    const stars = starsFor(graded.correct, graded.total)
+    if (settings.stageId) recordStars(settings.stageId, stars)
+    if (settings.daily) recordStars(new Date().toISOString().slice(0, 10), stars, true)
     setRecord(rec)
     setView('result')
   }
@@ -84,6 +89,13 @@ export default function App() {
   return (
     <div className="page">
       {view !== 'race' && <Menu current={view} onNavigate={navigate} />}
+      {view === 'map' && (
+        <MapView
+          profile={profile}
+          onStartStage={startRace}
+          onFreePractice={() => setView('setup')}
+        />
+      )}
       {view === 'setup' && (
         <SetupView
           profile={profile}
@@ -99,11 +111,11 @@ export default function App() {
           record={record}
           profile={profile}
           onRetry={startRace}
-          onHome={() => setView('setup')}
+          onHome={() => setView('map')}
           onOpenMistakes={() => setView('mistakes')}
         />
       )}
-      {view === 'mistakes' && <MistakeBook onBack={() => setView('setup')} onRetryMistakes={startMistakeRetry} />}
+      {view === 'mistakes' && <MistakeBook onBack={() => setView('map')} onRetryMistakes={startMistakeRetry} />}
       {view === 'dashboard' && <DashboardView />}
     </div>
   )
