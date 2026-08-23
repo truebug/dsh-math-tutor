@@ -89,7 +89,8 @@ function genQuestion(
       a = randInt(0, max, rng)
       b = randInt(0, a, rng)
     }
-    if (isTrivial(a, b, op, minOperand, level)) continue
+    const effMin = max >= 1000 && (op === 'add' || op === 'sub') ? Math.max(minOperand, 10) : minOperand
+    if (isTrivial(a, b, op, effMin, level)) continue
     if ((op === 'add' || op === 'sub') && isCarry(a, b, op) !== wantCarry) continue
     break
   }

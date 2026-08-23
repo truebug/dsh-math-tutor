@@ -23,6 +23,9 @@ const SCENES: Record<string, SceneTheme> = {
   falls:   { sky: ['#0e5a75', '#168aad', '#52c7d8'], layers: ['#2a97b8', '#0f6a8a', '#073f52'], glow: '#caf0f8', emoji: '🌊' },
   thunder: { sky: ['#1a1745', '#3d348b', '#6c63c9'], layers: ['#5246a3', '#2e2766', '#171240'], glow: '#c4b5fd', emoji: '⛰️' },
   temple:  { sky: ['#6e5705', '#9a7b0a', '#e0b93a'], layers: ['#b8942a', '#7d6308', '#4a3c04'], glow: '#fff3b0', emoji: '🏆' },
+  meadow:  { sky: ['#3a6ea5', '#7fb3d5', '#c9e4f5'], layers: ['#5a8fc0', '#3b6a99', '#234a70'], glow: '#e8f4ff', emoji: '🌤️' },
+  desert:  { sky: ['#b8651e', '#e0984a', '#f2c98a'], layers: ['#c98a4a', '#9a6428', '#6b4212'], glow: '#ffe4b0', emoji: '🏜️' },
+  volcano: { sky: ['#3d0c0c', '#8a2a1e', '#e0662a'], layers: ['#a83a24', '#5c1a10', '#330d07'], glow: '#ffb38a', emoji: '🌋' },
 }
 
 function rng(seed: number) {
@@ -193,7 +196,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
     const st = STAGES[i]
     return {
       mode: 'G2A', count: st.count, durationSec: st.durationSec, level: st.level,
-      ops: st.ops, max: 81, seed: Math.floor(Math.random() * 1e9), stageId: st.id,
+      ops: st.ops, max: st.max, seed: Math.floor(Math.random() * 1e9), stageId: st.id,
     }
   }
 
@@ -213,7 +216,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
         </div>
         <button
           className={dailyDone ? 'daily done' : 'daily'}
-          onClick={() => onStartStage({ mode: 'G2A', max: 81, imported: true, daily: true, ...dailySettings() })}
+          onClick={() => onStartStage({ mode: 'G2A', max: 100, imported: true, daily: true, ...dailySettings() })}
         >
           🌞 每日挑战{dailyDone ? ' ✅ 今日已完成' : ' · 全班同题！'}
         </button>

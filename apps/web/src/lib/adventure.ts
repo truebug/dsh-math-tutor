@@ -11,20 +11,24 @@ export interface StageDef {
   durationSec: number
   level: Level
   ops: Op[]
+  max: number   // 结果上限：加减法 100/1000，乘除法 81
 }
 
 // 寻宝地图：从森林出发，一路到宝藏岛
 export const STAGES: StageDef[] = [
-  { id: 'forest',  name: '萤火森林', emoji: '🌲', desc: '20题 · 3分钟 · 基础', count: 20, durationSec: 180, level: 1, ops: ['add', 'sub'] },
-  { id: 'cave',    name: '回声山洞', emoji: '🕳️', desc: '30题 · 3分钟 · 基础', count: 30, durationSec: 180, level: 1, ops: ['add', 'sub'] },
-  { id: 'lake',    name: '水晶湖底', emoji: '💧', desc: '40题 · 4分钟 · 进阶', count: 40, durationSec: 240, level: 2, ops: ['add', 'sub'] },
-  { id: 'snow',    name: '雪山之巅', emoji: '🏔️', desc: '50题 · 4分钟 · 进阶', count: 50, durationSec: 240, level: 2, ops: ['add', 'sub'] },
-  { id: 'island',  name: '宝藏岛',   emoji: '🏝️', desc: '60题 · 5分钟 · 挑战', count: 60, durationSec: 300, level: 3, ops: ['add', 'sub'] },
-  { id: 'vine',    name: '藤蔓山谷', emoji: '🌿', desc: '20题 · 3分钟 · 乘法入门', count: 20, durationSec: 180, level: 1, ops: ['mul'] },
-  { id: 'bamboo',  name: '蜂蜜竹林', emoji: '🎋', desc: '30题 · 3分钟 · 九九乘法', count: 30, durationSec: 180, level: 2, ops: ['mul'] },
-  { id: 'falls',   name: '瀑布峡谷', emoji: '🌊', desc: '30题 · 3分钟 · 表内除法', count: 30, durationSec: 180, level: 2, ops: ['div'] },
-  { id: 'thunder', name: '雷鸣峰',   emoji: '⛰️', desc: '40题 · 4分钟 · 乘除混合', count: 40, durationSec: 240, level: 2, ops: ['mul', 'div'] },
-  { id: 'temple',  name: '黄金圣殿', emoji: '🏆', desc: '50题 · 5分钟 · 乘除挑战', count: 50, durationSec: 300, level: 3, ops: ['mul', 'div'] },
+  { id: 'forest',  name: '萤火森林', emoji: '🌲', desc: '20题 · 3分钟 · 基础', count: 20, durationSec: 180, level: 1, ops: ['add', 'sub'], max: 100 },
+  { id: 'cave',    name: '回声山洞', emoji: '🕳️', desc: '30题 · 3分钟 · 基础', count: 30, durationSec: 180, level: 1, ops: ['add', 'sub'], max: 100 },
+  { id: 'lake',    name: '水晶湖底', emoji: '💧', desc: '40题 · 4分钟 · 进阶', count: 40, durationSec: 240, level: 2, ops: ['add', 'sub'], max: 100 },
+  { id: 'snow',    name: '雪山之巅', emoji: '🏔️', desc: '50题 · 4分钟 · 进阶', count: 50, durationSec: 240, level: 2, ops: ['add', 'sub'], max: 100 },
+  { id: 'island',  name: '宝藏岛',   emoji: '🏝️', desc: '60题 · 5分钟 · 挑战', count: 60, durationSec: 300, level: 3, ops: ['add', 'sub'], max: 100 },
+  { id: 'vine',    name: '藤蔓山谷', emoji: '🌿', desc: '20题 · 3分钟 · 乘法入门', count: 20, durationSec: 180, level: 1, ops: ['mul'], max: 81 },
+  { id: 'bamboo',  name: '蜂蜜竹林', emoji: '🎋', desc: '30题 · 3分钟 · 九九乘法', count: 30, durationSec: 180, level: 2, ops: ['mul'], max: 81 },
+  { id: 'falls',   name: '瀑布峡谷', emoji: '🌊', desc: '30题 · 3分钟 · 表内除法', count: 30, durationSec: 180, level: 2, ops: ['div'], max: 81 },
+  { id: 'thunder', name: '雷鸣峰',   emoji: '⛰️', desc: '40题 · 4分钟 · 乘除混合', count: 40, durationSec: 240, level: 2, ops: ['mul', 'div'], max: 81 },
+  { id: 'temple',  name: '黄金圣殿', emoji: '🏆', desc: '50题 · 5分钟 · 乘除挑战', count: 50, durationSec: 300, level: 3, ops: ['mul', 'div'], max: 81 },
+  { id: 'meadow',  name: '云端草原', emoji: '🌤️', desc: '30题 · 4分钟 · 千以内加减', count: 30, durationSec: 240, level: 1, ops: ['add', 'sub'], max: 1000 },
+  { id: 'desert',  name: '沙漠绿洲', emoji: '🏜️', desc: '40题 · 4分钟 · 千以内进阶', count: 40, durationSec: 240, level: 2, ops: ['add', 'sub'], max: 1000 },
+  { id: 'volcano', name: '烈焰火山', emoji: '🌋', desc: '50题 · 5分钟 · 千以内挑战', count: 50, durationSec: 300, level: 3, ops: ['add', 'sub'], max: 1000 },
 ]
 
 export interface AdventureState {

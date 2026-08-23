@@ -10,6 +10,7 @@ export const MODES: Record<string, { max: number; ops: Op[]; label: string }> = 
   G2M: { max: 81, ops: ['mul'], label: '表内乘法' },
   G2D: { max: 81, ops: ['div'], label: '表内除法' },
   G2X: { max: 81, ops: ['mul', 'div'], label: '乘除混合' },
+  G3A: { max: 1000, ops: ['add', 'sub'], label: '1000以内加减法' },
 }
 
 export function encodeRaceCode(s: RaceSettings): string {
