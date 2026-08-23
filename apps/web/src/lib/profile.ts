@@ -34,7 +34,7 @@ export function saveProfileData(p: ProfileData): void {
 export function accumulateSession(
   questions: Question[],
   wrongIndexes: number[],
-  answers: Array<number | null>,
+  answers: Array<number | string | null>,
 ): ProfileData {
   const p = loadProfileData()
   p.patterns ??= { sign: 0, carry: 0, calc: 0 }

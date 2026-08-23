@@ -23,6 +23,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@dsh-math-tutor/math-generator':
+        specifier: workspace:*
+        version: link:../../packages/math-generator
       react:
         specifier: ^19.1.0
         version: 19.2.8

@@ -274,3 +274,17 @@ input[type="range"] { width: 100%; }
   content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 90px;
   background: linear-gradient(180deg, transparent, #0d1b2a); z-index: 1; pointer-events: none;
 }
+/* 选择题 */
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.choice-btn {
+  font-size: 26px; padding: 18px 10px; border-radius: 16px; border: 2px solid #d7e4f5;
+  background: #f7fbff; cursor: pointer; font-weight: 600; transition: transform .1s;
+}
+.choice-btn:hover { border-color: #4a90e2; transform: scale(1.03); }
+.choice-btn:active { background: #e8f2ff; }
+/* 推荐卡 */
+.recommend {
+  background: rgba(255, 215, 106, .18); border: 2px solid #ffd76a; color: #ffe8a8;
+  border-radius: 14px; padding: 10px 16px; font-size: 15px; cursor: pointer;
+}
+.recommend:hover { background: rgba(255, 215, 106, .3); }

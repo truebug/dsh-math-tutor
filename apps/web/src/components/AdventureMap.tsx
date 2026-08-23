@@ -1,7 +1,7 @@
 // 寻宝探险 · 卷轴地图（kage 启发：多层剪影 + 滚动视差 + 光影氛围）
 // 零资源实现：SVG 程序化山脊剪影 × 3 景深层，滚动时差速移动
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { STAGES, SUBJECTS, currentSubject, setSubject, isUnlocked, loadAdventure, consumeUnlock, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
+import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loadAdventure, consumeUnlock, recommendStage, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import { sfx } from '../lib/sound'
 import TreasureMapBg from './TreasureMapBg'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
@@ -30,6 +30,9 @@ const SCENES: Record<string, SceneTheme> = {
   rainbow: { sky: ['#7a4a9e', '#c96a9e', '#f2a56a'], layers: ['#9a5a8e', '#6b3a72', '#3f2148'], glow: '#ffd6f5', emoji: '🌈' },
   galaxy:  { sky: ['#0b1026', '#232a52', '#4a5a9e'], layers: ['#323a6b', '#1c2145', '#0e1129'], glow: '#c9d6ff', emoji: '🌌' },
   moon:    { sky: ['#1c1f26', '#3a4048', '#6b7480'], layers: ['#4a525c', '#2c323a', '#161a20'], glow: '#f5f0d0', emoji: '🌙' },
+  'eng-letters1': { sky: ['#2a6a8a', '#52b6c9', '#a5e8f0'], layers: ['#3a8aa8', '#1e5a75', '#0f3a50'], glow: '#fff3b0', emoji: '🏖️' },
+  'eng-letters2': { sky: ['#4a5a75', '#7a8aa5', '#b8c4d8'], layers: ['#5c6c88', '#3a4763', '#202a42'], glow: '#e8f0ff', emoji: '🪨' },
+  'eng-greet':    { sky: ['#b85c1e', '#e8984a', '#f2d06a'], layers: ['#c97a3a', '#8a5222', '#5c3410'], glow: '#ffe8b0', emoji: '🗼' },
 }
 
 function rng(seed: number) {
@@ -198,12 +201,14 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   }, [reduced])
 
   const stageSettings = (i: number): RaceSettings => {
-    const st = STAGES[i]
+    const st = stagesOf(subject === 'english' ? 'english' : 'math')[i]
     return {
       mode: 'G2A', count: st.count, durationSec: st.durationSec, level: st.level,
-      ops: st.ops, max: st.max, domain: st.domain, seed: Math.floor(Math.random() * 1e9), stageId: st.id,
+      ops: st.ops, max: st.max, domain: st.domain, kind: st.kind,
+      seed: Math.floor(Math.random() * 1e9), stageId: st.id,
     }
   }
+  const recommend = recommendStage(adv)
 
   return (
     <div className="adventure" ref={scrollRef}>
@@ -226,6 +231,25 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
         >
           🌞 每日挑战{dailyDone ? ' ✅ 今日已完成' : ' · 全班同题！'}
         </button>
+        {recommend && (
+          <button className="recommend" onClick={() => {
+            const stages = [...STAGES, ...stagesOf('english')]
+            const idx = stages.findIndex((x) => x.id === recommend.stage.id)
+            if (idx >= 0) {
+              const isEng = recommend.stage.subject === 'english'
+              if (isEng) { setSubject('english'); setSub('english') } else { setSubject('math'); setSub('math') }
+              const all = isEng ? stagesOf('english') : STAGES
+              const i2 = all.findIndex((x) => x.id === recommend.stage.id)
+              onStartStage({
+                mode: 'G2A', count: all[i2].count, durationSec: all[i2].durationSec, level: all[i2].level,
+                ops: all[i2].ops, max: all[i2].max, domain: all[i2].domain, kind: all[i2].kind,
+                seed: Math.floor(Math.random() * 1e9), stageId: all[i2].id,
+              })
+            }
+          }}>
+            🧭 推荐：{recommend.reason} →
+          </button>
+        )}
         <div className="continents">
           {SUBJECTS.map((sub) => (
             <button
@@ -244,7 +268,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
       </header>
 
       {/* 占位大陆：迷雾预告 */}
-      {subject !== 'math' && (
+      {subject === 'chinese' && (
         <section className="scene locked" style={{ background: 'linear-gradient(180deg, #2c3440, #4a5462 55%, #6b7684)' }}>
           <div className="scene-node" style={{ justifyContent: 'center' }}>
             <div className="node locked teaser">
@@ -259,8 +283,8 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
       )}
 
       {/* 卷轴关卡 */}
-      {subject === 'math' && STAGES.map((st, i) => {
-        const unlocked = isUnlocked(i, adv)
+      {(subject === 'math' ? STAGES : stagesOf('english')).map((st, i) => {
+        const unlocked = isUnlocked(i, adv, subject === 'english' ? stagesOf('english') : STAGES)
         const got = adv.stars[st.id] ?? 0
         const t = SCENES[st.id] ?? SCENES.forest
         return (

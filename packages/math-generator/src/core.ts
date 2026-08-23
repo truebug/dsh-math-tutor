@@ -31,6 +31,8 @@ export interface Question {
   text: string
   answer: number
   carry: boolean
+  options?: string[]      // 选择题（如英语字母/单词）：四选一
+  answerText?: string     // 选择题正确答案（与 options 中一项一致）
 }
 
 export function mulberry32(seed: number): () => number {
@@ -128,6 +130,14 @@ export function generateQuestions(options: GenOptions): Question[] {
 
 // 错题重练：生成「同运算符、同进退位性质」的新题（换数字）
 export function generateSimilar(q: Question, rng: () => number, index: number): Question {
+  if (q.options && q.answerText) {
+    const options = [...q.options]
+    for (let i = options.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1))
+      ;[options[i], options[j]] = [options[j], options[i]]
+    }
+    return { ...q, index, options }
+  }
   const level: Level = 2
   const { minOperand } = LEVELS[level]
   const scale = Number.isInteger(q.a) && Number.isInteger(q.b) ? 1 : 10
@@ -155,7 +165,7 @@ export interface GradeResult {
 
 export function gradeSession(
   questions: Question[],
-  answers: Array<number | null>,
+  answers: Array<number | string | null>,
   perQuestionMs: number[],
 ): GradeResult {
   let correct = 0
@@ -165,7 +175,8 @@ export function gradeSession(
     const ans = answers[i]
     if (ans !== null && ans !== undefined) {
       answered += 1
-      if (ans === q.answer) correct += 1
+      const expected: number | string = q.answerText ?? q.answer
+      if (ans === expected) correct += 1
       else wrongIndexes.push(i)
     }
   })

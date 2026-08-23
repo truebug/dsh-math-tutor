@@ -50,7 +50,7 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
         plainWrong: record.wrong.length - carryWrong,
         history: syncEnabled() ? profileSummary() : undefined,
         wrongExamples: record.wrong.slice(0, 5).map((w) =>
-          `${w.question.text} 正确${w.question.answer}，孩子答 ${w.given ?? '未作答'}`),
+          `${w.question.text} 正确${w.question.answerText ?? w.question.answer}，孩子答 ${w.given ?? '未作答'}`),
       })
       setReview(text)
       setReviewState('idle')
@@ -87,7 +87,7 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
             <div key={i} className="wrong-item">
               <span>{w.question.text}</span>
               <span className="given">你的答案：{w.given ?? '未作答'}</span>
-              <span className="right">正确：{w.question.answer}</span>
+              <span className="right">正确：{w.question.answerText ?? w.question.answer}</span>
             </div>
           ))}
         </div>

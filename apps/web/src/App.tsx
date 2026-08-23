@@ -53,7 +53,7 @@ export default function App() {
   }
 
   const handleFinish = (r: {
-    answers: Array<number | null>
+    answers: Array<number | string | null>
     perQuestionMs: number[]
     usedMs: number
     finishedBy: 'submit' | 'timeout'

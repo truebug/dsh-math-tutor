@@ -9,8 +9,8 @@ export interface PatternStat {
 }
 
 // 基于「孩子答案与正确答案的关系」的确定性错因分类
-export function classifyError(q: Question, given: number | null): ErrorKind | null {
-  if (given === null) return null
+export function classifyError(q: Question, given: number | string | null): ErrorKind | null {
+  if (given === null || typeof given === 'string') return null  // 选择题暂不归因
   const { a, b, op, answer } = q
   // 看错符号：加法做成减法，或减法做成加法
   if (op === 'add' && given === Math.abs(a - b)) return 'sign'

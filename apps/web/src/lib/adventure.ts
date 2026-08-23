@@ -13,6 +13,8 @@ export interface StageDef {
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
   domain?: 'int' | 'dec'  // dec = 小数加减
+  kind?: 'letters' | 'greetings'  // 英语内容生成器（选择题，不走 generateQuestions）
+  subject?: 'math' | 'chinese' | 'english'
 }
 
 // 寻宝地图：科目大陆制（初始分路，独立解锁链；中间不分支——科目间无前置依赖）
@@ -34,6 +36,18 @@ export const STAGES: StageDef[] = [
   { id: 'galaxy',  name: '星空驿站', emoji: '🌌', desc: '30题 · 4分钟 · 小数进阶', count: 30, durationSec: 240, level: 2, ops: ['add', 'sub'], max: 100, domain: 'dec' },
   { id: 'moon',    name: '月面城',   emoji: '🌙', desc: '40题 · 5分钟 · 两位小数挑战', count: 40, durationSec: 300, level: 3, ops: ['add', 'sub'], max: 100, domain: 'dec' },
 ]
+
+// 英语大陆关卡（独立解锁链）
+export const ENGLISH_STAGES: StageDef[] = [
+  { id: 'eng-letters1', name: '字母沙滩', emoji: '🏖️', desc: '13题 · 2分钟 · 字母 A-M', count: 13, durationSec: 120, level: 1, ops: [], max: 0, kind: 'letters', subject: 'english' },
+  { id: 'eng-letters2', name: '字母礁石', emoji: '🪨', desc: '13题 · 2分钟 · 字母 N-Z', count: 13, durationSec: 120, level: 1, ops: [], max: 0, kind: 'letters', subject: 'english' },
+  { id: 'eng-greet',    name: '问候灯塔', emoji: '🗼', desc: '10题 · 2分钟 · 常见问候词', count: 10, durationSec: 120, level: 2, ops: [], max: 0, kind: 'greetings', subject: 'english' },
+]
+
+export function stagesOf(subject: 'math' | 'chinese' | 'english'): StageDef[] {
+  if (subject === 'english') return ENGLISH_STAGES
+  return STAGES
+}
 
 export interface AdventureState {
   stars: Record<string, number>   // stageId -> 0..3（取历史最高）
@@ -82,9 +96,9 @@ export function consumeUnlock(): string | null {
 }
 
 // 关卡解锁：第一关默认解锁，其余需要前一关至少 1 星
-export function isUnlocked(index: number, a: AdventureState): boolean {
+export function isUnlocked(index: number, a: AdventureState, stages: StageDef[] = STAGES): boolean {
   if (index === 0) return true
-  return (a.stars[STAGES[index - 1].id] ?? 0) >= 1
+  return (a.stars[stages[index - 1].id] ?? 0) >= 1
 }
 
 // ===== 科目大陆 =====
@@ -164,4 +178,18 @@ export function dailySeed(): number {
 
 export function dailySettings() {
   return { count: 30, durationSec: 180, level: 2 as Level, ops: ['add', 'sub'] as Op[], seed: dailySeed() }
+}
+
+// ===== 7b-2 知识点级推荐：找「已获得星星但未满星」的最简单关，其次第一个未解锁关 =====
+export function recommendStage(a: AdventureState = loadAdventure()): { stage: StageDef; reason: string } | null {
+  const all = [...STAGES, ...ENGLISH_STAGES]
+  for (const st of all) {
+    const got = a.stars[st.id] ?? 0
+    if (got > 0 && got < 3) {
+      return { stage: st, reason: `「${st.name}」已获得 ${got} 星，冲击满星！` }
+    }
+  }
+  const firstLocked = all.find((st) => (a.stars[st.id] ?? 0) === 0)
+  if (firstLocked) return { stage: firstLocked, reason: `下一站：「${firstLocked.name}」等你探索` }
+  return null
 }

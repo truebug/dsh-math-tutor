@@ -30,7 +30,7 @@ export default function MistakeBook({ onBack, onRetryMistakes }: Props) {
             {mistakes.map((m, i) => (
               <div key={i} className="wrong-item">
                 <span>{m.question.text}</span>
-                <span className="right">正确：{m.question.answer}</span>
+                <span className="right">正确：{m.question.answerText ?? m.question.answer}</span>
                 <span className="given">错 {m.times} 次 · 最近 {m.lastDate.slice(0, 10)}</span>
               </div>
             ))}

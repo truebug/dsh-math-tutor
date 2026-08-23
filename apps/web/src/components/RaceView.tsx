@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { generateQuestions, normalizeAnswer, OP_GLYPHS, type Question } from '@dsh-math-tutor/math-generator/core'
+import { generateLetterQuestions, generateGreetingQuestions } from '../lib/english'
 import type { RaceSettings } from '../lib/types'
 import { battleJoin, battleScore } from '../api/battle'
+import { encodeRaceCode } from '../lib/raceCode'
 import { sfx } from '../lib/sound'
 import { burst } from '../lib/particles'
 import StageArt from './StageArt'
-import { encodeRaceCode } from '../lib/raceCode'
 
 interface Props {
   settings: RaceSettings
   nickname: string
   onAbandon: () => void   // 放弃退出：不记录任何数据（误闯关卡场景）
   onFinish: (result: {
-    answers: Array<number | null>
+    answers: Array<number | string | null>
     perQuestionMs: number[]
     usedMs: number
     finishedBy: 'submit' | 'timeout'
@@ -21,13 +22,18 @@ interface Props {
 }
 
 export default function RaceView({ settings, nickname, onAbandon, onFinish }: Props) {
-  const [confirmQuit, setConfirmQuit] = useState(false)
   const code = encodeRaceCode(settings)
-  const questions = useMemo(
+  const [confirmQuit, setConfirmQuit] = useState(false)
+  const questions = useMemo<Question[]>(
     () => settings.customQuestions
-      ?? generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio, domain: settings.domain }),
+      ?? (settings.kind === 'letters'
+        ? generateLetterQuestions(settings.seed, settings.stageId === 'eng-letters2' ? 13 : 0, settings.stageId === 'eng-letters2' ? 26 : 13, settings.count)
+        : settings.kind === 'greetings'
+          ? generateGreetingQuestions(settings.seed, settings.count)
+          : generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio, domain: settings.domain })),
     [settings],
   )
+  const isChoice = questions[0]?.options !== undefined
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
   const correctRef = useRef(0)
@@ -35,7 +41,7 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
   const [flash, setFlash] = useState<'ok' | 'no' | null>(null)
   const [cheer, setCheer] = useState(0)  // 连击里程碑弹层计数
   const fxRef = useRef<HTMLCanvasElement>(null)
-  const answersRef = useRef<Array<number | null>>(Array(questions.length).fill(null))
+  const answersRef = useRef<Array<number | string | null>>(Array(questions.length).fill(null))
   const perQuestionRef = useRef<number[]>([])
   const questionStartRef = useRef(Date.now())
   const startRef = useRef(Date.now())
@@ -69,8 +75,8 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
   }, [settings.durationSec])
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [idx])
+    if (!isChoice) inputRef.current?.focus()
+  }, [idx, isChoice])
 
   const quit = () => {
     if (!confirmQuit) {
@@ -82,12 +88,12 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
     onAbandon()
   }
 
-  const submit = () => {
-    const value = normalizeAnswer(input)
-    if (value === null) return
+  const recordAnswer = (value: number | string) => {
+    const q = questions[idx]
     answersRef.current[idx] = value
     perQuestionRef.current[idx] = Date.now() - questionStartRef.current
-    const hit = value === q.answer
+    const expected: number | string = q.answerText ?? q.answer
+    const hit = value === expected
     if (hit) {
       correctRef.current += 1
       const next = streak + 1
@@ -97,8 +103,7 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
         sfx.streak()
         setCheer(next)
         if (fxRef.current) burst(fxRef.current, 'embers', 24)
-      }
-      else sfx.correct()
+      } else sfx.correct()
     } else {
       setStreak(0)
       setFlash('no')
@@ -113,6 +118,12 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
       setInput('')
       questionStartRef.current = Date.now()
     }
+  }
+
+  const submit = () => {
+    const value = normalizeAnswer(input)
+    if (value === null) return
+    recordAnswer(value)
   }
 
   const q = questions[idx]
@@ -142,28 +153,38 @@ export default function RaceView({ settings, nickname, onAbandon, onFinish }: Pr
         </div>
       )}
       <div className={flash === 'ok' ? 'question flash-ok' : flash === 'no' ? 'question flash-no' : 'question'}>
-        {q.a} {OP_GLYPHS[q.op]} {q.b} =
+        {isChoice ? q.text : <>{q.a} {OP_GLYPHS[q.op]} {q.b} =</>}
       </div>
 
-      <input
-        ref={inputRef}
-        className="answer-input"
-        type="text"
-        inputMode="numeric"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && submit()}
-        aria-label="答案"
-      />
+      {isChoice ? (
+        <div className="choices">
+          {q.options!.map((opt) => (
+            <button key={opt} className="choice-btn" onClick={() => recordAnswer(opt)}>{opt}</button>
+          ))}
+        </div>
+      ) : (
+        <>
+          <input
+            ref={inputRef}
+            className="answer-input"
+            type="text"
+            inputMode="decimal"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            aria-label="答案"
+          />
 
-      <div className="keypad">
-        {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map((k) => (
-          <button key={k} onClick={() => setInput((v) => v + k)}>{k}</button>
-        ))}
-        <button onClick={() => setInput((v) => v.slice(0, -1))}>⌫</button>
-        <button onClick={() => setInput((v) => v + '0')}>0</button>
-        <button className="ok" onClick={submit}>✓</button>
-      </div>
+          <div className="keypad">
+            {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map((k) => (
+              <button key={k} onClick={() => setInput((v) => v + k)}>{k}</button>
+            ))}
+            <button onClick={() => setInput((v) => v.slice(0, -1))}>⌫</button>
+            <button onClick={() => setInput((v) => v + '0')}>0</button>
+            <button className="ok" onClick={submit}>✓</button>
+          </div>
+        </>
+      )}
 
       <button className="ghost danger" onClick={() => finish('submit')}>提前交卷</button>
     </div>
