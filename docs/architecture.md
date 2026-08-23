@@ -66,3 +66,40 @@ DeepSeek 直接用官方 `llm-deepseek`。
 1. 出题/判分/统计永远确定性代码，LLM 只做讲解、归因、鼓励。
 2. API Key 仅存服务端；`dsh web` 的 3080 端口仅本地调试，不对外开放。
 3. 儿童数据最小化收集，画像默认本地存储，家长可见、可清除。
+
+## Agent 部署形态与「积累-利用-迭代」闭环
+
+### agent 在哪里运行？
+
+DSH agent 运行在 **harness 所在进程**里：开发期是本机 `dsh web`，线上则部署在服务器上
+（与 `apps/server` 同机，systemd 守护，不对外开放 3080）。也就是说：
+
+- **agent 是服务端的**，孩子的浏览器只是 UI；画像与练习数据的持久化归属服务端（同意后）。
+- agent 可以独立运行：DSH 以 Session 日志持久化 agent 状态，`agent.inject()` 追加的
+  上下文跨会话保留——这构成 agent 侧的「长期记忆」。
+- **定时能力的边界**：DSH 的 schedule 包是 **Session 内提醒**（持久于 Session 日志，
+  Session live 时触发，冷 Session 恢复 live 后补做逾期工作），**不是外部守护定时器**。
+  因此周期性的离线任务（如每晚汇总画像、生成周报）采用 **systemd timer / cron
+  调用 server 内部 API** 实现；Session 活跃期间的轻量提醒用 DSH schedule。
+
+### 闭环管线
+
+```
+浏览器（出题/判分/计时，确定性）
+   │  练习结果（匿名摘要 or 授权后带 ID）
+   ▼
+apps/server  /api/*           ← LLM 调用唯一出口（key 不出服务端）
+   │  写入画像（SQLite，需监护人同意；否则仅本次请求内存使用）
+   ▼
+Learner Profile（JSON 资产，厂商无关）
+   │  ① 注入 LLM prompt → 个性化讲解
+   │  ② agent.inject()  → DSH agent 长期上下文
+   │  ③ 反哺出题参数    → 难度/进退位占比自适应
+   ▼
+迭代：错因聚类更新画像；推荐策略按采纳结果校准；systemd timer 定期生成成长报告
+```
+
+### 与传统 SaaS 的对照
+
+传统做法是「用户表 + 推荐服务 CRUD」；本项目画像是 **agent 可读写的上下文资产**，
+利用路径以 prompt/context 注入为主，而非在服务端跑独立推荐模型。
