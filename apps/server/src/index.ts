@@ -2,6 +2,9 @@ import { createServer } from 'node:http'
 import { config } from './config.ts'
 import { buildReview, type ReviewRequest } from './routes/review.ts'
 import { getRoom, joinRoom, reportScore } from './routes/battle.ts'
+import { loadProfile, saveProfile, type ProfileDoc } from './routes/profile.ts'
+
+const FAMILY_RE = /^[a-z0-9-]{6,32}$/
 
 function json(res: import('node:http').ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { 'content-type': 'application/json' })
@@ -53,6 +56,30 @@ const server = createServer(async (req, res) => {
       if (req.method === 'GET' && action === 'state') {
         const room = getRoom(code)
         room ? json(res, 200, room) : json(res, 404, { error: 'no_room' })
+        return
+      }
+    }
+    if (req.url?.startsWith('/api/profile/')) {
+      const familyId = decodeURIComponent(req.url.split('/')[3] ?? '')
+      if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return }
+      if (req.method === 'GET') {
+        const doc = loadProfile(familyId)
+        doc ? json(res, 200, doc) : json(res, 404, { error: 'not_found' })
+        return
+      }
+      if (req.method === 'PUT') {
+        const doc = (await readBody(req)) as ProfileDoc
+        if (!doc?.consent) { json(res, 403, { error: 'consent_required' }); return }
+        // 只接受白名单字段，防止任意写入
+        saveProfile(familyId, {
+          version: 1, consent: true,
+          profile: doc.profile ?? null,
+          profileData: doc.profileData ?? null,
+          adventure: doc.adventure ?? null,
+          sessions: Array.isArray(doc.sessions) ? doc.sessions.slice(0, 200) : [],
+          updatedAt: '',
+        })
+        json(res, 200, { ok: true })
         return
       }
     }

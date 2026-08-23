@@ -1,4 +1,5 @@
 import type { SessionRecord, WrongItem } from './types'
+import { pushProfile } from './sync'
 
 const KEY = 'dsh-math-tutor:sessions'
 
@@ -14,6 +15,7 @@ export function saveSession(record: SessionRecord): void {
   const all = loadSessions()
   all.unshift(record)
   localStorage.setItem(KEY, JSON.stringify(all.slice(0, 200)))
+  pushProfile()
 }
 
 // 错题本：跨会话聚合，同一题目保留最近记录与错误次数
@@ -55,4 +57,5 @@ export function loadProfile(): import('./types').LearnerProfile | null {
 
 export function saveProfile(p: import('./types').LearnerProfile): void {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(p))
+  pushProfile()
 }

@@ -218,3 +218,19 @@ input[type="range"] { width: 100%; }
   .adventure { scroll-behavior: auto; }
   .scene .layer { transform: none !important; }
 }
+/* 解锁仪式 */
+.scene.unlock-fx { animation: unlockMist 2.4s ease-out; }
+.scene.unlock-fx .scene-glow { animation: unlockPulse 2.4s ease-out; }
+@keyframes unlockMist {
+  0% { filter: saturate(.45) brightness(.7); }
+  100% { filter: none; }
+}
+@keyframes unlockPulse {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: .8; }
+}
+.sync-card { background: #f9fbfe; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.consent { display: flex; gap: 8px; font-size: 13px; color: #556; line-height: 1.6; }
+.consent input { margin-top: 3px; flex-shrink: 0; }
+.adv-sub code { background: #eef4fb; padding: 2px 6px; border-radius: 6px; }

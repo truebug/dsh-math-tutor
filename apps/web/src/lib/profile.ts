@@ -3,6 +3,7 @@
 
 import { classifyError, type PatternStat } from './errorPatterns'
 import type { Question } from '@dsh-math-tutor/math-generator/core'
+import { pushProfile } from './sync'
 
 export interface ProfileData {
   carryWrong: number      // 进位/退位题累计错误
@@ -26,6 +27,7 @@ export function loadProfileData(): ProfileData {
 
 export function saveProfileData(p: ProfileData): void {
   localStorage.setItem(KEY, JSON.stringify(p))
+  pushProfile()
 }
 
 // 每次练习后增量更新画像（确定性，不走 LLM）

@@ -7,6 +7,7 @@ export interface ReviewRequest {
   carryWrong: number
   plainWrong: number
   wrongExamples: string[]
+  history?: string
 }
 
 export async function fetchReview(req: ReviewRequest): Promise<string> {

@@ -1,7 +1,8 @@
 // 寻宝探险 · 卷轴地图（kage 启发：多层剪影 + 滚动视差 + 光影氛围）
 // 零资源实现：SVG 程序化山脊剪影 × 3 景深层，滚动时差速移动
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { STAGES, isUnlocked, loadAdventure, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
+import { STAGES, isUnlocked, loadAdventure, consumeUnlock, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
+import { sfx } from '../lib/sound'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
 interface SceneTheme {
@@ -46,12 +47,84 @@ function ridge(seed: number, baseY: number, amp: number, width = 400, height = 1
   return pts.join(' ')
 }
 
+// 场景辨识元素：每关独有的剪影（钟乳石/廊柱/缆索/竹林）
+function Landmarks({ stageId, color }: { stageId: string; color: string }) {
+  if (stageId === 'cave') {
+    return (
+      <>
+        {[40, 120, 210, 300, 370].map((x, i) => (
+          <polygon key={i} points={`${x},0 ${x + 14},0 ${x + 7},${22 + (i % 3) * 10}`} fill={color} />
+        ))}
+      </>
+    )
+  }
+  if (stageId === 'temple') {
+    return (
+      <>
+        <rect x="120" y="20" width="160" height="8" fill={color} />
+        <rect x="150" y="28" width="10" height="50" fill={color} />
+        <rect x="240" y="28" width="10" height="50" fill={color} />
+        <polygon points="110,20 290,20 200,2" fill={color} />
+      </>
+    )
+  }
+  if (stageId === 'thunder') {
+    return <polyline points="60,90 180,10 340,85" stroke={color} strokeWidth="2" fill="none" opacity="0.7" />
+  }
+  if (stageId === 'bamboo') {
+    return (
+      <>
+        {[60, 90, 150, 260, 320].map((x, i) => (
+          <rect key={i} x={x} y={30 + (i % 2) * 8} width="5" height="60" fill={color} opacity="0.8" />
+        ))}
+      </>
+    )
+  }
+  if (stageId === 'falls') {
+    return (
+      <>
+        {[140, 200, 260].map((x, i) => (
+          <line key={i} x1={x} y1="30" x2={x} y2="90" stroke="#caf0f8" strokeWidth="3" opacity="0.35" />
+        ))}
+      </>
+    )
+  }
+  if (stageId === 'forest' || stageId === 'vine') {
+    return (
+      <>
+        {[50, 130, 230, 330].map((x, i) => (
+          <polygon key={i} points={`${x},70 ${x + 9},70 ${x + 4.5},${44 + (i % 2) * 8}`} fill={color} opacity="0.85" />
+        ))}
+      </>
+    )
+  }
+  if (stageId === 'snow') {
+    return (
+      <>
+        <polygon points="90,42 118,10 146,42" fill="#ffffff" opacity="0.85" />
+        <polygon points="230,50 262,14 294,50" fill="#ffffff" opacity="0.7" />
+      </>
+    )
+  }
+  if (stageId === 'lake' || stageId === 'island') {
+    return (
+      <>
+        {[80, 190, 300].map((x, i) => (
+          <ellipse key={i} cx={x} cy={86 - (i % 2) * 4} rx="26" ry="4" fill="#ffffff" opacity="0.18" />
+        ))}
+      </>
+    )
+  }
+  return null
+}
+
 function SceneLayers({ stageId }: { stageId: string }) {
   const t = SCENES[stageId] ?? SCENES.forest
   return (
     <>
       <svg className="layer far" data-speed="0.15" viewBox="0 0 400 100" preserveAspectRatio="none" aria-hidden>
         <path d={ridge(stageId.length * 7 + 3, 55, 18)} fill={t.layers[0]} opacity="0.8" />
+        <Landmarks stageId={stageId} color={t.layers[1]} />
       </svg>
       <svg className="layer mid" data-speed="0.35" viewBox="0 0 400 100" preserveAspectRatio="none" aria-hidden>
         <path d={ridge(stageId.length * 13 + 5, 68, 14)} fill={t.layers[1]} />
@@ -76,6 +149,20 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   const dailyDone = (adv.daily[todayKey()] ?? 0) > 0
   const scrollRef = useRef<HTMLDivElement>(null)
   const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
+  const [unlockFx, setUnlockFx] = useState<string | null>(null)
+
+  // 解锁仪式：回到地图时若有新解锁关卡，滚动到它并播放光晕脉冲
+  useEffect(() => {
+    const id = consumeUnlock()
+    if (!id) return
+    setUnlockFx(id)
+    sfx.win()
+    const el = scrollRef.current
+    const scene = el?.querySelector<HTMLElement>(`[data-stage="${id}"]`)
+    if (el && scene) el.scrollTo({ top: scene.offsetTop - el.clientHeight / 4, behavior: reduced ? 'auto' : 'smooth' })
+    const t = setTimeout(() => setUnlockFx(null), 2600)
+    return () => clearTimeout(t)
+  }, [reduced])
 
   // 滚动视差：各景深层按 data-speed 差速移动
   useEffect(() => {
@@ -141,7 +228,8 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
         return (
           <section
             key={st.id}
-            className={unlocked ? 'scene' : 'scene locked'}
+            data-stage={st.id}
+            className={`scene${unlocked ? '' : ' locked'}${unlockFx === st.id ? ' unlock-fx' : ''}`}
             style={{ background: `linear-gradient(180deg, ${t.sky[0]}, ${t.sky[1]} 55%, ${t.sky[2]})` }}
           >
             {/* 光晕（已解锁关的灯笼光/萤火） */}

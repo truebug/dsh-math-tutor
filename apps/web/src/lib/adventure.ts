@@ -1,5 +1,6 @@
 // 寻宝探险：关卡、星星、宠物养成、每日挑战 —— 本地持久化
 import type { Level, Op } from '@dsh-math-tutor/math-generator/core'
+import { pushProfile } from './sync'
 
 export interface StageDef {
   id: string
@@ -29,6 +30,7 @@ export const STAGES: StageDef[] = [
 export interface AdventureState {
   stars: Record<string, number>   // stageId -> 0..3（取历史最高）
   daily: Record<string, number>   // 'YYYY-MM-DD' -> stars
+  lastUnlock?: string             // 最近一次解锁的关卡（用于解锁仪式，消费后清除）
 }
 
 const KEY = 'dsh-math-tutor:adventure'
@@ -49,8 +51,26 @@ export function recordStars(id: string, stars: number, daily = false): Adventure
   const a = loadAdventure()
   const map = daily ? a.daily : a.stars
   map[id] = Math.max(map[id] ?? 0, stars)
+  // 解锁仪式：本次得星若解锁了下一关，记录 lastUnlock
+  if (!daily && stars >= 1) {
+    const idx = STAGES.findIndex((s) => s.id === id)
+    const next = STAGES[idx + 1]
+    if (idx >= 0 && next && (a.stars[next.id] ?? 0) === 0) {
+      a.lastUnlock = next.id
+    }
+  }
   localStorage.setItem(KEY, JSON.stringify(a))
   return a
+}
+
+export function consumeUnlock(): string | null {
+  const a = loadAdventure()
+  const id = a.lastUnlock ?? null
+  if (id) {
+    delete a.lastUnlock
+    localStorage.setItem(KEY, JSON.stringify(a))
+  }
+  return id
 }
 
 // 关卡解锁：第一关默认解锁，其余需要前一关至少 1 星

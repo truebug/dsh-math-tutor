@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { loadSessions } from '../lib/storage'
+import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
 import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 
@@ -30,6 +32,22 @@ function LineChart({ values, format, color }: { values: number[]; format: (v: nu
 }
 
 export default function DashboardView() {
+  const [sync, setSync] = useState(syncEnabled())
+  const [consent, setConsent] = useState(false)
+  const [restoreId, setRestoreId] = useState('')
+  const [msg, setMsg] = useState('')
+
+  const enable = () => {
+    const id = newFamilyId()
+    setSync(true)
+    pushProfile()
+    setMsg(`已开启。家庭ID：${id}（凭此 ID 可在其他设备恢复）`)
+  }
+  const restore = async () => {
+    const ok = await pullProfile(restoreId)
+    setMsg(ok ? '已从云端恢复，刷新页面生效' : '未找到该家庭ID的数据')
+    if (ok) setSync(true)
+  }
   const sessions = loadSessions()
   const recent = [...sessions].reverse().slice(-20)  // 时间正序，最多 20 次
   const totalQ = sessions.reduce((n, s) => n + s.total, 0)
@@ -85,7 +103,32 @@ export default function DashboardView() {
         color="#e2a44a"
       />
 
-      <p className="privacy">数据保存在本机浏览器，未上传。历史记录（旧到新）：{recent.map((s) => s.date.slice(5, 10)).join(' · ')}</p>
+      <div className="sync-card">
+        <h3 className="chart-title">☁️ 云端同步（家长设置）</h3>
+        {sync ? (
+          <>
+            <p className="adv-sub">已开启 · 家庭ID：<code>{getFamilyId()}</code> · 换设备输入此 ID 即可恢复</p>
+            <button className="ghost" onClick={() => { disableSync(); setSync(false); setMsg('已停止同步，数据保留在本机') }}>停止同步</button>
+          </>
+        ) : (
+          <>
+            <label className="consent">
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+              <span>我是孩子的监护人，同意将练习数据（昵称、成绩、错题、画像统计）上传到本服务器存储，用于跨设备同步与个性化学习。数据不会提供给第三方，可随时停止同步。</span>
+            </label>
+            <div className="btn-row">
+              <button className="primary" disabled={!consent} onClick={enable}>开启云端同步</button>
+            </div>
+            <div className="code-row">
+              <input placeholder="已有家庭ID？输入以恢复" value={restoreId} onChange={(e) => setRestoreId(e.target.value)} />
+              <button className="ghost" onClick={restore} disabled={!restoreId.trim()}>恢复</button>
+            </div>
+          </>
+        )}
+        {msg && <p className="adaptive-hint">{msg}</p>}
+      </div>
+
+      <p className="privacy">{sync ? '数据已同步至服务器（监护人已同意）。' : '数据保存在本机浏览器，未上传。'}</p>
     </div>
   )
 }
