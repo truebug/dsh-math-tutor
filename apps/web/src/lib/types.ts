@@ -31,7 +31,7 @@ export interface SessionRecord {
   finishedBy: 'submit' | 'timeout'
 }
 
-export type View = 'setup' | 'race' | 'result' | 'mistakes'
+export type View = 'setup' | 'race' | 'result' | 'mistakes' | 'dashboard'
 
 export type Gender = 'boy' | 'girl' | 'secret'
 export type Subject = 'math' | 'chinese' | 'english'

@@ -4,6 +4,8 @@ import SetupView from './components/SetupView'
 import RaceView from './components/RaceView'
 import ResultView from './components/ResultView'
 import MistakeBook from './components/MistakeBook'
+import DashboardView from './components/DashboardView'
+import Menu from './components/Menu'
 import { defaultSettings } from './lib/raceCode'
 import { loadProfile, saveProfile, saveSession } from './lib/storage'
 import type { LearnerProfile, RaceSettings, SessionRecord, View } from './lib/types'
@@ -67,8 +69,11 @@ export default function App() {
     setView('result')
   }
 
+  const navigate = (v: View) => setView(v)
+
   return (
     <div className="page">
+      {view !== 'race' && <Menu current={view} onNavigate={navigate} />}
       {view === 'setup' && (
         <SetupView
           profile={profile}
@@ -88,6 +93,7 @@ export default function App() {
         />
       )}
       {view === 'mistakes' && <MistakeBook onBack={() => setView('setup')} onRetryMistakes={startMistakeRetry} />}
+      {view === 'dashboard' && <DashboardView />}
     </div>
   )
 }
