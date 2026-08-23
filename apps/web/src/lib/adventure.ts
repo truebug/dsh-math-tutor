@@ -15,7 +15,7 @@ export interface StageDef {
   domain?: 'int' | 'dec'  // dec = 小数加减
 }
 
-// 寻宝地图：从森林出发，一路到宝藏岛
+// 寻宝地图：科目大陆制（初始分路，独立解锁链；中间不分支——科目间无前置依赖）
 export const STAGES: StageDef[] = [
   { id: 'forest',  name: '萤火森林', emoji: '🌲', desc: '20题 · 3分钟 · 基础', count: 20, durationSec: 180, level: 1, ops: ['add', 'sub'], max: 100 },
   { id: 'cave',    name: '回声山洞', emoji: '🕳️', desc: '30题 · 3分钟 · 基础', count: 30, durationSec: 180, level: 1, ops: ['add', 'sub'], max: 100 },
@@ -85,6 +85,32 @@ export function consumeUnlock(): string | null {
 export function isUnlocked(index: number, a: AdventureState): boolean {
   if (index === 0) return true
   return (a.stars[STAGES[index - 1].id] ?? 0) >= 1
+}
+
+// ===== 科目大陆 =====
+export interface SubjectDef {
+  id: 'math' | 'chinese' | 'english'
+  name: string
+  emoji: string
+  desc: string
+  comingSoon: boolean
+}
+
+export const SUBJECTS: SubjectDef[] = [
+  { id: 'math', name: '数学大陆', emoji: '🔢', desc: '16 关 · 沪教版 2~4 年级计算', comingSoon: false },
+  { id: 'chinese', name: '语文大陆', emoji: '📖', desc: '字词/阅读/古诗 · 即将开放', comingSoon: true },
+  { id: 'english', name: '英语大陆', emoji: '🔤', desc: '单词/句型/听说 · 即将开放', comingSoon: true },
+]
+
+const SUBJECT_KEY = 'dsh-math-tutor:subject'
+
+export function currentSubject(): SubjectDef['id'] {
+  const v = localStorage.getItem(SUBJECT_KEY)
+  return v === 'chinese' || v === 'english' ? v : 'math'
+}
+
+export function setSubject(id: SubjectDef['id']): void {
+  localStorage.setItem(SUBJECT_KEY, id)
 }
 
 // 成绩 → 星星

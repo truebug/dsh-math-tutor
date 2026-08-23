@@ -239,3 +239,19 @@ input[type="range"] { width: 100%; }
   cursor: pointer; padding: 4px 8px; border-radius: 8px;
 }
 .quit-btn.confirm { color: #c05050; background: #fdf0ee; font-weight: 600; }
+/* 大陆选择器 */
+.continents { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.continent {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 130px; padding: 12px 14px; border-radius: 16px; cursor: pointer;
+  background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.15);
+  color: #dce6f0; position: relative;
+}
+.continent.active { border-color: #ffd76a; background: rgba(255,215,106,.12); }
+.continent-emoji { font-size: 28px; }
+.continent small { color: #a8b6c6; font-size: 11px; text-align: center; }
+.continent .soon {
+  position: absolute; top: -8px; right: -6px; background: #8a97a8; color: #fff;
+  font-size: 10px; padding: 2px 8px; border-radius: 8px;
+}
+.node.teaser { cursor: default; }

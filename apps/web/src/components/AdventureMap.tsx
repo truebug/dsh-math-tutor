@@ -1,7 +1,7 @@
 // 寻宝探险 · 卷轴地图（kage 启发：多层剪影 + 滚动视差 + 光影氛围）
 // 零资源实现：SVG 程序化山脊剪影 × 3 景深层，滚动时差速移动
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { STAGES, isUnlocked, loadAdventure, consumeUnlock, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
+import { STAGES, SUBJECTS, currentSubject, setSubject, isUnlocked, loadAdventure, consumeUnlock, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import { sfx } from '../lib/sound'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
@@ -149,6 +149,7 @@ interface Props {
 }
 
 export default function AdventureMap({ profile, onStartStage, onFreePractice }: Props) {
+  const [subject, setSub] = useState(currentSubject())
   const adv = loadAdventure()
   const stars = totalStars(adv)
   const pet = petStage(stars)
@@ -223,11 +224,40 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
         >
           🌞 每日挑战{dailyDone ? ' ✅ 今日已完成' : ' · 全班同题！'}
         </button>
-        <p className="adv-sub">向下滚动，开始你的旅程 ↓</p>
+        <div className="continents">
+          {SUBJECTS.map((sub) => (
+            <button
+              key={sub.id}
+              className={sub.id === subject ? 'continent active' : 'continent'}
+              onClick={() => { setSubject(sub.id); setSub(sub.id) }}
+            >
+              <span className="continent-emoji">{sub.emoji}</span>
+              <b>{sub.name}</b>
+              <small>{sub.desc}</small>
+              {sub.comingSoon && <span className="soon">即将开放</span>}
+            </button>
+          ))}
+        </div>
+        {subject === 'math' && <p className="adv-sub">向下滚动，开始你的旅程 ↓</p>}
       </header>
 
+      {/* 占位大陆：迷雾预告 */}
+      {subject !== 'math' && (
+        <section className="scene locked" style={{ background: 'linear-gradient(180deg, #2c3440, #4a5462 55%, #6b7684)' }}>
+          <div className="scene-node" style={{ justifyContent: 'center' }}>
+            <div className="node locked teaser">
+              <span className="node-emoji">🔮</span>
+              <span className="node-label">
+                <b>{SUBJECTS.find((x) => x.id === subject)?.name} 还在迷雾中</b>
+                <small>这片大陆正在建设中，先去数学大陆探险吧！</small>
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 卷轴关卡 */}
-      {STAGES.map((st, i) => {
+      {subject === 'math' && STAGES.map((st, i) => {
         const unlocked = isUnlocked(i, adv)
         const got = adv.stars[st.id] ?? 0
         const t = SCENES[st.id] ?? SCENES.forest
