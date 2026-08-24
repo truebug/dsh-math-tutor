@@ -15,6 +15,9 @@ interface SceneTheme {
 
 const SUBJECT_LABEL: Record<string, string> = { math: '数学', chinese: '语文', english: '英语' }
 
+// 已生成静帧插画的关卡（public/stages/<id>.webp）：有图则替换程序化 SVG 场景
+const STAGE_ART = new Set(['forest', 'cave', 'lake', 'snow', 'island', 'vine', 'bamboo', 'falls', 'thunder', 'temple'])
+
 const SCENES: Record<string, SceneTheme> = {
   forest:  { sky: ['#0d2818', '#1d4a3a', '#3a7a55'], layers: ['#2e6b4f', '#1a4534', '#0c2418'], glow: '#ffe08a', emoji: '🌲' },
   cave:    { sky: ['#101223', '#2b2d42', '#4a4e6d'], layers: ['#3a3d5c', '#23243a', '#12131f'], glow: '#8ab6ff', emoji: '🕳️' },
@@ -297,9 +300,19 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
             style={{ background: `linear-gradient(180deg, ${t.sky[0]}, ${t.sky[1]} 55%, ${t.sky[2]})` }}
           >
             {/* 光晕（已解锁关的灯笼光/萤火） */}
-            {unlocked && <div className="scene-glow" style={{ background: `radial-gradient(circle at 50% 42%, ${t.glow}33, transparent 60%)` }} />}
-            <SceneLayers stageId={st.id} />
-            <StageArt stageId={st.id} />
+            {STAGE_ART.has(st.id) ? (
+              <img
+                className="scene-art"
+                src={`${import.meta.env.BASE_URL}stages/${st.id}.webp`}
+                alt="" aria-hidden
+              />
+            ) : (
+              <>
+                {unlocked && <div className="scene-glow" style={{ background: `radial-gradient(circle at 50% 42%, ${t.glow}33, transparent 60%)` }} />}
+                <SceneLayers stageId={st.id} />
+                <StageArt stageId={st.id} />
+              </>
+            )}
 
             <div className="scene-node" style={{ justifyContent: i % 2 === 0 ? 'flex-start' : 'flex-end' }}>
               <button
