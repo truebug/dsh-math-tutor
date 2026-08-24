@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { generateQuestions, normalizeAnswer, OP_GLYPHS, type Question } from '@dsh-math-tutor/math-generator/core'
 import { generateAntonymQuestions, generateLetterQuestions, generateSentenceQuestions, generateVocabQuestions } from '../lib/english'
+import { generateChineseQuestions } from '../lib/chinese'
 import type { RaceSettings } from '../lib/types'
 import { battleJoin, battleScore } from '../api/battle'
 import { encodeRaceCode } from '../lib/raceCode'
@@ -36,6 +37,8 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
             ? generateSentenceQuestions(settings.seed, settings.count)
             : settings.kind === 'antonym'
               ? generateAntonymQuestions(settings.seed, settings.count)
+              : settings.kind === 'chinese'
+                ? generateChineseQuestions(settings.seed, settings.stageId ?? 'chi-nature', settings.count)
           : generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio, domain: settings.domain })),
     [settings],
   )

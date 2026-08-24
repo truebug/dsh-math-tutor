@@ -13,7 +13,7 @@ export interface StageDef {
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
   domain?: 'int' | 'dec'  // dec = 小数加减
-  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym'  // 英语内容生成器（选择题，不走 generateQuestions）
+  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese'  // 非数字内容生成器（选择题，不走 generateQuestions）
   subject?: 'math' | 'chinese' | 'english'
 }
 
@@ -57,8 +57,18 @@ export const ENGLISH_STAGES: StageDef[] = [
   { id: 'eng-sentence', name: '句型学院', emoji: '🏫', desc: '12题 · 2分钟 · 句型填空', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'sentence', subject: 'english' },
 ]
 
+// 语文大陆关卡（独立解锁链）：部编版二年级上册词语表
+export const CHINESE_STAGES: StageDef[] = [
+  { id: 'chi-nature', name: '竹林小径', emoji: '🎋', desc: '12题 · 2分钟 · 自然篇', count: 12, durationSec: 120, level: 1, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-school', name: '书香庭院', emoji: '🏮', desc: '12题 · 2分钟 · 校园篇', count: 12, durationSec: 120, level: 1, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-tree',   name: '梧桐书院', emoji: '🌳', desc: '12题 · 2分钟 · 树木篇', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-home',   name: '江南小镇', emoji: '🏘️', desc: '12题 · 2分钟 · 家乡篇', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-story',  name: '寓言古亭', emoji: '⛩️', desc: '12题 · 2分钟 · 故事篇', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+]
+
 export function stagesOf(subject: 'math' | 'chinese' | 'english'): StageDef[] {
   if (subject === 'english') return ENGLISH_STAGES
+  if (subject === 'chinese') return CHINESE_STAGES
   return STAGES
 }
 
@@ -125,8 +135,8 @@ export interface SubjectDef {
 
 export const SUBJECTS: SubjectDef[] = [
   { id: 'math', name: '数学大陆', emoji: '🔢', desc: '16 关 · 沪教版 2~4 年级计算', comingSoon: false },
-  { id: 'chinese', name: '语文大陆', emoji: '📖', desc: '字词/阅读/古诗 · 即将开放', comingSoon: true },
-  { id: 'english', name: '英语大陆', emoji: '🔤', desc: '单词/句型/听说 · 即将开放', comingSoon: true },
+  { id: 'chinese', name: '语文大陆', emoji: '📖', desc: '5 关 · 部编版二上词语表', comingSoon: false },
+  { id: 'english', name: '英语大陆', emoji: '🔤', desc: '15 关 · 牛津上海版 1-2 年级', comingSoon: false },
 ]
 
 const SUBJECT_KEY = 'dsh-math-tutor:subject'
@@ -195,7 +205,7 @@ export function dailySettings() {
 
 // ===== 7b-2 知识点级推荐：找「已获得星星但未满星」的最简单关，其次第一个未解锁关 =====
 export function recommendStage(a: AdventureState = loadAdventure()): { stage: StageDef; reason: string } | null {
-  const all = [...STAGES, ...ENGLISH_STAGES]
+  const all = [...STAGES, ...ENGLISH_STAGES, ...CHINESE_STAGES]
   for (const st of all) {
     const got = a.stars[st.id] ?? 0
     if (got > 0 && got < 3) {
