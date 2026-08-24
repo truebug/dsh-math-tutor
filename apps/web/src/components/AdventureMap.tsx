@@ -13,6 +13,8 @@ interface SceneTheme {
   emoji: string
 }
 
+const SUBJECT_LABEL: Record<string, string> = { math: '数学', chinese: '语文', english: '英语' }
+
 const SCENES: Record<string, SceneTheme> = {
   forest:  { sky: ['#0d2818', '#1d4a3a', '#3a7a55'], layers: ['#2e6b4f', '#1a4534', '#0c2418'], glow: '#ffe08a', emoji: '🌲' },
   cave:    { sky: ['#101223', '#2b2d42', '#4a4e6d'], layers: ['#3a3d5c', '#23243a', '#12131f'], glow: '#8ab6ff', emoji: '🕳️' },
@@ -243,7 +245,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
           className={dailyDone ? 'daily done' : 'daily'}
           onClick={() => onStartStage({ mode: 'G2A', max: 100, imported: true, daily: true, ...dailySettings() })}
         >
-          🌞 每日挑战{dailyDone ? ' ✅ 今日已完成' : ' · 全班同题！'}
+          🌞 每日挑战 · 今日{SUBJECT_LABEL[dailySettings().subject ?? 'math']}{dailyDone ? ' ✅' : ''}
         </button>
         {recommend && (
           <button className="recommend" onClick={() => {

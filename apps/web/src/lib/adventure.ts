@@ -208,7 +208,17 @@ export function dailySeed(): number {
 }
 
 export function dailySettings() {
-  return { count: 30, durationSec: 180, level: 2 as Level, ops: ['add', 'sub'] as Op[], seed: dailySeed() }
+  // 科目轮换：按日期在 语文/数学/英语 间轮转，每天题目不同（种子=日期，全班同题）
+  const day = Number(todayKey().replace(/-/g, ''))
+  const subject = ['chinese', 'math', 'english'][day % 3]
+  const seed = dailySeed()
+  if (subject === 'chinese') {
+    return { count: 12, durationSec: 120, level: 2 as Level, ops: [] as Op[], max: 0, kind: 'chinese' as const, subject: 'chinese' as const, seed }
+  }
+  if (subject === 'english') {
+    return { count: 12, durationSec: 120, level: 2 as Level, ops: [] as Op[], max: 0, kind: 'vocab' as const, subject: 'english' as const, seed }
+  }
+  return { count: 30, durationSec: 180, level: 2 as Level, ops: ['add', 'sub'] as Op[], max: 100, subject: 'math' as const, seed }
 }
 
 // ===== 7b-2 知识点级推荐：找「已获得星星但未满星」的最简单关，其次第一个未解锁关 =====

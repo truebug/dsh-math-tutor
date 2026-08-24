@@ -139,6 +139,11 @@ input[type="range"] { width: 100%; }
   padding: 13px; border-radius: 14px; border: 2px solid #f0c040; background: #fffbe8;
   font-size: 16px; cursor: pointer; font-weight: 600;
 }
+/* 每日挑战挪到英雄区左上角，不遮挡中央藏宝图 */
+.adv-hero.parchment .daily {
+  position: absolute; top: 14px; left: 14px; z-index: 3;
+  padding: 8px 14px; font-size: 14px;
+}
 .daily.done { border-color: #b8d8b8; background: #f2faf2; color: #5a7a5a; }
 /* 答题反馈 */
 .streak { color: #e2662a; font-weight: 700; font-size: 16px; }
