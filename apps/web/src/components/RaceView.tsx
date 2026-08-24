@@ -77,6 +77,12 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
   const inputRef = useRef<HTMLInputElement>(null)
   const finishedRef = useRef(false)
 
+  // 触屏设备（iPad/手机）：输入框只读，避免虚拟键盘与屏上数字键盘打架
+  const isTouch = useMemo(
+    () => typeof window !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window),
+    [],
+  )
+
   const finish = (by: 'submit' | 'timeout') => {
     if (finishedRef.current) return
     finishedRef.current = true
@@ -103,8 +109,8 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
   }, [settings.durationSec])
 
   useEffect(() => {
-    if (!isChoice) inputRef.current?.focus()
-  }, [idx, isChoice])
+    if (!isChoice && !isTouch) inputRef.current?.focus()
+  }, [idx, isChoice, isTouch])
 
   const quit = () => {
     if (!confirmQuit) {
@@ -204,6 +210,7 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
             className="answer-input"
             type="text"
             inputMode="decimal"
+            readOnly={isTouch}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
