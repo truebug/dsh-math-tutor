@@ -285,7 +285,23 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
             <button
               key={sub.id}
               className={`continent land-${sub.id}${sub.id === subject ? ' active' : ''}`}
-              onClick={() => { setSubject(sub.id); setSub(sub.id) }}
+              onClick={() => {
+                setSubject(sub.id); setSub(sub.id)
+                // 跳到该大陆最新可参与关：解锁链上最后一个未满星的关卡
+                const stages = stagesOf(sub.id)
+                let target = stages[0]
+                for (let j = 0; j < stages.length; j++) {
+                  if (!isUnlocked(j, adv, stages)) break
+                  target = stages[j]
+                  if ((adv.stars[stages[j].id] ?? 0) >= 3) continue  // 满星继续往后找
+                  break
+                }
+                requestAnimationFrame(() => {
+                  const el = scrollRef.current
+                  const scene = el?.querySelector<HTMLElement>(`[data-stage="${target.id}"]`)
+                  if (el && scene) el.scrollTo({ top: scene.offsetTop - el.clientHeight / 4, behavior: reduced ? 'auto' : 'smooth' })
+                })
+              }}
             >
               <span className="continent-emoji">{sub.emoji}</span>
               <b>{sub.name}</b>
