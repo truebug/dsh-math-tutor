@@ -12,6 +12,13 @@ import { burst } from '../lib/particles'
 import { useRef } from 'react'
 import type { LearnerProfile } from '../lib/types'
 import type { RaceSettings, SessionRecord } from '../lib/types'
+import { classifyError, PATTERN_LABELS } from '../lib/errorPatterns'
+
+// 题型标签：让 AI 知道错的是哪类题（拼音/古诗/词义/句型……）
+const KIND_LABELS: Record<string, string> = {
+  letters: '字母', vocab: '词汇', sentence: '句型', antonym: '反义词',
+  chinese: '词语', poem: '古诗', chars: '识字',
+}
 
 interface Props {
   record: SessionRecord
@@ -41,6 +48,20 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
     setReviewState('loading')
     try {
       const carryWrong = record.wrong.filter((w) => w.question.carry).length
+      const kind = record.settings.kind
+      const kindTag = kind ? `[${KIND_LABELS[kind] ?? kind}]` : ''
+      // 错因统计：classifyError 现成确定性分类（看错符号/进退位/计算/字词）
+      const kindCounts = new Map<string, number>()
+      for (const w of record.wrong) {
+        const k = classifyError(w.question, w.given)
+        if (k) kindCounts.set(k, (kindCounts.get(k) ?? 0) + 1)
+      }
+      const causeSummary = [...kindCounts.entries()].map(([k, n]) => `${PATTERN_LABELS[k as keyof typeof PATTERN_LABELS]}${n}次`).join('、')
+      // 节奏信号：全卷平均用时 vs 题量，判断整体节奏（过快=可能粗心，过慢=可能吃力）
+      const avgSec = record.answered > 0 ? record.usedMs / record.answered / 1000 : 0
+      const paceNote = record.answered > 0
+        ? `全卷平均每题${avgSec.toFixed(1)}秒（${avgSec < 3 ? '节奏偏快，注意是否有粗心秒答' : avgSec > 10 ? '节奏偏慢，可能有畏难或卡顿' : '节奏正常'}）`
+        : ''
       const text = await fetchReview({
         grade: profile.grade,
         level: record.settings.level,
@@ -51,8 +72,12 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
         carryWrong,
         plainWrong: record.wrong.length - carryWrong,
         history: syncEnabled() ? profileSummary() : undefined,
-        wrongExamples: record.wrong.slice(0, 5).map((w) =>
-          `${w.question.text} 正确${w.question.answerText ?? w.question.answer}，孩子答 ${w.given ?? '未作答'}`),
+        wrongExamples: [
+          ...record.wrong.slice(0, 8).map((w) =>
+            `${kindTag}${w.question.text} 正确${w.question.answerText ?? w.question.answer}，孩子答 ${w.given ?? '未作答'}`),
+          ...(causeSummary ? [`错因统计：${causeSummary}`] : []),
+          ...(paceNote ? [paceNote] : []),
+        ],
       })
       setReview(text)
       setReviewState('idle')
