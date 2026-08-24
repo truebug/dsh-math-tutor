@@ -265,9 +265,6 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
           </button>
         )}
         <div className="continents">
-          {/* 灵性小岛装饰：为未来新大陆预留的想象空间 */}
-          <span className="islet i1" /><span className="islet i2" /><span className="islet i3" />
-          <span className="islet i4" /><span className="islet i5" /><span className="islet i6" />
           {SUBJECTS.map((sub) => (
             <button
               key={sub.id}
