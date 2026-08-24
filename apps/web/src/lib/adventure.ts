@@ -1,6 +1,7 @@
 // 寻宝探险：关卡、星星、宠物养成、每日挑战 —— 本地持久化
 import type { Level, Op } from '@dsh-math-tutor/math-generator/core'
 import { pushProfile } from './sync'
+import { loadProfileData } from './profile'
 
 export interface StageDef {
   id: string
@@ -13,7 +14,7 @@ export interface StageDef {
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
   domain?: 'int' | 'dec'  // dec = 小数加减
-  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese'  // 非数字内容生成器（选择题，不走 generateQuestions）
+  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese' | 'poem' | 'chars'  // 非数字内容生成器（选择题，不走 generateQuestions）
   subject?: 'math' | 'chinese' | 'english'
 }
 
@@ -64,6 +65,13 @@ export const CHINESE_STAGES: StageDef[] = [
   { id: 'chi-tree',   name: '梧桐书院', emoji: '🌳', desc: '12题 · 2分钟 · 树木篇', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
   { id: 'chi-home',   name: '江南小镇', emoji: '🏘️', desc: '12题 · 2分钟 · 家乡篇', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
   { id: 'chi-story',  name: '寓言古亭', emoji: '⛩️', desc: '12题 · 2分钟 · 故事篇', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-mist',   name: '迷雾码头', emoji: '🌁', desc: '12题 · 2分钟 · 雾与风', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-snow',   name: '雪人谷',   emoji: '⛄', desc: '12题 · 2分钟 · 雪孩子', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-fox',    name: '狐狸洞窟', emoji: '🦊', desc: '12题 · 2分钟 · 狐狸故事', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-boat',   name: '纸船溪',   emoji: '⛵', desc: '12题 · 2分钟 · 友谊篇', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chinese', subject: 'chinese' },
+  { id: 'chi-poem',   name: '诗韵画舫', emoji: '🖼️', desc: '12题 · 2分钟 · 古诗补全', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'poem', subject: 'chinese' },
+  { id: 'chi-char1',  name: '百字碑林', emoji: '🪦', desc: '12题 · 2分钟 · 识字读音（上）', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chars', subject: 'chinese' },
+  { id: 'chi-char2',  name: '千字石窟', emoji: '🗿', desc: '12题 · 2分钟 · 识字读音（下）', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chars', subject: 'chinese' },
 ]
 
 export function stagesOf(subject: 'math' | 'chinese' | 'english'): StageDef[] {
@@ -135,7 +143,7 @@ export interface SubjectDef {
 
 export const SUBJECTS: SubjectDef[] = [
   { id: 'math', name: '数学大陆', emoji: '🔢', desc: '16 关 · 沪教版 2~4 年级计算', comingSoon: false },
-  { id: 'chinese', name: '语文大陆', emoji: '📖', desc: '5 关 · 部编版二上词语表', comingSoon: false },
+  { id: 'chinese', name: '语文大陆', emoji: '📖', desc: '12 关 · 部编版二上词语+古诗', comingSoon: false },
   { id: 'english', name: '英语大陆', emoji: '🔤', desc: '15 关 · 牛津上海版 1-2 年级', comingSoon: false },
 ]
 
@@ -206,6 +214,12 @@ export function dailySettings() {
 // ===== 7b-2 知识点级推荐：找「已获得星星但未满星」的最简单关，其次第一个未解锁关 =====
 export function recommendStage(a: AdventureState = loadAdventure()): { stage: StageDef; reason: string } | null {
   const all = [...STAGES, ...ENGLISH_STAGES, ...CHINESE_STAGES]
+  // 错题归因反哺：字词错误累计较多时，优先推荐未满星的语文/英语关
+  const prof = loadProfileData()
+  if ((prof.patterns?.word ?? 0) >= 3) {
+    const lang = all.find((st) => st.subject !== 'math' && (a.stars[st.id] ?? 0) < 3)
+    if (lang) return { stage: lang, reason: `最近字词错误有点多，去「${lang.name}」巩固一下` }
+  }
   for (const st of all) {
     const got = a.stars[st.id] ?? 0
     if (got > 0 && got < 3) {

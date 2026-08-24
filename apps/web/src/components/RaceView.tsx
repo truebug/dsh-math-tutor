@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { generateQuestions, normalizeAnswer, OP_GLYPHS, type Question } from '@dsh-math-tutor/math-generator/core'
 import { generateAntonymQuestions, generateLetterQuestions, generateSentenceQuestions, generateVocabQuestions } from '../lib/english'
-import { generateChineseQuestions } from '../lib/chinese'
+import { generateCharQuestions, generateChineseQuestions, generatePoemQuestions, POEMS } from '../lib/chinese'
 import type { RaceSettings } from '../lib/types'
 import { battleJoin, battleScore } from '../api/battle'
 import { encodeRaceCode } from '../lib/raceCode'
@@ -24,6 +24,20 @@ interface Props {
   }) => void
 }
 
+
+// 朗读当前题目中被引用的词/字（英语关读英文，语文关读汉字）
+function speakQuoted(text: string, kind?: string) {
+  if (!('speechSynthesis' in window)) return
+  const m = text.match(/["「]([^"」]+)["」]/)
+  if (!m) return
+  const utt = new SpeechSynthesisUtterance(m[1])
+  const isEnglish = kind === 'vocab' || kind === 'letters' || kind === 'sentence' || kind === 'antonym'
+  utt.lang = isEnglish ? 'en-US' : 'zh-CN'
+  utt.rate = 0.85
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utt)
+}
+
 export default function RaceView({ settings, nickname, grade, onAbandon, onFinish }: Props) {
   const code = encodeRaceCode(settings)
   const [confirmQuit, setConfirmQuit] = useState(false)
@@ -39,6 +53,10 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
               ? generateAntonymQuestions(settings.seed, settings.count)
               : settings.kind === 'chinese'
                 ? generateChineseQuestions(settings.seed, settings.stageId ?? 'chi-nature', settings.count)
+                : settings.kind === 'poem'
+                  ? generatePoemQuestions(settings.seed, settings.count)
+                  : settings.kind === 'chars'
+                    ? generateCharQuestions(settings.seed, settings.count, settings.stageId === 'chi-char2' ? 58 : 0, settings.stageId === 'chi-char2' ? 116 : 58)
           : generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio, domain: settings.domain })),
     [settings],
   )
@@ -165,8 +183,14 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
       )}
       <div className={flash === 'ok' ? 'question flash-ok' : flash === 'no' ? 'question flash-no' : 'question'}>
         {isChoice ? q.text : <>{q.a} {OP_GLYPHS[q.op]} {q.b} =</>}
+        {isChoice && /["「]/.test(q.text) && (
+          <button className="speak-btn" title="朗读" onClick={() => speakQuoted(q.text, settings.kind)}>🔊</button>
+        )}
       </div>
 
+      {settings.kind === 'poem' && (
+        <div className="poem-bg" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}poems/${POEMS[Math.min(3, Math.floor(idx / 3))]?.id}.svg)` }} />
+      )}
       {isChoice ? (
         <div className="choices">
           {q.options!.map((opt) => (

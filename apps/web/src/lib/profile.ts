@@ -22,7 +22,7 @@ export function loadProfileData(): ProfileData {
     const raw = localStorage.getItem(KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* fallthrough */ }
-  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, patterns: { sign: 0, carry: 0, calc: 0 }, sessions: 0, reviews: [] }
+  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, patterns: { sign: 0, carry: 0, calc: 0, word: 0 }, sessions: 0, reviews: [] }
 }
 
 export function saveProfileData(p: ProfileData): void {
@@ -37,7 +37,7 @@ export function accumulateSession(
   answers: Array<number | string | null>,
 ): ProfileData {
   const p = loadProfileData()
-  p.patterns ??= { sign: 0, carry: 0, calc: 0 }
+  p.patterns ??= { sign: 0, carry: 0, calc: 0, word: 0 }
   const wrong = new Set(wrongIndexes)
   questions.forEach((q, i) => {
     if (q.carry) {

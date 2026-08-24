@@ -56,6 +56,50 @@ const THEMES: Record<string, { title: string; words: Array<[string, string]> }> 
       ['水分', 'shuǐ fèn'], ['空气', 'kōng qì'], ['五光十色', 'wǔ guāng shí sè'], ['中央', 'zhōng yāng'],
     ],
   },
+  'chi-mist': {
+    title: '雾与风',
+    words: [
+      ['于是', 'yú shì'], ['无论', 'wú lùn'],
+      ['海水', 'hǎi shuǐ'], ['船只', 'chuán zhī'],
+      ['远方', 'yuǎn fāng'], ['连同', 'lián tóng'],
+      ['岸边', 'àn biān'], ['海岸', 'hǎi àn'],
+      ['房屋', 'fáng wū'], ['街道', 'jiē dào'],
+      ['桥梁', 'qiáo liáng'], ['一切', 'yī qiè'],
+    ],
+  },
+  'chi-snow': {
+    title: '雪孩子',
+    words: [
+      ['空地', 'kòng dì'], ['唱歌', 'chàng gē'],
+      ['赶快', 'gǎn kuài'], ['旁边', 'páng biān'],
+      ['火星', 'huǒ xīng'], ['连忙', 'lián máng'],
+      ['浑身', 'hún shēn'], ['谢谢', 'xiè xiè'],
+      ['水汽', 'shuǐ qì'], ['散步', 'sàn bù'],
+      ['白云', 'bái yún'], ['美丽', 'měi lì'],
+    ],
+  },
+  'chi-fox': {
+    title: '狐狸故事',
+    words: [
+      ['食物', 'shí wù'], ['身边', 'shēn biān'],
+      ['爪子', 'zhuǎ zi'], ['面前', 'miàn qián'],
+      ['野猪', 'yě zhū'], ['往常', 'wǎng cháng'],
+      ['身后', 'shēn hòu'], ['神气活现', 'shén qì huó xiàn'],
+      ['信以为真', 'xìn yǐ wéi zhēn'], ['奶酪', 'nǎi lào'],
+      ['公平', 'gōng píng'], ['争吵', 'zhēng chǎo'],
+    ],
+  },
+  'chi-boat': {
+    title: '友谊篇',
+    words: [
+      ['纸船', 'zhǐ chuán'], ['松果', 'sōng guǒ'],
+      ['纸条', 'zhǐ tiáo'], ['屋顶', 'wū dǐng'],
+      ['和好', 'hé hǎo'], ['高兴', 'gāo xìng'],
+      ['风筝', 'fēng zhēng'], ['幸福', 'xìng fú'],
+      ['田野', 'tián yě'], ['风车', 'fēng chē'],
+      ['秧苗', 'yāng miáo'], ['广场', 'guǎng chǎng'],
+    ],
+  },
   'chi-story': {
     title: '故事篇',
     words: [
@@ -84,4 +128,65 @@ export function generateChineseQuestions(seed: number, stageId: string, count: n
       ? toChoice(index, `拼音 "${pinyin}" 对应的词语是？`, hanzi, hanziPool, rng)
       : toChoice(index, `「${hanzi}」的正确拼音是？`, pinyin, pinyinPool, rng)
   })
+}
+// ===== 古诗补全（二上必背 4 首；每首 3 题，顺序固定便于按题号配图）=====
+import { CHAR_POOL } from './chineseChars'
+
+interface Poem { id: string; title: string; author: string; lines: string[] }
+export const POEMS: Poem[] = [
+  { id: 'guanquelou', title: '登鹳雀楼', author: '王之涣', lines: ['白日依山尽', '黄河入海流', '欲穷千里目', '更上一层楼'] },
+  { id: 'lushan', title: '望庐山瀑布', author: '李白', lines: ['日照香炉生紫烟', '遥看瀑布挂前川', '飞流直下三千尺', '疑是银河落九天'] },
+  { id: 'yesu', title: '夜宿山寺', author: '李白', lines: ['危楼高百尺', '手可摘星辰', '不敢高声语', '恐惊天上人'] },
+  { id: 'chile', title: '敕勒歌', author: '北朝民歌', lines: ['敕勒川，阴山下', '天似穹庐，笼盖四野', '天苍苍，野茫茫', '风吹草低见牛羊'] },
+]
+
+// 每首取第 2/3/4 句中的关键字挖空，四选一补全
+const POEM_BLANKS: Array<Array<{ line: number; char: string; distractors: [string, string, string] }>> = [
+  [
+    { line: 1, char: '海', distractors: ['江', '河', '湖'] },
+    { line: 2, char: '穷', distractors: ['看', '望', '追'] },
+    { line: 3, char: '层', distractors: ['重', '座', '级'] },
+  ],
+  [
+    { line: 0, char: '烟', distractors: ['云', '雾', '霞'] },
+    { line: 2, char: '尺', distractors: ['丈', '里', '寸'] },
+    { line: 3, char: '银', distractors: ['金', '玉', '白'] },
+  ],
+  [
+    { line: 0, char: '尺', distractors: ['丈', '米', '里'] },
+    { line: 1, char: '星', distractors: ['月', '云', '灯'] },
+    { line: 3, char: '惊', distractors: ['吓', '吵', '醒'] },
+  ],
+  [
+    { line: 1, char: '野', distractors: ['地', '原', '草'] },
+    { line: 2, char: '苍', distractors: ['蓝', '青', '绿'] },
+    { line: 3, char: '见', distractors: ['现', '看', '望'] },
+  ],
+]
+
+export function generatePoemQuestions(seed: number, count: number): Question[] {
+  const rng = mulberry32(seed)
+  const all: Array<{ poem: Poem; blank: (typeof POEM_BLANKS)[number][number] }> = []
+  POEMS.forEach((poem, pi) => POEM_BLANKS[pi].forEach((blank) => all.push({ poem, blank })))
+  const picked = shuffle(all, rng).slice(0, Math.min(count, all.length))
+  return picked.map(({ poem, blank }, index) => {
+    const lineText = poem.lines[blank.line]
+    const shown = lineText.replace(blank.char, '＿')
+    const options = shuffle([blank.char, ...blank.distractors], rng)
+    return {
+      index, a: 0, b: 0, op: 'add' as const,
+      text: `《${poem.title}》「${shown}」缺哪个字？`,
+      answer: 0, carry: false, options, answerText: blank.char,
+    }
+  })
+}
+
+// ===== 识字认读：选正确读音（字库来自已核实的二上词语表拆字）=====
+export function generateCharQuestions(seed: number, count: number, from: number, to: number): Question[] {
+  const rng = mulberry32(seed)
+  const pool = CHAR_POOL.slice(from, to)
+  const picked = shuffle(pool, rng).slice(0, Math.min(count, pool.length))
+  const pyPool = CHAR_POOL.map(([, py]) => py)
+  return picked.map(([hanzi, py], index) =>
+    toChoice(index, `「${hanzi}」的正确读音是？`, py, pyPool, rng))
 }

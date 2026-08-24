@@ -12,7 +12,7 @@ export interface RaceSettings {
   adaptiveReason?: string // 自适应说明文案（设置页展示）
   imported?: boolean      // 是否来自竞赛码导入（导入=锁定参数，不做自适应，保证同码同题）
   domain?: 'int' | 'dec'  // dec = 小数加减（四年级）
-  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese'  // 英语选择题内容（不使用数字出题器）
+  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese' | 'poem' | 'chars'  // 英语选择题内容（不使用数字出题器）
   stageId?: string      // 闯关 ID（成绩用于记星）
   daily?: boolean       // 每日挑战（成绩记入 daily 星）
   customQuestions?: Question[]  // 错题重练：直接使用给定题集（忽略 seed）

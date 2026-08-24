@@ -352,3 +352,17 @@ input[type="range"] { width: 100%; }
   margin-top: 6px; border: none; background: #4a90e2; color: #fff;
   border-radius: 8px; padding: 4px 10px; font-size: 13px; cursor: pointer;
 }
+
+/* 古诗画舫：诗配画背景 */
+.race { position: relative; }
+.poem-bg {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  opacity: .16; pointer-events: none; border-radius: 16px;
+}
+/* 朗读按钮 */
+.speak-btn {
+  margin-left: 10px; font-size: 18px; background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.25); border-radius: 10px; padding: 2px 8px;
+  cursor: pointer; vertical-align: middle;
+}
+.speak-btn:hover { background: rgba(255,255,255,.28); }
