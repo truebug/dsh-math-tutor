@@ -13,7 +13,7 @@ export interface StageDef {
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
   domain?: 'int' | 'dec'  // dec = 小数加减
-  kind?: 'letters' | 'vocab'  // 英语内容生成器（选择题，不走 generateQuestions）
+  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym'  // 英语内容生成器（选择题，不走 generateQuestions）
   subject?: 'math' | 'chinese' | 'english'
 }
 
@@ -37,7 +37,7 @@ export const STAGES: StageDef[] = [
   { id: 'moon',    name: '月面城',   emoji: '🌙', desc: '40题 · 5分钟 · 两位小数挑战', count: 40, durationSec: 300, level: 3, ops: ['add', 'sub'], max: 100, domain: 'dec' },
 ]
 
-// 英语大陆关卡（独立解锁链）
+// 英语大陆关卡（独立解锁链）：1-8 为一年级段（1A/1B），9 起为二年级段（2A/2B）
 export const ENGLISH_STAGES: StageDef[] = [
   { id: 'eng-letters1', name: '字母沙滩', emoji: '🏖️', desc: '13题 · 2分钟 · 字母 A-M', count: 13, durationSec: 120, level: 1, ops: [], max: 0, kind: 'letters', subject: 'english' },
   { id: 'eng-letters2', name: '字母礁石', emoji: '🪨', desc: '13题 · 2分钟 · 字母 N-Z', count: 13, durationSec: 120, level: 1, ops: [], max: 0, kind: 'letters', subject: 'english' },
@@ -48,6 +48,13 @@ export const ENGLISH_STAGES: StageDef[] = [
   { id: 'eng-animal', name: '动物森林', emoji: '🦁', desc: '12题 · 2分钟 · 动物朋友', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
   { id: 'eng-food',   name: '美食集市', emoji: '🍔', desc: '12题 · 2分钟 · 美食与饮料', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
   { id: 'eng-family', name: '温馨小屋', emoji: '🏠', desc: '12题 · 2分钟 · 家人与人物', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-toy',     name: '玩具城堡', emoji: '🧸', desc: '12题 · 2分钟 · 玩具与物品', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-clothes', name: '换装魔镜', emoji: '👗', desc: '12题 · 2分钟 · 衣物穿戴', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-weather', name: '四季风车', emoji: '🌦️', desc: '12题 · 2分钟 · 天气与户外', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-number',  name: '数字钟楼', emoji: '🕰️', desc: '12题 · 2分钟 · 数字 11-100', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-action',  name: '运动乐园', emoji: '🤾', desc: '12题 · 2分钟 · 动作能力', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-opp',     name: '反转镜湖', emoji: '🪞', desc: '12题 · 2分钟 · 反义词配对', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'antonym', subject: 'english' },
+  { id: 'eng-sentence', name: '句型学院', emoji: '🏫', desc: '12题 · 2分钟 · 句型填空', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'sentence', subject: 'english' },
 ]
 
 export function stagesOf(subject: 'math' | 'chinese' | 'english'): StageDef[] {

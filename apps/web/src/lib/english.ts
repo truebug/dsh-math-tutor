@@ -94,6 +94,51 @@ const VOCAB: Record<string, { title: string; words: Array<[string, string]> }> =
       ['orange', '橙子'], ['pear', '梨'], ['egg', '鸡蛋'], ['pineapple', '菠萝'],
     ],
   },
+  'eng-toy': {
+    title: '玩具与物品',
+    words: [
+      ['doll', '洋娃娃'], ['balloon', '气球'], ['ball', '球'], ['kite', '风筝'],
+      ['car', '小汽车'], ['plane', '飞机'], ['boat', '小船'], ['bus', '公共汽车'],
+      ['bicycle', '自行车'], ['train', '火车'], ['robot', '机器人'], ['watch', '手表'],
+      ['clock', '时钟'], ['umbrella', '雨伞'], ['cap', '帽子'], ['box', '盒子'],
+    ],
+  },
+  'eng-clothes': {
+    title: '衣物穿戴',
+    words: [
+      ['coat', '外套'], ['skirt', '短裙'], ['shirt', '衬衫'], ['jacket', '夹克'],
+      ['dress', '连衣裙'], ['T-shirt', 'T恤衫'], ['shoe', '鞋子'], ['sock', '袜子'],
+      ['hat', '帽子'], ['scarf', '围巾'], ['clean', '干净的'], ['dirty', '脏的'],
+      ['new', '新的'], ['old', '旧的'], ['wear', '穿着'], ['wash', '洗'],
+    ],
+  },
+  'eng-weather': {
+    title: '天气与户外',
+    words: [
+      ['rain', '下雨'], ['wind', '风'], ['snow', '雪'], ['sun', '太阳'],
+      ['cloud', '云'], ['sky', '天空'], ['hot', '热的'], ['cold', '冷的'],
+      ['warm', '温暖的'], ['cool', '凉爽的'], ['park', '公园'], ['zoo', '动物园'],
+      ['playground', '操场'], ['spring', '春天'], ['summer', '夏天'], ['winter', '冬天'],
+    ],
+  },
+  'eng-number': {
+    title: '数字进阶',
+    words: [
+      ['eleven', '十一'], ['twelve', '十二'], ['thirteen', '十三'], ['fourteen', '十四'],
+      ['fifteen', '十五'], ['sixteen', '十六'], ['seventeen', '十七'], ['eighteen', '十八'],
+      ['nineteen', '十九'], ['twenty', '二十'], ['thirty', '三十'], ['forty', '四十'],
+      ['fifty', '五十'], ['hundred', '一百'], ['how many', '多少（数量）'], ['how much', '多少钱'],
+    ],
+  },
+  'eng-action': {
+    title: '动作能力',
+    words: [
+      ['run', '跑'], ['jump', '跳'], ['swim', '游泳'], ['fly', '飞'],
+      ['draw', '画画'], ['sing', '唱歌'], ['dance', '跳舞'], ['write', '写字'],
+      ['read', '阅读'], ['play', '玩'], ['ride', '骑'], ['skate', '滑冰'],
+      ['climb', '爬'], ['walk', '走'], ['hop', '单脚跳'], ['can', '会；能'],
+    ],
+  },
   'eng-family': {
     title: '家人与人物',
     words: [
@@ -128,4 +173,50 @@ export function generateVocabQuestions(seed: number, stageId: string, count: num
 // 兼容旧调用（问候灯塔关）
 export function generateGreetingQuestions(seed: number, count: number): Question[] {
   return generateVocabQuestions(seed, 'eng-greet', count)
+}
+
+// 句型关：三选一填空（二年级 2A/2B 核心句型）
+const SENTENCES: Array<{ text: string; correct: string; distractors: [string, string] }> = [
+  { text: 'I ___ a boy.', correct: 'am', distractors: ['is', 'are'] },
+  { text: 'This ___ my friend.', correct: 'is', distractors: ['am', 'are'] },
+  { text: 'They ___ happy.', correct: 'are', distractors: ['is', 'am'] },
+  { text: '___ can you do? I can swim.', correct: 'What', distractors: ['Who', 'How'] },
+  { text: '___ old are you? I am eight.', correct: 'How', distractors: ['What', 'Who'] },
+  { text: '___ is she? She is my mum.', correct: 'Who', distractors: ['What', 'How'] },
+  { text: 'Can you swim? Yes, I ___.', correct: 'can', distractors: ["can't", 'do'] },
+  { text: 'How ___ books? Five.', correct: 'many', distractors: ['much', 'old'] },
+  { text: 'How ___ is it? Ten yuan.', correct: 'much', distractors: ['many', 'old'] },
+  { text: 'I like ___. They are cute.', correct: 'pandas', distractors: ['panda', 'a panda'] },
+  { text: 'Look ___ the blackboard.', correct: 'at', distractors: ['in', 'on'] },
+  { text: 'Listen ___ the teacher.', correct: 'to', distractors: ['at', 'for'] },
+  { text: 'It is raining. I have ___ umbrella.', correct: 'an', distractors: ['a', 'the'] },
+  { text: 'This is ___ apple.', correct: 'an', distractors: ['a', 'two'] },
+  { text: 'I get up ___ seven o\'clock.', correct: 'at', distractors: ['in', 'on'] },
+  { text: 'Nice ___ meet you!', correct: 'to', distractors: ['too', 'two'] },
+  { text: 'I can ___ a bike.', correct: 'ride', distractors: ['read', 'red'] },
+  { text: 'What ___ is it? It is red.', correct: 'colour', distractors: ['time', 'animal'] },
+]
+
+export function generateSentenceQuestions(seed: number, count: number): Question[] {
+  const rng = mulberry32(seed)
+  const picked = shuffle(SENTENCES, rng).slice(0, Math.min(count, SENTENCES.length))
+  return picked.map((sen, index) => {
+    const options = shuffle([sen.correct, ...sen.distractors], rng)
+    return { index, a: 0, b: 0, op: 'add' as const, text: `选一选：${sen.text}`, answer: 0, carry: false, options, answerText: sen.correct }
+  })
+}
+
+// 反义词配对关：给单词选反义词（二年级常见形容词）
+const ANTONYMS: Array<[string, string]> = [
+  ['big', 'small'], ['tall', 'short'], ['long', 'short'], ['fat', 'thin'],
+  ['hot', 'cold'], ['warm', 'cool'], ['clean', 'dirty'], ['new', 'old'],
+  ['happy', 'sad'], ['open', 'close'], ['fast', 'slow'], ['young', 'old'],
+]
+
+export function generateAntonymQuestions(seed: number, count: number): Question[] {
+  const rng = mulberry32(seed)
+  const picked = shuffle(ANTONYMS, rng).slice(0, Math.min(count, ANTONYMS.length))
+  const pool = ANTONYMS.map(([, b]) => b)
+  return picked.map(([word, antonym], index) =>
+    toChoice(index, `"${word}" 的反义词是哪个？`, antonym, pool, rng))
 }

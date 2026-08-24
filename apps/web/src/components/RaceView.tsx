@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { generateQuestions, normalizeAnswer, OP_GLYPHS, type Question } from '@dsh-math-tutor/math-generator/core'
-import { generateLetterQuestions, generateVocabQuestions } from '../lib/english'
+import { generateAntonymQuestions, generateLetterQuestions, generateSentenceQuestions, generateVocabQuestions } from '../lib/english'
 import type { RaceSettings } from '../lib/types'
 import { battleJoin, battleScore } from '../api/battle'
 import { encodeRaceCode } from '../lib/raceCode'
@@ -32,6 +32,10 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
         ? generateLetterQuestions(settings.seed, settings.stageId === 'eng-letters2' ? 13 : 0, settings.stageId === 'eng-letters2' ? 26 : 13, settings.count)
         : settings.kind === 'vocab'
           ? generateVocabQuestions(settings.seed, settings.stageId ?? 'eng-greet', settings.count)
+          : settings.kind === 'sentence'
+            ? generateSentenceQuestions(settings.seed, settings.count)
+            : settings.kind === 'antonym'
+              ? generateAntonymQuestions(settings.seed, settings.count)
           : generateQuestions({ count: settings.count, max: settings.max, ops: settings.ops, seed: settings.seed, level: settings.level, carryRatio: settings.carryRatio, domain: settings.domain })),
     [settings],
   )
