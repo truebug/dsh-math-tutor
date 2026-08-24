@@ -3,6 +3,51 @@ import { loadSessions } from '../lib/storage'
 import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
 import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
+import { STAGES, stagesOf } from '../lib/adventure'
+
+const ALL_STAGES = [...STAGES, ...stagesOf('chinese'), ...stagesOf('english')]
+
+interface StageStat { name: string; emoji: string; total: number; wrong: number }
+
+// 知识点热力图：按关卡聚合正确率，薄弱点（错题多/正确率低）高亮
+function Heatmap() {
+  const stats = new Map<string, StageStat>()
+  for (const s of loadSessions()) {
+    const sid = s.settings.stageId
+    if (!sid) continue
+    const def = ALL_STAGES.find((x) => x.id === sid)
+    if (!def) continue
+    const cur = stats.get(sid) ?? { name: def.name, emoji: def.emoji, total: 0, wrong: 0 }
+    cur.total += s.answered
+    cur.wrong += s.wrong.length
+    stats.set(sid, cur)
+  }
+  const rows = [...stats.values()].sort((a, b) => (b.wrong / Math.max(b.total, 1)) - (a.wrong / Math.max(a.total, 1)))
+  if (rows.length === 0) return null
+  return (
+    <div className="pattern-card">
+      <h3 className="chart-title">🗺️ 知识点热力图（按关卡）</h3>
+      <div className="pattern-bars">
+        {rows.map((r) => {
+          const acc = r.total > 0 ? 1 - r.wrong / r.total : 1
+          const hue = Math.round(acc * 120)  // 0=红 120=绿
+          return (
+            <div key={r.name} className="pattern-row">
+              <span className="pattern-label">{r.emoji} {r.name}</span>
+              <div className="pattern-bar">
+                <div style={{ width: `${acc * 100}%`, background: `hsl(${hue} 65% 45%)` }} />
+              </div>
+              <span>{Math.round(acc * 100)}%{r.wrong > 0 ? ` · 错${r.wrong}` : ''}</span>
+            </div>
+          )
+        })}
+      </div>
+      {rows[0].wrong > 0 && (
+        <p className="adaptive-hint">🔥 最薄弱：{rows[0].emoji} {rows[0].name}（正确率 {Math.round((1 - rows[0].wrong / Math.max(rows[0].total, 1)) * 100)}%），建议优先复习</p>
+      )}
+    </div>
+  )
+}
 
 function LineChart({ values, format, color }: { values: number[]; format: (v: number) => string; color: string }) {
   if (values.length === 0) return <p className="subtitle">还没有数据</p>
@@ -88,6 +133,8 @@ export default function DashboardView() {
           </div>
         )
       })()}
+
+      <Heatmap />
 
       <h3 className="chart-title">正确率趋势（最近 {recent.length} 次）</h3>
       <LineChart
