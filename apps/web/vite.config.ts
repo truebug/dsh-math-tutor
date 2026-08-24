@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // 部署约束：base 支持子路径部署（如 /dsh-math-tutor/），由环境变量注入
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH ?? '/',
+  base: process.env.VITE_BASE_PATH ?? '/dsh-math-tutor/',  // 默认线上子路径；本地开发可 VITE_BASE_PATH=/ 覆盖
   plugins: [react()],
   resolve: {
     alias: {
