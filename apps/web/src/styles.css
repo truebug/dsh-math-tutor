@@ -241,7 +241,7 @@ input[type="range"] { width: 100%; }
 .quit-btn.confirm { color: #c05050; background: #fdf0ee; font-weight: 600; }
 /* 大陆选择器：群岛布局 —— 三块不规则大陆错落咬合，周围散布灵性小岛 */
 .continents {
-  position: relative; height: 290px; max-width: 560px; margin: 6px auto 0;
+  position: relative; height: 330px; max-width: 560px; margin: 6px auto 0;
 }
 .continent {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
@@ -253,19 +253,19 @@ input[type="range"] { width: 100%; }
 .continent:hover { transform: scale(1.05); }
 /* 数学大陆：左上大块 */
 .continent.land-math {
-  left: 1%; top: 2%; width: 216px; height: 172px; padding: 12px 16px;
+  left: 2%; top: 0; width: 208px; height: 164px; padding: 12px 16px;
   border-radius: 58% 42% 55% 45% / 52% 60% 40% 48%;
   background: rgba(84, 148, 92, .28); border-color: rgba(120, 190, 130, .45);
 }
 /* 语文大陆：中部偏下，与数学下缘错落咬合 */
 .continent.land-chinese {
-  left: 34%; top: 47%; width: 192px; height: 152px; padding: 12px 16px;
+  left: 36%; top: 56%; width: 192px; height: 148px; padding: 12px 16px;
   border-radius: 44% 56% 48% 52% / 58% 44% 56% 42%;
   background: rgba(196, 116, 66, .26); border-color: rgba(226, 150, 96, .45);
 }
 /* 英语大陆：右侧，整体上移 */
 .continent.land-english {
-  right: 0; top: 9%; width: 200px; height: 160px; padding: 12px 16px;
+  right: 1%; top: 12%; width: 196px; height: 156px; padding: 12px 16px;
   border-radius: 52% 48% 40% 60% / 46% 54% 46% 54%;
   background: rgba(84, 128, 190, .26); border-color: rgba(122, 166, 226, .45);
 }
