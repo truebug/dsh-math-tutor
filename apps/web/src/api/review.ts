@@ -1,6 +1,7 @@
 export interface ReviewRequest {
   grade: 2 | 3 | 4 | 5
   level: 1 | 2 | 3
+  subject?: 'math' | 'chinese' | 'english'
   total: number
   correct: number
   usedSec: number

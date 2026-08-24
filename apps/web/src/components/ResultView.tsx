@@ -44,6 +44,7 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
       const text = await fetchReview({
         grade: profile.grade,
         level: record.settings.level,
+        subject: record.settings.subject ?? 'math',
         total: record.total,
         correct: record.correct,
         usedSec: Math.round(record.usedMs / 1000),

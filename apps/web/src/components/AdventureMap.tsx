@@ -235,6 +235,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
     return {
       mode: 'G2A', count: st.count, durationSec: st.durationSec, level: st.level,
       ops: st.ops, max: st.max, domain: st.domain, kind: st.kind,
+      subject: st.subject ?? 'math',
       seed: Math.floor(Math.random() * 1e9), stageId: st.id,
     }
   }
