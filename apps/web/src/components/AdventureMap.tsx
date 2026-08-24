@@ -16,7 +16,18 @@ interface SceneTheme {
 const SUBJECT_LABEL: Record<string, string> = { math: '数学', chinese: '语文', english: '英语' }
 
 // 已生成静帧插画的关卡（public/stages/<id>.webp）：有图则替换程序化 SVG 场景
-const STAGE_ART = new Set(['forest', 'cave', 'lake', 'snow', 'island', 'vine', 'bamboo', 'falls', 'thunder', 'temple'])
+const STAGE_ART = new Set([
+  // 数学大陆 16 关
+  'forest', 'cave', 'lake', 'snow', 'island', 'vine', 'bamboo', 'falls', 'thunder', 'temple',
+  'meadow', 'desert', 'volcano', 'rainbow', 'galaxy', 'moon',
+  // 语文大陆 12 关
+  'chi-nature', 'chi-school', 'chi-tree', 'chi-home', 'chi-story', 'chi-mist',
+  'chi-snow', 'chi-fox', 'chi-boat', 'chi-poem', 'chi-char1', 'chi-char2',
+  // 英语大陆 16 关
+  'eng-letters1', 'eng-letters2', 'eng-greet', 'eng-school', 'eng-body', 'eng-color',
+  'eng-animal', 'eng-food', 'eng-family', 'eng-toy', 'eng-clothes', 'eng-weather',
+  'eng-number', 'eng-action', 'eng-opp', 'eng-sentence',
+])
 
 const SCENES: Record<string, SceneTheme> = {
   forest:  { sky: ['#0d2818', '#1d4a3a', '#3a7a55'], layers: ['#2e6b4f', '#1a4534', '#0c2418'], glow: '#ffe08a', emoji: '🌲' },
