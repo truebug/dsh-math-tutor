@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { Question } from '@dsh-math-tutor/math-generator/core'
 import { loadSessions } from '../lib/storage'
 import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
@@ -7,19 +8,20 @@ import { STAGES, stagesOf } from '../lib/adventure'
 
 const ALL_STAGES = [...STAGES, ...stagesOf('chinese'), ...stagesOf('english')]
 
-interface StageStat { name: string; emoji: string; total: number; wrong: number }
+interface StageStat { name: string; emoji: string; total: number; wrong: number; questions: Question[] }
 
 // 知识点热力图：按关卡聚合正确率，薄弱点（错题多/正确率低）高亮
-function Heatmap() {
+function Heatmap({ onRetry }: { onRetry: (qs: Question[]) => void }) {
   const stats = new Map<string, StageStat>()
   for (const s of loadSessions()) {
     const sid = s.settings.stageId
     if (!sid) continue
     const def = ALL_STAGES.find((x) => x.id === sid)
     if (!def) continue
-    const cur = stats.get(sid) ?? { name: def.name, emoji: def.emoji, total: 0, wrong: 0 }
+    const cur = stats.get(sid) ?? { name: def.name, emoji: def.emoji, total: 0, wrong: 0, questions: [] }
     cur.total += s.answered
     cur.wrong += s.wrong.length
+    for (const w of s.wrong) cur.questions.push(w.question)
     stats.set(sid, cur)
   }
   const rows = [...stats.values()].sort((a, b) => (b.wrong / Math.max(b.total, 1)) - (a.wrong / Math.max(a.total, 1)))
@@ -37,13 +39,25 @@ function Heatmap() {
               <div className="pattern-bar">
                 <div style={{ width: `${acc * 100}%`, background: `hsl(${hue} 65% 45%)` }} />
               </div>
-              <span>{Math.round(acc * 100)}%{r.wrong > 0 ? ` · 错${r.wrong}` : ''}</span>
+              <span className="pattern-acc" style={{ color: `hsl(${hue} 65% 32%)` }}>
+                {Math.round(acc * 100)}%{r.wrong > 0 ? ` · 错${r.wrong}` : ''}
+              </span>
+              {r.wrong > 0 && (
+                <button className="retry-mini" onClick={() => onRetry(r.questions)}>
+                  重练 {r.questions.length} 题
+                </button>
+              )}
             </div>
           )
         })}
       </div>
       {rows[0].wrong > 0 && (
-        <p className="adaptive-hint">🔥 最薄弱：{rows[0].emoji} {rows[0].name}（正确率 {Math.round((1 - rows[0].wrong / Math.max(rows[0].total, 1)) * 100)}%），建议优先复习</p>
+        <div className="adaptive-hint weak-spot">
+          🔥 最薄弱：{rows[0].emoji} {rows[0].name}（正确率 {Math.round((1 - rows[0].wrong / Math.max(rows[0].total, 1)) * 100)}%）
+          <button className="primary retry-main" onClick={() => onRetry(rows[0].questions)}>
+            立即重练该关错题 →
+          </button>
+        </div>
       )}
     </div>
   )
@@ -76,7 +90,7 @@ function LineChart({ values, format, color }: { values: number[]; format: (v: nu
   )
 }
 
-export default function DashboardView() {
+export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (qs: Question[]) => void }) {
   const [sync, setSync] = useState(syncEnabled())
   const [consent, setConsent] = useState(false)
   const [restoreId, setRestoreId] = useState('')
@@ -134,7 +148,7 @@ export default function DashboardView() {
         )
       })()}
 
-      <Heatmap />
+      <Heatmap onRetry={onRetryMistakes} />
 
       <h3 className="chart-title">正确率趋势（最近 {recent.length} 次）</h3>
       <LineChart

@@ -116,7 +116,7 @@ export default function App() {
         />
       )}
       {view === 'mistakes' && <MistakeBook onBack={() => setView('map')} onRetryMistakes={startMistakeRetry} />}
-      {view === 'dashboard' && <DashboardView />}
+      {view === 'dashboard' && <DashboardView onRetryMistakes={startMistakeRetry} />}
     </div>
   )
 }

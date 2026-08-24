@@ -111,6 +111,16 @@ input[type="range"] { width: 100%; }
 .pattern-label { width: 70px; }
 .pattern-bar { flex: 1; height: 12px; background: #edf3fa; border-radius: 6px; overflow: hidden; }
 .pattern-bar div { height: 100%; background: #e2814a; }
+.pattern-row { padding: 4px 6px; border-radius: 8px; transition: background .15s; }
+.pattern-row:hover { background: rgba(74, 144, 226, .08); }
+.pattern-acc { font-weight: 600; white-space: nowrap; }
+.retry-mini {
+  padding: 2px 10px; border-radius: 10px; border: 1px solid #e2814a; background: #fff7f0;
+  color: #c96a2e; font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.retry-mini:hover { background: #e2814a; color: #fff; }
+.weak-spot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.retry-main { padding: 6px 16px; font-size: 13px; }
 .battle-board { background: #f4fbf6; border-radius: 14px; padding: 12px 14px; }
 .battle-board h3 { margin: 0 0 8px; font-size: 15px; }
 .battle-row { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 4px; border-radius: 8px; }
