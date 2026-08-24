@@ -13,7 +13,7 @@ export interface StageDef {
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
   domain?: 'int' | 'dec'  // dec = 小数加减
-  kind?: 'letters' | 'greetings'  // 英语内容生成器（选择题，不走 generateQuestions）
+  kind?: 'letters' | 'vocab'  // 英语内容生成器（选择题，不走 generateQuestions）
   subject?: 'math' | 'chinese' | 'english'
 }
 
@@ -41,7 +41,13 @@ export const STAGES: StageDef[] = [
 export const ENGLISH_STAGES: StageDef[] = [
   { id: 'eng-letters1', name: '字母沙滩', emoji: '🏖️', desc: '13题 · 2分钟 · 字母 A-M', count: 13, durationSec: 120, level: 1, ops: [], max: 0, kind: 'letters', subject: 'english' },
   { id: 'eng-letters2', name: '字母礁石', emoji: '🪨', desc: '13题 · 2分钟 · 字母 N-Z', count: 13, durationSec: 120, level: 1, ops: [], max: 0, kind: 'letters', subject: 'english' },
-  { id: 'eng-greet',    name: '问候灯塔', emoji: '🗼', desc: '10题 · 2分钟 · 常见问候词', count: 10, durationSec: 120, level: 2, ops: [], max: 0, kind: 'greetings', subject: 'english' },
+  { id: 'eng-greet',  name: '问候灯塔', emoji: '🗼', desc: '12题 · 2分钟 · 问候与课堂用语', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-school', name: '文具小屋', emoji: '✏️', desc: '12题 · 2分钟 · 文具与课堂', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-body',   name: '木偶剧场', emoji: '🤸', desc: '12题 · 2分钟 · 我的身体', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-color',  name: '彩虹画室', emoji: '🎨', desc: '12题 · 2分钟 · 颜色与数字', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-animal', name: '动物森林', emoji: '🦁', desc: '12题 · 2分钟 · 动物朋友', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-food',   name: '美食集市', emoji: '🍔', desc: '12题 · 2分钟 · 美食与饮料', count: 12, durationSec: 120, level: 2, ops: [], max: 0, kind: 'vocab', subject: 'english' },
+  { id: 'eng-family', name: '温馨小屋', emoji: '🏠', desc: '12题 · 2分钟 · 家人与人物', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'vocab', subject: 'english' },
 ]
 
 export function stagesOf(subject: 'math' | 'chinese' | 'english'): StageDef[] {
