@@ -152,6 +152,20 @@ interface Props {
   onFreePractice: () => void
 }
 
+
+// 关卡插画：public/stages/<id>.jpg 存在则显示（离线生成的 AI 插画），缺失则透明回退
+function StageArt({ stageId }: { stageId: string }) {
+  const url = `${import.meta.env.BASE_URL}stages/${stageId}.jpg`
+  const [ok, setOk] = useState(false)
+  useEffect(() => {
+    const img = new Image()
+    img.onload = () => setOk(true)
+    img.src = url
+  }, [url])
+  if (!ok) return null
+  return <div className="stage-art" style={{ backgroundImage: `url(${url})` }} />
+}
+
 export default function AdventureMap({ profile, onStartStage, onFreePractice }: Props) {
   const [subject, setSub] = useState(currentSubject())
   const adv = loadAdventure()
@@ -286,6 +300,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
             {/* 光晕（已解锁关的灯笼光/萤火） */}
             {unlocked && <div className="scene-glow" style={{ background: `radial-gradient(circle at 50% 42%, ${t.glow}33, transparent 60%)` }} />}
             <SceneLayers stageId={st.id} />
+            <StageArt stageId={st.id} />
 
             <div className="scene-node" style={{ justifyContent: i % 2 === 0 ? 'flex-start' : 'flex-end' }}>
               <button

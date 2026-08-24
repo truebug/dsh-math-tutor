@@ -27,24 +27,62 @@ export default function Sprite({ question, wrongGiven, grade, bubble }: Props) {
   const [asking, setAsking] = useState(false)
   const shown = tip ?? bubble ?? null
 
+  const payload = () => JSON.stringify({
+    grade,
+    question: question!.text,
+    wrongAnswer: String(wrongGiven ?? '未作答'),
+    correctAnswer: String(question!.answerText ?? question!.answer),
+  })
+
+  // SSE 优先（逐字呈现），失败回退一次性 JSON
   const ask = async () => {
     if (!question || asking) return
     setAsking(true)
+    setTip('')
     try {
-      const res = await fetch('/api/hint', {
+      const res = await fetch('/api/hint/stream', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          grade,
-          question: question.text,
-          wrongAnswer: String(wrongGiven ?? '未作答'),
-          correctAnswer: String(question.answerText ?? question.answer),
-        }),
+        body: payload(),
       })
-      const data = (await res.json()) as { text?: string }
-      setTip(data.text ?? '小精灵累了，稍后再问我吧～')
+      if (!res.ok || !res.body) throw new Error('stream_unavailable')
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      let acc = ''
+      let failed = false
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop() ?? ''
+        for (const line of lines) {
+          const t = line.trim()
+          if (!t.startsWith('data:')) continue
+          const data = t.slice(5).trim()
+          if (data === '[DONE]') continue
+          try {
+            const evt = JSON.parse(data) as { delta?: string; error?: string }
+            if (evt.error) { failed = true; break }
+            if (evt.delta) { acc += evt.delta; setTip(acc) }
+          } catch { /* 半包忽略 */ }
+        }
+        if (failed) break
+      }
+      if (failed || !acc) throw new Error('stream_failed')
     } catch {
-      setTip(quickHint(question))
+      try {
+        const res = await fetch('/api/hint', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: payload(),
+        })
+        const data = (await res.json()) as { text?: string }
+        setTip(data.text ?? '小精灵累了，稍后再问我吧～')
+      } catch {
+        setTip(quickHint(question))
+      }
     }
     setAsking(false)
   }

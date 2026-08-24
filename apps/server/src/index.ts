@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 import { config } from './config.ts'
 import { buildReview, type ReviewRequest } from './routes/review.ts'
-import { buildHint, type HintRequest } from './routes/hint.ts'
+import { buildHint, streamHint, type HintRequest } from './routes/hint.ts'
 import { getRoom, joinRoom, reportScore } from './routes/battle.ts'
 import { loadProfile, saveProfile, type ProfileDoc } from './routes/profile.ts'
 
@@ -33,6 +33,30 @@ const server = createServer(async (req, res) => {
       }
       const text = await buildReview(body)
       json(res, 200, { text })
+      return
+    }
+    if (req.method === 'POST' && req.url === '/api/hint/stream') {
+      const body = (await readBody(req)) as HintRequest
+      if (!body?.question || body.correctAnswer === undefined) {
+        json(res, 400, { error: 'bad_request' })
+        return
+      }
+      // SSE：x-accel-buffering: no 让 nginx 不缓冲，逐字推送
+      res.writeHead(200, {
+        'content-type': 'text/event-stream; charset=utf-8',
+        'cache-control': 'no-cache',
+        connection: 'keep-alive',
+        'x-accel-buffering': 'no',
+      })
+      try {
+        for await (const delta of streamHint(body)) {
+          res.write(`data: ${JSON.stringify({ delta })}\n\n`)
+        }
+        res.write('data: [DONE]\n\n')
+      } catch (e) {
+        res.write(`data: ${JSON.stringify({ error: e instanceof Error ? e.message : 'llm_error' })}\n\n`)
+      }
+      res.end()
       return
     }
     if (req.method === 'POST' && req.url === '/api/hint') {

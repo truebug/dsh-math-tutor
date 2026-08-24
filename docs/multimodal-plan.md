@@ -21,3 +21,11 @@ TTS：Web Speech（默认）──► 可选升级：server /api/tts 代理豆�
 - 原则：能离线生成的绝不运行时调 API（儿童产品：快、稳、省钱、内容可审）
 - .env 规划：LLM 4 行（已有）+ 可选 IMAGE_API_*（豆包/GLM 生图）+ 可选 TTS_*（火山）
 - 暂不引入运行时生图；语音输入（口语评测）等三年级英语听说关再议
+
+## 2026-08-24 落地
+- SSE 已默认启用：/api/hint/stream（服务端 chatStream 转发 LLM 流式增量，
+  响应头 x-accel-buffering: no 免改 nginx），前端 Sprite 逐字呈现，失败自动回退 /api/hint JSON
+- 资产管线就绪：scripts/gen-assets.mjs（豆包 doubao-seedream / 智谱 cogview-3-flash，
+  IMAGE_PROVIDER + IMAGE_API_KEY 注入），43 个关卡 prompt 已按主题写好
+- 前端已支持关卡插画：AdventureMap StageArt 组件探测 public/stages/<id>.jpg，存在即叠加显示
+- 待办：用户提供豆包/GLM 生图 key 后跑批量生成

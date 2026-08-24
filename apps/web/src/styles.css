@@ -366,3 +366,9 @@ input[type="range"] { width: 100%; }
   cursor: pointer; vertical-align: middle;
 }
 .speak-btn:hover { background: rgba(255,255,255,.28); }
+
+/* 关卡插画：AI 离线生成的场景画，叠在渐变天空之上、剪影层之下 */
+.stage-art {
+  position: absolute; inset: 0; background-size: cover; background-position: center 30%;
+  opacity: .28; pointer-events: none; mix-blend-mode: luminosity;
+}
