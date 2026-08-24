@@ -201,7 +201,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   }, [reduced])
 
   const stageSettings = (i: number): RaceSettings => {
-    const st = stagesOf(subject === 'english' ? 'english' : 'math')[i]
+    const st = stagesOf(subject)[i]
     return {
       mode: 'G2A', count: st.count, durationSec: st.durationSec, level: st.level,
       ops: st.ops, max: st.max, domain: st.domain, kind: st.kind,
@@ -233,12 +233,12 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
         </button>
         {recommend && (
           <button className="recommend" onClick={() => {
-            const stages = [...STAGES, ...stagesOf('english')]
+            const stages = [...STAGES, ...stagesOf('english'), ...stagesOf('chinese')]
             const idx = stages.findIndex((x) => x.id === recommend.stage.id)
             if (idx >= 0) {
-              const isEng = recommend.stage.subject === 'english'
-              if (isEng) { setSubject('english'); setSub('english') } else { setSubject('math'); setSub('math') }
-              const all = isEng ? stagesOf('english') : STAGES
+              const sub2 = recommend.stage.subject ?? 'math'
+              setSubject(sub2); setSub(sub2)
+              const all = stagesOf(sub2)
               const i2 = all.findIndex((x) => x.id === recommend.stage.id)
               onStartStage({
                 mode: 'G2A', count: all[i2].count, durationSec: all[i2].durationSec, level: all[i2].level,
@@ -251,10 +251,13 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
           </button>
         )}
         <div className="continents">
+          {/* 灵性小岛装饰：为未来新大陆预留的想象空间 */}
+          <span className="islet i1" /><span className="islet i2" /><span className="islet i3" />
+          <span className="islet i4" /><span className="islet i5" /><span className="islet i6" />
           {SUBJECTS.map((sub) => (
             <button
               key={sub.id}
-              className={sub.id === subject ? 'continent active' : 'continent'}
+              className={`continent land-${sub.id}${sub.id === subject ? ' active' : ''}`}
               onClick={() => { setSubject(sub.id); setSub(sub.id) }}
             >
               <span className="continent-emoji">{sub.emoji}</span>
@@ -264,27 +267,13 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
             </button>
           ))}
         </div>
-        {subject === 'math' && <p className="adv-sub">向下滚动，开始你的旅程 ↓</p>}
+        <p className="adv-sub">向下滚动，开始你的旅程 ↓</p>
       </header>
 
-      {/* 占位大陆：迷雾预告 */}
-      {subject === 'chinese' && (
-        <section className="scene locked" style={{ background: 'linear-gradient(180deg, #2c3440, #4a5462 55%, #6b7684)' }}>
-          <div className="scene-node" style={{ justifyContent: 'center' }}>
-            <div className="node locked teaser">
-              <span className="node-emoji">🔮</span>
-              <span className="node-label">
-                <b>{SUBJECTS.find((x) => x.id === subject)?.name} 还在迷雾中</b>
-                <small>这片大陆正在建设中，先去数学大陆探险吧！</small>
-              </span>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* 卷轴关卡 */}
-      {(subject === 'math' ? STAGES : stagesOf('english')).map((st, i) => {
-        const unlocked = isUnlocked(i, adv, subject === 'english' ? stagesOf('english') : STAGES)
+      {stagesOf(subject).map((st, i) => {
+        const unlocked = isUnlocked(i, adv, stagesOf(subject))
         const got = adv.stars[st.id] ?? 0
         const t = SCENES[st.id] ?? SCENES.forest
         return (
