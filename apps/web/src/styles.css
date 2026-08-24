@@ -186,7 +186,7 @@ input[type="range"] { width: 100%; }
 .scene .layer.mid  { height: 52%; }
 .scene .layer.near { height: 44%; }
 .scene-glow { position: absolute; inset: 0; pointer-events: none; transition: opacity .3s; }
-.scene.locked { filter: saturate(.45) brightness(.7); }
+.scene.locked { filter: sepia(.4) saturate(.4) brightness(.72); }
 .scene.locked::after {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(13,27,42,.15), rgba(13,27,42,.55));
@@ -377,4 +377,21 @@ input[type="range"] { width: 100%; }
 }
 
 /* 场景渐变幻化：整体向羊皮纸暖调靠拢 */
-.adventure .scene { filter: sepia(.18) saturate(.92); }
+.adventure .scene { filter: sepia(.42) saturate(.72) hue-rotate(-8deg) brightness(1.04); }
+
+/* 手绘感：每屏边缘不规则墨迹描边 + 画纸暖底 */
+.scene::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse at 50% 45%, transparent 60%, rgba(74, 50, 20, .42) 100%);
+  mix-blend-mode: multiply;
+}
+.scene svg text { filter: drop-shadow(0 2px 3px rgba(60, 40, 15, .45)); }
+
+/* 关卡卡片羊皮纸化，与首页标签一致 */
+.node {
+  background: rgba(223, 196, 143, .92); border: 2px solid rgba(146, 104, 48, .55);
+  border-radius: 16px; color: #3a2a14;
+  box-shadow: 0 6px 18px rgba(60, 40, 15, .35), inset 0 0 24px rgba(146, 104, 48, .18);
+}
+.node small { color: #6b5232; }
+.node.locked { opacity: .75; }
