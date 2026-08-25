@@ -180,7 +180,9 @@ input[type="range"] { width: 100%; }
 .adventure {
   position: fixed; inset: 0; overflow-y: auto; scroll-behavior: smooth;
   background: #0d1b2a;
+  scroll-snap-type: y mandatory;   /* 整屏翻页：滚动结束自动对齐到屏边界 */
 }
+.adv-hero, .adv-foot { scroll-snap-align: start; }
 .adv-hero {
   min-height: 62vh; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 12px; color: #fff; padding: 24px;
@@ -192,18 +194,17 @@ input[type="range"] { width: 100%; }
 .scene {
   position: relative; overflow: hidden;
   display: flex; align-items: center;
-  /* 视口自适应：高度随浏览器动态计算（svh 适配移动端地址栏伸缩），并限制宽高比防止极端裁切 */
-  height: clamp(320px, 78svh, 100svh);
-  /* 超宽屏（如横屏桌面 >2.2:1）：收矮一点，图片改 contain 防裁掉关键画面 */
+  /* 一关一屏：恰好铺满当前视口（svh 随移动端地址栏伸缩自动重算），配合滚动吸附形成分屏感 */
+  height: 100svh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;   /* 快速滑动也逐屏停靠，不跳关 */
 }
 .scene-art { object-fit: cover; object-position: center 38%; }
 @media (min-aspect-ratio: 21/10) {
-  .scene { height: clamp(300px, 62svh, 78svh); }
   .scene-art { object-position: center 30%; }
 }
 /* 窄屏竖屏（如手机 <0.75:1）：加高一点保证画面存在感 */
 @media (max-aspect-ratio: 3/4) {
-  .scene { height: clamp(360px, 88svh, 100svh); }
   .scene-art { object-position: center center; }
 }
 .scene .layer {
