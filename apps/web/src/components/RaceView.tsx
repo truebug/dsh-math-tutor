@@ -68,6 +68,8 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
   const [flash, setFlash] = useState<'ok' | 'no' | null>(null)
   const [cheer, setCheer] = useState(0)  // 连击里程碑弹层计数
   const [lastWrong, setLastWrong] = useState<{ q: Question; given: number | string } | null>(null)
+  const [paceWarn, setPaceWarn] = useState<string | null>(null)   // 主动干预：连续秒错提醒
+  const fastWrongRef = useRef(0)
   const fxRef = useRef<HTMLCanvasElement>(null)
   const answersRef = useRef<Array<number | string | null>>(Array(questions.length).fill(null))
   const perQuestionRef = useRef<number[]>([])
@@ -143,6 +145,14 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
       setFlash('no')
       sfx.wrong()
       setLastWrong({ q, given: value })   // 答错：小精灵出即时提示
+      // 主动干预：连续 2 题"秒答错"（<2.5s），主动提醒慢一点（画像节奏信号实时化）
+      const spent = Date.now() - questionStartRef.current
+      fastWrongRef.current = spent < 2500 ? fastWrongRef.current + 1 : 0
+      if (fastWrongRef.current >= 2) {
+        setPaceWarn('这几题答得好快呀～读两遍题、想清楚再点，正确率会更高哦 💪')
+        fastWrongRef.current = 0
+        setTimeout(() => setPaceWarn(null), 6000)
+      }
     }
     setTimeout(() => setFlash(null), 350)
     battleScore(settings, nickname, correctRef.current, idx + 1, 0)  // 进度上报；交卷时由 App 带 usedMs 覆盖
@@ -235,7 +245,7 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
         question={lastWrong?.q ?? questions[idx]}
         wrongGiven={lastWrong?.given ?? null}
         grade={grade}
-        bubble={lastWrong ? quickHint(lastWrong.q) : null}
+        bubble={paceWarn ?? (lastWrong ? quickHint(lastWrong.q) : null)}
       />
     </div>
   )

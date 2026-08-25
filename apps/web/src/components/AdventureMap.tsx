@@ -2,6 +2,9 @@
 // 零资源实现：SVG 程序化山脊剪影 × 3 景深层，滚动时差速移动
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loadAdventure, consumeUnlock, recommendStage, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
+import { loadProfileData } from '../lib/profile'
+import { dominantAdvice } from '../lib/errorPatterns'
+import Sprite from './Sprite'
 import { sfx } from '../lib/sound'
 import TreasureMapBg from './TreasureMapBg'
 import ParticleField from './ParticleField'
@@ -292,6 +295,17 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   }
   const recommend = recommendStage(adv)
 
+  // 主动性：画像驱动"今日建议"气泡（打开地图时小精灵主动开口）
+  const todayAdvice = (() => {
+    const pd = loadProfileData()
+    const tip = dominantAdvice(pd.patterns)
+    const dailyCount = Object.keys(adv.daily).length
+    if (tip) return `今天开始之前：${tip}`
+    if (dailyCount > 0 && !dailyDone) return '今天还没打卡每日挑战哦，完成后有加分奖励！'
+    if (recommend) return `我看好你哦～${recommend.reason}`
+    return null
+  })()
+
   return (
     <div className="adventure" ref={scrollRef}>
       {/* 顶部信息栏（随卷轴滚动） */}
@@ -430,6 +444,9 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
       {showTop && (
         <button className="to-top" onClick={() => scrollToIdx(-1)} aria-label="回到顶部">↑</button>
       )}
+
+      {/* 主动性：小精灵画像驱动今日建议（无画像数据时不显示） */}
+      {todayAdvice && <Sprite grade={profile.grade} bubble={todayAdvice} />}
     </div>
   )
 }
