@@ -93,9 +93,11 @@ export default function OnboardingView({ onDone }: Props) {
             <button
               key={g}
               className={grade === g ? 'seg-btn active' : 'seg-btn'}
+              disabled={g !== 2}
               onClick={() => setGrade(g)}
+              title={g !== 2 ? '内容筹备中，敬请期待' : undefined}
             >
-              {g} 年级
+              {g} 年级{g !== 2 ? ' 🔒' : ''}
             </button>
           ))}
         </div>

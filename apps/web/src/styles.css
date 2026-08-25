@@ -17,6 +17,7 @@ h1 { font-size: 28px; margin: 0; text-align: center; }
   background: #f7fbff; font-size: 15px; cursor: pointer;
 }
 .seg-btn.active { border-color: #4a90e2; background: #e8f2ff; font-weight: 600; }
+.seg-btn:disabled { opacity: .45; cursor: not-allowed; background: #f4f6f8; }
 input[type="range"] { width: 100%; }
 .primary {
   background: #4a90e2; color: #fff; border: none; border-radius: 14px;
@@ -143,6 +144,63 @@ input[type="range"] { width: 100%; }
 .lb-pts { color: #b8860b; font-weight: 600; }
 .weekly-text { line-height: 1.8; color: #445; margin: 6px 0; white-space: pre-wrap; }
 .metric-line { font-size: 12px; color: #8a94a8; margin: 8px 0 0; }
+
+/* 智慧树快捷通道：Hero 中央树区热键 */
+.atlas-entry {
+  position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%);
+  width: 96px; height: 96px; border-radius: 50%; border: none; cursor: pointer;
+  background: transparent; font-size: 44px; z-index: 3;
+  filter: drop-shadow(0 0 14px rgba(255, 215, 106, .55));
+  animation: atlas-breath 3.2s ease-in-out infinite;
+  transition: transform .2s;
+}
+.atlas-entry:hover { transform: translate(-50%, -50%) scale(1.12); }
+@keyframes atlas-breath {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 215, 106, .4)); }
+  50% { filter: drop-shadow(0 0 22px rgba(255, 215, 106, .85)); }
+}
+@media (prefers-reduced-motion: reduce) { .atlas-entry { animation: none; } }
+
+/* 智慧树导航面板 */
+.atlas-mask {
+  position: fixed; inset: 0; z-index: 30; background: rgba(20, 14, 5, .55);
+  backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fade-in .2s ease;
+}
+.atlas-panel {
+  width: min(680px, 94vw); max-height: 84svh; overflow-y: auto;
+  background: linear-gradient(180deg, #f5e6c4, #e8d3a8);
+  border: 3px solid rgba(146, 104, 48, .6); border-radius: 20px;
+  padding: 20px 24px; color: #3a2a14;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5), inset 0 0 40px rgba(146, 104, 48, .12);
+}
+.atlas-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.atlas-head h2 { margin: 0; font-size: 20px; }
+.atlas-grades { display: flex; gap: 10px; margin-bottom: 14px; }
+.atlas-grade {
+  padding: 4px 14px; border-radius: 12px; font-size: 13px;
+  background: rgba(146, 104, 48, .12); color: #8a7450;
+}
+.atlas-grade.on { background: #ffd76a; color: #5d4a1a; font-weight: 700; }
+.atlas-subject h3 { margin: 14px 0 8px; font-size: 16px; }
+.atlas-stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.atlas-stage {
+  padding: 8px 10px; border-radius: 10px; border: 1.5px solid rgba(146, 104, 48, .4);
+  background: rgba(255, 250, 235, .8); cursor: pointer; text-align: left;
+  font-size: 13px; color: #3a2a14; display: flex; flex-direction: column; gap: 2px;
+  transition: transform .15s, box-shadow .15s;
+}
+.atlas-stage:not(.locked):hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(90, 60, 20, .25); }
+.atlas-stage.locked { opacity: .5; cursor: not-allowed; }
+.atlas-stage.full { border-color: #b8860b; background: rgba(255, 215, 106, .3); }
+.atlas-stage small { color: #b8860b; }
+.atlas-subject.fog {
+  margin-top: 18px; padding: 14px; border-radius: 14px;
+  background: repeating-linear-gradient(135deg, rgba(146,104,48,.08) 0 12px, rgba(146,104,48,.04) 12px 24px);
+  border: 2px dashed rgba(146, 104, 48, .4);
+}
+.atlas-subject.fog h3 { margin-top: 0; opacity: .7; }
+.atlas-fog-note { margin: 0; font-size: 13px; color: #8a7450; }
 .battle-board { background: #f4fbf6; border-radius: 14px; padding: 12px 14px; }
 .battle-board h3 { margin: 0 0 8px; font-size: 15px; }
 .battle-row { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 4px; border-radius: 8px; }

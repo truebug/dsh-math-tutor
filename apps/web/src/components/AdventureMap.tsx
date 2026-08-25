@@ -190,6 +190,7 @@ function StageArt({ stageId }: { stageId: string }) {
 
 export default function AdventureMap({ profile, onStartStage, onFreePractice }: Props) {
   const [subject, setSub] = useState(currentSubject())
+  const [atlasOpen, setAtlasOpen] = useState(false)   // 智慧树快捷导航面板
   const adv = loadAdventure()
   const stars = totalStars(adv)
   const pet = petStage(stars)
@@ -322,6 +323,10 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
       <header className="adv-hero parchment">
         <TreasureMapBg />
         <ParticleField />
+        {/* 智慧树快捷通道：点击藏宝图中央树区打开全关卡导航 */}
+        <button className="atlas-entry" onClick={() => setAtlasOpen(true)} aria-label="智慧树·全关卡导航">
+          🌳
+        </button>
         <h1>🗺️ 寻宝探险</h1>
         <div className="pet-row">
           <span className="pet">{pet.emoji}</span>
@@ -458,6 +463,56 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
 
       {/* 主动性：小精灵画像驱动今日建议（无画像数据时不显示） */}
       {todayAdvice && <Sprite grade={profile.grade} bubble={todayAdvice} />}
+
+      {/* 智慧树·全关卡导航面板 */}
+      {atlasOpen && (
+        <div className="atlas-mask" onClick={() => setAtlasOpen(false)}>
+          <div className="atlas-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="atlas-head">
+              <h2>🌳 智慧树 · 直达关卡</h2>
+              <button className="ghost" onClick={() => setAtlasOpen(false)}>关闭</button>
+            </div>
+            {/* 年级行：仅二年级有内容，其余灰色 */}
+            <div className="atlas-grades">
+              {([2, 3, 4, 5] as const).map((g) => (
+                <span key={g} className={g === 2 ? 'atlas-grade on' : 'atlas-grade'}>{g}年级{g !== 2 && ' 🔒'}</span>
+              ))}
+            </div>
+            {SUBJECTS.map((sub) => (
+              <div key={sub.id} className="atlas-subject">
+                <h3>{sub.emoji} {sub.name}</h3>
+                <div className="atlas-stages">
+                  {stagesOf(sub.id).map((st, j) => {
+                    const locked = !isUnlocked(j, adv, stagesOf(sub.id))
+                    const got = adv.stars[st.id] ?? 0
+                    return (
+                      <button
+                        key={st.id}
+                        className={`atlas-stage${locked ? ' locked' : ''}${got >= 3 ? ' full' : ''}`}
+                        disabled={locked}
+                        title={locked ? '先通关前一站解锁' : st.desc}
+                        onClick={() => {
+                          setAtlasOpen(false)
+                          setSubject(sub.id); setSub(sub.id)
+                          requestAnimationFrame(() => scrollToIdx(j))
+                        }}
+                      >
+                        {locked ? '🔒' : st.emoji} {st.name}
+                        {got > 0 && <small>{'⭐'.repeat(got)}</small>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            {/* 迷雾占位：未来学科 */}
+            <div className="atlas-subject fog">
+              <h3>🌫️ 更多大陆</h3>
+              <p className="atlas-fog-note">自然 · 历史 · 地理 · 生物 · 美术 · 音乐 —— 迷雾之后，敬请期待</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
