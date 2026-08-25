@@ -1,5 +1,6 @@
 // 辅助小精灵：与孩子养的宠物合体——宠物即学习伙伴，随星星进化、越来越会教
 import { useState } from 'react'
+import { getFamilyId } from '../lib/sync'
 import { petStage, totalStars } from '../lib/adventure'
 import type { Question } from '@dsh-math-tutor/math-generator/core'
 
@@ -32,6 +33,7 @@ export default function Sprite({ question, wrongGiven, grade, bubble }: Props) {
     question: question!.text,
     wrongAnswer: String(wrongGiven ?? '未作答'),
     correctAnswer: String(question!.answerText ?? question!.answer),
+    familyId: getFamilyId() ?? undefined,
   })
 
   // SSE 优先（逐字呈现），失败回退一次性 JSON

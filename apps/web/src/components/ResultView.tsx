@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { encodeRaceCode } from '../lib/raceCode'
 import { fetchReview } from '../api/review'
 import { saveReview, profileSummary } from '../lib/profile'
-import { syncEnabled } from '../lib/sync'
+import { syncEnabled, getFamilyId } from '../lib/sync'
 import { starsFor, totalStars, petStage } from '../lib/adventure'
 import { sfx } from '../lib/sound'
 import { useEffect } from 'react'
@@ -84,6 +84,7 @@ export default function ResultView({ record, profile, scoreResult, onRetry, onHo
         grade: profile.grade,
         level: record.settings.level,
         subject: record.settings.subject ?? 'math',
+        familyId: getFamilyId() ?? undefined,
         total: record.total,
         correct: record.correct,
         usedSec: Math.round(record.usedMs / 1000),

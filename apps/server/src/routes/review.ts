@@ -1,5 +1,6 @@
 import { chat } from '../services/llm.ts'
 import type { ServerContext } from '../host.ts'
+import { buildLearnerContext } from '../services/learnerCtx.ts'
 
 // 匿名错题摘要（不含昵称等身份信息；grade 用于措辞适龄化）
 export interface ReviewRequest {
@@ -13,6 +14,7 @@ export interface ReviewRequest {
   plainWrong: number      // 非进退位题错误数
   wrongExamples: string[] // 如 "48 + 37 = 正确85，孩子答 75"（最多 5 条）
   history?: string        // 开启云端同步后携带的历史画像摘要（不含身份信息）
+  familyId?: string       // P1：传 familyId 时服务端注入画像上下文（agent 记得孩子）
 }
 
 const SYSTEM_MATH = `你是一位温柔的小学数学老师，正在给{grade}年级的孩子做口算练习点评。
@@ -50,6 +52,8 @@ const SUBJECT_DESC = {
 export async function buildReview(req: ReviewRequest): Promise<string> {
   const subject = req.subject ?? 'math'
   const acc = Math.round((req.correct / Math.max(req.total, 1)) * 100)
+  // 画像注入优先级：服务端画像（familyId 查云端）> 前端捎带 history
+  const context = (req.familyId ? buildLearnerContext(req.familyId) : null) ?? req.history
   const user = [
     `练习情况：${SUBJECT_DESC[subject]}，共${req.total}题，答对${req.correct}题（${acc}%），用时${req.usedSec}秒。`,
     subject === 'math'
@@ -57,7 +61,7 @@ export async function buildReview(req: ReviewRequest): Promise<string> {
       : req.wrongExamples.length > 0
         ? `错题示例：${req.wrongExamples.join('；')}`
         : '全部答对。',
-    req.history ? `孩子近期情况：${req.history}` : '',
+    context ? `孩子近期情况：${context}` : '',
   ].join('\n')
   return chat([
     { role: 'system', content: SYSTEMS[subject].replace('{grade}', String(req.grade)) },

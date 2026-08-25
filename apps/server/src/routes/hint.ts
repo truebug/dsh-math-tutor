@@ -1,11 +1,13 @@
 // 小精灵讲解：答错后点击触发，LLM 生成简短儿童友好讲解（不携带身份信息）
 import { chat, chatStream } from '../services/llm.ts'
+import { buildLearnerContext } from '../services/learnerCtx.ts'
 
 export interface HintRequest {
   grade: 2 | 3 | 4 | 5
   question: string        // 如 "48 + 37 =" 或 "大写 G 的小写是哪个？"
   wrongAnswer: string     // 孩子给的答案
   correctAnswer: string
+  familyId?: string       // P1：画像注入（agent 记得孩子的易错类型）
 }
 
 const SYSTEM = `你是一位温柔的小学{grade}年级助教小精灵。孩子答错了一道题。
@@ -15,15 +17,23 @@ const SYSTEM = `你是一位温柔的小学{grade}年级助教小精灵。孩子
 export async function buildHint(req: HintRequest): Promise<string> {
   return chat([
     { role: 'system', content: SYSTEM.replace('{grade}', String(req.grade)) },
-    { role: 'user', content: `题目：${req.question}\n孩子答：${req.wrongAnswer}\n正确答案：${req.correctAnswer}` },
+    { role: 'user', content: hintUser(req) },
   ], 300)
 }
 
 export function streamHint(req: HintRequest): AsyncGenerator<string> {
   return chatStream([
     { role: 'system', content: SYSTEM.replace('{grade}', String(req.grade)) },
-    { role: 'user', content: `题目：${req.question}\n孩子答：${req.wrongAnswer}\n正确答案：${req.correctAnswer}` },
+    { role: 'user', content: hintUser(req) },
   ], 300)
+}
+
+function hintUser(req: HintRequest): string {
+  const ctx = req.familyId ? buildLearnerContext(req.familyId) : null
+  return [
+    `题目：${req.question}\n孩子答：${req.wrongAnswer}\n正确答案：${req.correctAnswer}`,
+    ctx ? `孩子近期情况：${ctx}（讲解时照顾其薄弱点）` : '',
+  ].join('\n')
 }
 
 // ===== DSH 插件壳 =====

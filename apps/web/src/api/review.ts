@@ -2,6 +2,7 @@ export interface ReviewRequest {
   grade: 2 | 3 | 4 | 5
   level: 1 | 2 | 3
   subject?: 'math' | 'chinese' | 'english'
+  familyId?: string        // P1：开启同步时服务端注入画像上下文
   total: number
   correct: number
   usedSec: number

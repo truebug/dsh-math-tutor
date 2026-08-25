@@ -8,6 +8,7 @@ export interface RouteHandler {
 
 export interface ServerContext {
   routes: { register(pattern: string, method: string, handler: RouteHandler): void }
+  services: Record<string, unknown>   // 插件间共享服务（P1 画像服务等经此注入）
   logger: { info(msg: string): void; warn(msg: string): void }
 }
 
@@ -24,11 +25,12 @@ export function createHost(): { ctx: ServerContext; dispatch: (req: IncomingMess
   const ctx: ServerContext = {
     routes: {
       register(pattern, method, handler) {
-        // "POST /api/score/submit" 或 "GET /api/score/best*" 形式
+        // pattern 为路径（尾部 * 为通配符），如 "/api/hint" 或 "/api/profile/*"
         const re = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*') + '$')
         routes.push({ pattern: re, method, handler })
       },
     },
+    services: {},
     logger: console,
   }
   const dispatch = async (req: IncomingMessage, res: ServerResponse) => {
