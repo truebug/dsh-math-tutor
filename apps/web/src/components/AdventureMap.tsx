@@ -290,9 +290,18 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   const stageSettings = (i: number): RaceSettings => {
     const st = stagesOf(subject)[i]
     const tune = adaptiveStageTune(st.id, st.count, st.durationSec)
+    // 年级驱动难度（数学加减法关）：三年级起上限升至 1000，四年级起启用小数；乘除法关与语英选择题不受影响
+    const isAddSub = (st.subject ?? 'math') === 'math' && !st.kind && st.ops.every((o) => o === 'add' || o === 'sub')
+    const gradeBoost = isAddSub
+      ? {
+          max: profile.grade >= 3 ? 1000 : st.max,
+          domain: (profile.grade >= 4 ? 'dec' : st.domain) as 'int' | 'dec' | undefined,
+        }
+      : {}
     return {
       mode: 'G2A', count: tune.count, durationSec: tune.durationSec, level: st.level,
       ops: st.ops, max: st.max, domain: st.domain, kind: st.kind,
+      ...gradeBoost,
       subject: st.subject ?? 'math',
       adaptiveReason: tune.reason || undefined,
       seed: Math.floor(Math.random() * 1e9), stageId: st.id,

@@ -2,6 +2,7 @@
 import type { Level, Op } from '@dsh-math-tutor/math-generator/core'
 import { pushProfile } from './sync'
 import { loadProfileData } from './profile'
+import { loadProfile } from './storage'
 
 export interface StageDef {
   id: string
@@ -218,7 +219,9 @@ export function dailySettings() {
   if (subject === 'english') {
     return { count: 12, durationSec: 120, level: 2 as Level, ops: [] as Op[], max: 0, kind: 'vocab' as const, subject: 'english' as const, seed }
   }
-  return { count: 30, durationSec: 180, level: 2 as Level, ops: ['add', 'sub'] as Op[], max: 100, subject: 'math' as const, seed }
+  // 年级驱动难度：三年级起上限升至 1000，四年级起启用小数（与 stageSettings 一致）
+  const grade = loadProfile()?.grade ?? 2
+  return { count: 30, durationSec: 180, level: 2 as Level, ops: ['add', 'sub'] as Op[], max: grade >= 3 ? 1000 : 100, domain: grade >= 4 ? ('dec' as const) : undefined, subject: 'math' as const, seed }
 }
 
 // ===== 7b-2 知识点级推荐：找「已获得星星但未满星」的最简单关，其次第一个未解锁关 =====
