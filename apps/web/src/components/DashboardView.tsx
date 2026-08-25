@@ -3,6 +3,7 @@ import type { Question } from '@dsh-math-tutor/math-generator/core'
 import { loadSessions } from '../lib/storage'
 import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
+import { metricRates } from '../lib/profile'
 import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 import { STAGES, stagesOf } from '../lib/adventure'
 import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
@@ -175,6 +176,7 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
       {(() => {
         const pd = loadProfileData()
         const total = pd.patterns.sign + pd.patterns.carry + pd.patterns.calc
+        const { recRate, hitRate } = metricRates()
         if (total === 0) return null
         const advice = dominantAdvice(pd.patterns)
         return (
@@ -190,6 +192,13 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
               ))}
             </div>
             {advice && <p className="adaptive-hint">💡 {advice}</p>}
+            {(recRate !== null || hitRate !== null) && (
+              <p className="metric-line">
+                {recRate !== null && `🧭 推荐采纳率 ${Math.round(recRate * 100)}%（${pd.metrics!.recAdopted}/${pd.metrics!.recShown}）`}
+                {recRate !== null && hitRate !== null && ' · '}
+                {hitRate !== null && `🎯 反哺命中率 ${Math.round(hitRate * 100)}%（${pd.metrics!.adaptHit}/${pd.metrics!.adaptShown}）`}
+              </p>
+            )}
           </div>
         )
       })()}

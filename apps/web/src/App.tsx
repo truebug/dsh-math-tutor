@@ -16,6 +16,7 @@ import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
 import { battleScore } from './api/battle'
 import { recordStars, starsFor } from './lib/adventure'
 import { submitScore, type ScoreResult } from './lib/score'
+import { bumpMetric } from './lib/profile'
 import './styles.css'
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
       const { ratio, applied, reason } = adaptiveCarryRatio(LEVELS[s.level].carryRatio)
       if (applied) s = { ...s, carryRatio: ratio, adaptiveReason: reason }
     }
+    if (s.adaptiveReason) bumpMetric('adaptShown')   // 画像反哺生效埋点
     setSettings(s)
     setRaceKey((k) => k + 1)
     setView('race')
@@ -77,6 +79,8 @@ export default function App() {
       finishedBy: r.finishedBy,
     }
     saveSession(rec)
+    // 反哺命中：自适应生效且本次正确率达标（≥85%）
+    if (settings.adaptiveReason && graded.correct / Math.max(graded.total, 1) >= 0.85) bumpMetric('adaptHit')
     accumulateSession(r.questions, graded.wrongIndexes, r.answers)  // 画像积累（确定性统计）
     battleScore(settings, profile.nickname, graded.correct, graded.answered, r.usedMs)  // 交卷上报
     // 积分上报：仅开启云端同步时参与（异步不阻塞结算页展示）

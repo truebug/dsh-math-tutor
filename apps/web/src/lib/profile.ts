@@ -23,6 +23,12 @@ export interface ProfileData {
   patterns: PatternStat   // 错因聚类：看错符号/进退位失误/计算错误
   sessions: number
   reviews: Array<{ date: string; sessionId: string; text: string }>  // AI 点评历史
+  metrics?: {
+    recShown: number      // 推荐曝光次数（推荐按钮展示）
+    recAdopted: number    // 推荐采纳次数（点击推荐进入关卡）
+    adaptShown: number    // 画像反哺生效次数（题量/进退位被自适应调整）
+    adaptHit: number      // 反哺后当次成绩达标次数（正确率 ≥85%）
+  }
 }
 
 const KEY = 'dsh-math-tutor:profile-data'
@@ -32,7 +38,7 @@ export function loadProfileData(): ProfileData {
     const raw = localStorage.getItem(KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* fallthrough */ }
-  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, patterns: { sign: 0, carry: 0, calc: 0, word: 0 }, sessions: 0, reviews: [] }
+  return { carryWrong: 0, carryTotal: 0, plainWrong: 0, plainTotal: 0, patterns: { sign: 0, carry: 0, calc: 0, word: 0 }, sessions: 0, reviews: [], metrics: { recShown: 0, recAdopted: 0, adaptShown: 0, adaptHit: 0 } }
 }
 
 export function saveProfileData(p: ProfileData): void {
@@ -47,7 +53,8 @@ export function accumulateSession(
   answers: Array<number | string | null>,
 ): ProfileData {
   const p = loadProfileData()
-  p.patterns ??= { sign: 0, carry: 0, calc: 0, word: 0 }
+      p.patterns ??= { sign: 0, carry: 0, calc: 0, word: 0 }
+      p.metrics ??= { recShown: 0, recAdopted: 0, adaptShown: 0, adaptHit: 0 }
   const wrong = new Set(wrongIndexes)
   questions.forEach((q, i) => {
     if (q.carry) {
@@ -124,4 +131,21 @@ export function adaptiveStageTune(stageId: string, baseCount: number, baseSec: n
     }
   }
   return { count: baseCount, durationSec: baseSec, reason: '' }
+}
+
+// ===== 推荐采纳率 / 反哺命中率（P3 指标落库，确定性本地统计） =====
+export function bumpMetric(key: 'recShown' | 'recAdopted' | 'adaptShown' | 'adaptHit'): void {
+  const p = loadProfileData()
+  p.metrics ??= { recShown: 0, recAdopted: 0, adaptShown: 0, adaptHit: 0 }
+  p.metrics[key] += 1
+  saveProfileData(p)
+}
+
+export function metricRates(): { recRate: number | null; hitRate: number | null } {
+  const m = loadProfileData().metrics
+  if (!m) return { recRate: null, hitRate: null }
+  return {
+    recRate: m.recShown > 0 ? m.recAdopted / m.recShown : null,
+    hitRate: m.adaptShown > 0 ? m.adaptHit / m.adaptShown : null,
+  }
 }

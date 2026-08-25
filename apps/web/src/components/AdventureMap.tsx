@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loadAdventure, consumeUnlock, recommendStage, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import { loadProfileData } from '../lib/profile'
 import { adaptiveStageTune } from '../lib/profile'
+import { bumpMetric } from '../lib/profile'
 import { dominantAdvice } from '../lib/errorPatterns'
 import Sprite from './Sprite'
 import { sfx } from '../lib/sound'
@@ -298,6 +299,12 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   }
   const recommend = recommendStage(adv)
 
+  // 指标：推荐曝光（每次出现推荐卡计一次）
+  useEffect(() => {
+    if (recommend) bumpMetric('recShown')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommend?.stage.id])
+
   // 主动性：画像驱动"今日建议"气泡（打开地图时小精灵主动开口）
   const todayAdvice = (() => {
     const pd = loadProfileData()
@@ -333,6 +340,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
         </button>
         {recommend && (
           <button className="recommend" onClick={() => {
+            bumpMetric('recAdopted')
             const stages = [...STAGES, ...stagesOf('english'), ...stagesOf('chinese')]
             const idx = stages.findIndex((x) => x.id === recommend.stage.id)
             if (idx >= 0) {
