@@ -25,3 +25,43 @@ export function streamHint(req: HintRequest): AsyncGenerator<string> {
     { role: 'user', content: `题目：${req.question}\n孩子答：${req.wrongAnswer}\n正确答案：${req.correctAnswer}` },
   ], 300)
 }
+
+// ===== DSH 插件壳 =====
+import type { ServerContext } from '../host.ts'
+export const name = 'hint'
+export function apply(ctx: ServerContext) {
+  ctx.routes.register('/api/hint/stream', 'POST', async (_req, res, _url, body) => {
+    const b = body as HintRequest
+    if (!b?.question || b.correctAnswer === undefined) {
+      res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    // SSE：x-accel-buffering: no 让 nginx 不缓冲，逐字推送
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+    })
+    try {
+      for await (const delta of streamHint(b)) {
+        res.write(`data: ${JSON.stringify({ delta })}\n\n`)
+      }
+      res.write('data: [DONE]\n\n')
+    } catch (e) {
+      res.write(`data: ${JSON.stringify({ error: e instanceof Error ? e.message : 'llm_error' })}\n\n`)
+    }
+    res.end()
+    return true
+  })
+  ctx.routes.register('/api/hint', 'POST', async (_req, res, _url, body) => {
+    const b = body as HintRequest
+    if (!b?.question || b.correctAnswer === undefined) {
+      res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    const text = await buildHint(b)
+    res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text }))
+    return true
+  })
+}

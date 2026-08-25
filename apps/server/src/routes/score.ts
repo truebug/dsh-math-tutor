@@ -159,3 +159,30 @@ export function getServerBest(mode: string, level: number): number {
   const store = load()
   return store.serverBest[modeKey(mode, level)] ?? 0
 }
+
+// ===== DSH 插件壳 =====
+import type { ServerContext } from '../host.ts'
+export const name = 'score'
+export function apply(ctx: ServerContext) {
+  const json = (res: import('node:http').ServerResponse, status: number, b: unknown) => {
+    res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(b))
+  }
+  ctx.routes.register('/api/score/submit', 'POST', async (_req, res, _url, body) => {
+    const b = body as SubmitScoreRequest
+    if (!b?.familyId || !b?.nickname || typeof b.total !== 'number' || typeof b.correct !== 'number') {
+      json(res, 400, { error: 'bad_request' }); return true
+    }
+    json(res, 200, submitScore(b))
+    return true
+  })
+  ctx.routes.register('/api/score/leaderboard', 'GET', async (_req, res, url) => {
+    json(res, 200, getLeaderboard(url.searchParams.get('familyId') ?? ''))
+    return true
+  })
+  ctx.routes.register('/api/score/best', 'GET', async (_req, res, url) => {
+    const mode = url.searchParams.get('mode') ?? 'G2A'
+    const level = Number(url.searchParams.get('level') ?? 2)
+    json(res, 200, { serverBest: getServerBest(mode, level) })
+    return true
+  })
+}

@@ -1,4 +1,5 @@
 import { chat } from '../services/llm.ts'
+import type { ServerContext } from '../host.ts'
 
 // 匿名错题摘要（不含昵称等身份信息；grade 用于措辞适龄化）
 export interface ReviewRequest {
@@ -62,4 +63,19 @@ export async function buildReview(req: ReviewRequest): Promise<string> {
     { role: 'system', content: SYSTEMS[subject].replace('{grade}', String(req.grade)) },
     { role: 'user', content: user },
   ])
+}
+
+// ===== DSH 插件壳：注册 HTTP 路由（行为与重构前一致） =====
+export const name = 'review'
+export function apply(ctx: ServerContext) {
+  ctx.routes.register('/api/review', 'POST', async (_req, res, _url, body) => {
+    const b = body as ReviewRequest
+    if (!b || typeof b.total !== 'number' || !Array.isArray(b.wrongExamples)) {
+      res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    const text = await buildReview(b)
+    res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text }))
+    return true
+  })
 }

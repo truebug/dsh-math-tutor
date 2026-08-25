@@ -1,148 +1,31 @@
+// DSH 插件宿主：HTTP 服务仅作分发器，业务能力全部以插件形式加载
+// P0 纯重构：对外 API 行为与重构前完全一致
 import { createServer } from 'node:http'
 import { config } from './config.ts'
-import { buildReview, type ReviewRequest } from './routes/review.ts'
-import { buildHint, streamHint, type HintRequest } from './routes/hint.ts'
-import { getRoom, joinRoom, reportScore } from './routes/battle.ts'
-import { loadProfile, saveProfile, type ProfileDoc } from './routes/profile.ts'
-import { submitScore, getLeaderboard, getServerBest, type SubmitScoreRequest } from './routes/score.ts'
+import { createHost, loadPlugins, type Plugin } from './host.ts'
+import * as review from './routes/review.ts'
+import * as hint from './routes/hint.ts'
+import * as battle from './routes/battle.ts'
+import * as score from './routes/score.ts'
+import * as profile from './routes/profile.ts'
 
-const FAMILY_RE = /^[a-z0-9-]{6,32}$/
+const { ctx, dispatch } = createHost()
 
-function json(res: import('node:http').ServerResponse, status: number, body: unknown) {
-  res.writeHead(status, { 'content-type': 'application/json' })
-  res.end(JSON.stringify(body))
-}
+// 健康检查（基础设施，非业务插件）
+ctx.routes.register('/api/health', 'GET', async (_req, res) => {
+  res.writeHead(200, { 'content-type': 'application/json' })
+  res.end(JSON.stringify({ ok: true }))
+  return true
+})
 
-async function readBody(req: import('node:http').IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = []
-  for await (const c of req) chunks.push(c as Buffer)
-  const raw = Buffer.concat(chunks).toString('utf8')
-  return raw ? JSON.parse(raw) : {}
-}
+loadPlugins(ctx, [review, hint, battle, score, profile] as Plugin[])
 
 const server = createServer(async (req, res) => {
   try {
-    if (req.method === 'GET' && req.url === '/api/health') {
-      json(res, 200, { ok: true })
-      return
-    }
-    if (req.method === 'POST' && req.url === '/api/review') {
-      const body = (await readBody(req)) as ReviewRequest
-      if (!body || typeof body.total !== 'number' || !Array.isArray(body.wrongExamples)) {
-        json(res, 400, { error: 'bad_request' })
-        return
-      }
-      const text = await buildReview(body)
-      json(res, 200, { text })
-      return
-    }
-    if (req.method === 'POST' && req.url === '/api/hint/stream') {
-      const body = (await readBody(req)) as HintRequest
-      if (!body?.question || body.correctAnswer === undefined) {
-        json(res, 400, { error: 'bad_request' })
-        return
-      }
-      // SSE：x-accel-buffering: no 让 nginx 不缓冲，逐字推送
-      res.writeHead(200, {
-        'content-type': 'text/event-stream; charset=utf-8',
-        'cache-control': 'no-cache',
-        connection: 'keep-alive',
-        'x-accel-buffering': 'no',
-      })
-      try {
-        for await (const delta of streamHint(body)) {
-          res.write(`data: ${JSON.stringify({ delta })}\n\n`)
-        }
-        res.write('data: [DONE]\n\n')
-      } catch (e) {
-        res.write(`data: ${JSON.stringify({ error: e instanceof Error ? e.message : 'llm_error' })}\n\n`)
-      }
-      res.end()
-      return
-    }
-    if (req.method === 'POST' && req.url === '/api/hint') {
-      const body = (await readBody(req)) as HintRequest
-      if (!body?.question || body.correctAnswer === undefined) {
-        json(res, 400, { error: 'bad_request' })
-        return
-      }
-      const text = await buildHint(body)
-      json(res, 200, { text })
-      return
-    }
-    if (req.url?.startsWith('/api/battle/')) {
-      const parts = req.url.split('/')
-      const action = parts[3]
-      const code = decodeURIComponent(parts[4] ?? '')
-      if (req.method === 'POST' && action === 'join') {
-        const { nickname } = (await readBody(req)) as { nickname?: string }
-        if (!nickname) { json(res, 400, { error: 'nickname_required' }); return }
-        json(res, 200, joinRoom(code, nickname.slice(0, 12)))
-        return
-      }
-      if (req.method === 'POST' && action === 'score') {
-        const b = (await readBody(req)) as { nickname?: string; correct?: number; answered?: number; usedMs?: number }
-        if (!b.nickname || b.correct === undefined || b.answered === undefined || b.usedMs === undefined) {
-          json(res, 400, { error: 'bad_request' }); return
-        }
-        const room = reportScore(code, b.nickname, b.correct, b.answered, b.usedMs)
-        room ? json(res, 200, room) : json(res, 404, { error: 'not_in_room' })
-        return
-      }
-      if (req.method === 'GET' && action === 'state') {
-        const room = getRoom(code)
-        room ? json(res, 200, room) : json(res, 404, { error: 'no_room' })
-        return
-      }
-    }
-    if (req.method === 'POST' && req.url === '/api/score/submit') {
-      const body = (await readBody(req)) as SubmitScoreRequest
-      if (!body?.familyId || !body?.nickname || typeof body.total !== 'number' || typeof body.correct !== 'number') {
-        json(res, 400, { error: 'bad_request' })
-        return
-      }
-      json(res, 200, submitScore(body))
-      return
-    }
-    if (req.method === 'GET' && req.url?.startsWith('/api/score/leaderboard')) {
-      const familyId = new URL(req.url, 'http://x').searchParams.get('familyId') ?? ''
-      json(res, 200, getLeaderboard(familyId))
-      return
-    }
-    if (req.method === 'GET' && req.url?.startsWith('/api/score/best')) {
-      const u = new URL(req.url, 'http://x')
-      const mode = u.searchParams.get('mode') ?? 'G2A'
-      const level = Number(u.searchParams.get('level') ?? 2)
-      json(res, 200, { serverBest: getServerBest(mode, level) })
-      return
-    }
-    if (req.url?.startsWith('/api/profile/')) {
-      const familyId = decodeURIComponent(req.url.split('/')[3] ?? '')
-      if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return }
-      if (req.method === 'GET') {
-        const doc = loadProfile(familyId)
-        doc ? json(res, 200, doc) : json(res, 404, { error: 'not_found' })
-        return
-      }
-      if (req.method === 'PUT') {
-        const doc = (await readBody(req)) as ProfileDoc
-        if (!doc?.consent) { json(res, 403, { error: 'consent_required' }); return }
-        // 只接受白名单字段，防止任意写入
-        saveProfile(familyId, {
-          version: 1, consent: true,
-          profile: doc.profile ?? null,
-          profileData: doc.profileData ?? null,
-          adventure: doc.adventure ?? null,
-          sessions: Array.isArray(doc.sessions) ? doc.sessions.slice(0, 200) : [],
-          updatedAt: '',
-        })
-        json(res, 200, { ok: true })
-        return
-      }
-    }
-    json(res, 404, { error: 'not_found' })
+    await dispatch(req, res)
   } catch (err) {
-    json(res, 500, { error: err instanceof Error ? err.message : 'internal_error' })
+    res.writeHead(500, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'internal_error' }))
   }
 })
 
