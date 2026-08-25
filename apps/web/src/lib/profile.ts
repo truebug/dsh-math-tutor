@@ -4,6 +4,16 @@
 import { classifyError, type PatternStat } from './errorPatterns'
 import type { Question } from '@dsh-math-tutor/math-generator/core'
 import { pushProfile } from './sync'
+import type { SessionRecord } from './types'
+
+// 直接读 sessions 键，避免与 storage.ts 循环依赖（storage → sync → profile）
+function readSessions(): SessionRecord[] {
+  try {
+    return JSON.parse(localStorage.getItem('dsh-math-tutor:sessions') ?? '[]')
+  } catch {
+    return []
+  }
+}
 
 export interface ProfileData {
   carryWrong: number      // 进位/退位题累计错误
@@ -89,4 +99,29 @@ export function adaptiveCarryRatio(base: number): { ratio: number; applied: bool
     return { ratio, applied: true, reason: '进退位已熟练掌握，适当增加基础题保持手感' }
   }
   return { ratio: base, applied: false, reason: '' }
+}
+
+// 画像反哺关卡参数（P2）：按该关最近成绩微调题量与限时
+// 连续高正确率 → 加量提速（吃不饱）；正确率低 → 减量减压（跟不上）
+export function adaptiveStageTune(stageId: string, baseCount: number, baseSec: number): { count: number; durationSec: number; reason: string } {
+  const sessions = readSessions().filter((s) => s.settings.stageId === stageId && s.answered > 0)
+  if (sessions.length < 2) return { count: baseCount, durationSec: baseSec, reason: '' }
+  const recent = sessions.slice(0, 2)  // 最近两次（sessions 按时间倒序存）
+  const accs = recent.map((s) => s.correct / Math.max(s.total, 1))
+  const avgAcc = accs.reduce((a, b) => a + b, 0) / accs.length
+  if (avgAcc >= 0.95 && baseCount < 60) {
+    return {
+      count: Math.min(60, Math.round(baseCount * 1.25)),
+      durationSec: baseSec,
+      reason: '这关最近表现很棒，题量+25% 挑战一下',
+    }
+  }
+  if (avgAcc < 0.7 && baseCount > 10) {
+    return {
+      count: Math.max(10, Math.round(baseCount * 0.8)),
+      durationSec: baseSec,
+      reason: '这关最近有点吃力，先减量稳扎稳打',
+    }
+  }
+  return { count: baseCount, durationSec: baseSec, reason: '' }
 }

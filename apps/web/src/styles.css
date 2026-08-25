@@ -141,6 +141,7 @@ input[type="range"] { width: 100%; }
 .lb-rank { width: 34px; text-align: center; }
 .lb-name { flex: 1; color: #445; }
 .lb-pts { color: #b8860b; font-weight: 600; }
+.weekly-text { line-height: 1.8; color: #445; margin: 6px 0; white-space: pre-wrap; }
 .battle-board { background: #f4fbf6; border-radius: 14px; padding: 12px 14px; }
 .battle-board h3 { margin: 0 0 8px; font-size: 15px; }
 .battle-row { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 4px; border-radius: 8px; }

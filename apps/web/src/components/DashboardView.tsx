@@ -7,6 +7,45 @@ import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 import { STAGES, stagesOf } from '../lib/adventure'
 import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
 import { useEffect } from 'react'
+import { getFamilyId } from '../lib/sync'
+
+// 家长周报：LLM 基于一周画像生成，可语音朗读
+function WeeklyReport() {
+  const [text, setText] = useState<string | null>(null)
+  const [state, setState] = useState<'idle' | 'loading' | 'error' | 'empty'>('idle')
+  const ask = async () => {
+    setState('loading')
+    try {
+      const res = await fetch(`/api/weekly-report?familyId=${encodeURIComponent(getFamilyId() ?? '')}`)
+      if (res.status === 404) { setState('empty'); return }
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setText(data.text)
+      setState('idle')
+    } catch { setState('error') }
+  }
+  const speak = () => {
+    if (!text || !('speechSynthesis' in window)) return
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.lang = 'zh-CN'; utt.rate = 0.9
+    window.speechSynthesis.cancel(); window.speechSynthesis.speak(utt)
+  }
+  return (
+    <div className="pattern-card">
+      <h3 className="chart-title">📮 本周成长简报（给家长）</h3>
+      {text ? (
+        <>
+          <p className="weekly-text">{text}</p>
+          <button className="speak-btn" title="朗读简报" onClick={speak}>🔊</button>
+        </>
+      ) : (
+        <button className="primary" onClick={ask} disabled={state === 'loading'}>
+          {state === 'loading' ? '正在生成…' : state === 'error' ? '生成失败，再试一次' : state === 'empty' ? '本周还没有练习记录' : '✨ 生成本周简报'}
+        </button>
+      )}
+    </div>
+  )
+}
 
 const ALL_STAGES = [...STAGES, ...stagesOf('chinese'), ...stagesOf('english')]
 
@@ -156,6 +195,8 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
       })()}
 
       <Heatmap onRetry={onRetryMistakes} />
+
+      {sync && <WeeklyReport />}
 
       {sync && board && board.entries.length > 0 && (
         <div className="pattern-card">

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loadAdventure, consumeUnlock, recommendStage, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import { loadProfileData } from '../lib/profile'
+import { adaptiveStageTune } from '../lib/profile'
 import { dominantAdvice } from '../lib/errorPatterns'
 import Sprite from './Sprite'
 import { sfx } from '../lib/sound'
@@ -286,10 +287,12 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
 
   const stageSettings = (i: number): RaceSettings => {
     const st = stagesOf(subject)[i]
+    const tune = adaptiveStageTune(st.id, st.count, st.durationSec)
     return {
-      mode: 'G2A', count: st.count, durationSec: st.durationSec, level: st.level,
+      mode: 'G2A', count: tune.count, durationSec: tune.durationSec, level: st.level,
       ops: st.ops, max: st.max, domain: st.domain, kind: st.kind,
       subject: st.subject ?? 'math',
+      adaptiveReason: tune.reason || undefined,
       seed: Math.floor(Math.random() * 1e9), stageId: st.id,
     }
   }
