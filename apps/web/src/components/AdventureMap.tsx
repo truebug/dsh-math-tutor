@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loadAdventure, consumeUnlock, recommendStage, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
 import { sfx } from '../lib/sound'
 import TreasureMapBg from './TreasureMapBg'
+import ParticleField from './ParticleField'
 import type { LearnerProfile, RaceSettings } from '../lib/types'
 
 interface SceneTheme {
@@ -227,7 +228,10 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
     const onScroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(apply) }
     apply()
     el.addEventListener('scroll', onScroll, { passive: true })
-    return () => { el.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf) }
+    // 视口尺寸变化（横竖屏切换/窗口拖拽/地址栏伸缩）时重算视差
+    const ro = new ResizeObserver(() => onScroll())
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); cancelAnimationFrame(raf) }
   }, [reduced])
 
   const stageSettings = (i: number): RaceSettings => {
@@ -246,6 +250,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
       {/* 顶部信息栏（随卷轴滚动） */}
       <header className="adv-hero parchment">
         <TreasureMapBg />
+        <ParticleField />
         <h1>🗺️ 寻宝探险</h1>
         <div className="pet-row">
           <span className="pet">{pet.emoji}</span>

@@ -190,8 +190,21 @@ input[type="range"] { width: 100%; }
 .adv-hero .pet-row { color: #fff; }
 .adv-sub { color: #b8c6d8; font-size: 13px; margin: 0; }
 .scene {
-  position: relative; height: 78vh; overflow: hidden;
+  position: relative; overflow: hidden;
   display: flex; align-items: center;
+  /* 视口自适应：高度随浏览器动态计算（svh 适配移动端地址栏伸缩），并限制宽高比防止极端裁切 */
+  height: clamp(320px, 78svh, 100svh);
+  /* 超宽屏（如横屏桌面 >2.2:1）：收矮一点，图片改 contain 防裁掉关键画面 */
+}
+.scene-art { object-fit: cover; object-position: center 38%; }
+@media (min-aspect-ratio: 21/10) {
+  .scene { height: clamp(300px, 62svh, 78svh); }
+  .scene-art { object-position: center 30%; }
+}
+/* 窄屏竖屏（如手机 <0.75:1）：加高一点保证画面存在感 */
+@media (max-aspect-ratio: 3/4) {
+  .scene { height: clamp(360px, 88svh, 100svh); }
+  .scene-art { object-position: center center; }
 }
 .scene .layer {
   position: absolute; left: 0; bottom: 0; width: 100%; height: 46%;
@@ -213,7 +226,7 @@ input[type="range"] { width: 100%; }
 }
 .scene-node {
   position: relative; z-index: 2; width: 100%; display: flex;
-  padding: 0 8%; 
+  padding: 0 clamp(4%, 8vw, 10%);
 }
 .node {
   display: flex; align-items: center; gap: 14px; padding: 16px 20px;
@@ -304,11 +317,30 @@ input[type="range"] { width: 100%; }
 .node.teaser { cursor: default; }
 /* 藏宝图英雄区 */
 .adv-hero.parchment { background: #dfc48f; color: #3a2a14; position: relative; overflow: hidden; }
-.adv-hero.parchment > *:not(.treasure-bg):not(.continents) { position: relative; z-index: 1; }
+.adv-hero.parchment > *:not(.treasure-bg):not(.continents):not(.particle-field) { position: relative; z-index: 1; }
 .treasure-bg {
   position: absolute; inset: 0; width: 100%; height: 100%;
   background-size: cover; background-position: center; pointer-events: none;
 }
+/* Hero 粒子星图层：叠在藏宝图上、内容之下 */
+.particle-field {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  mix-blend-mode: screen; opacity: .8;
+}
+
+/* ===== 按钮微交互升级（纯 CSS：玻璃质感 + 流光扫过） ===== */
+.primary, .daily, .node:not(.locked), .retry-main {
+  position: relative; overflow: hidden; isolation: isolate;
+  backdrop-filter: blur(6px) saturate(1.15);
+}
+.primary::after, .daily::after, .node:not(.locked)::after, .retry-main::after {
+  content: ''; position: absolute; top: 0; left: -80%; width: 55%; height: 100%;
+  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,.42) 50%, transparent 80%);
+  transform: skewX(-18deg); transition: left .55s ease;
+  pointer-events: none; z-index: 1;
+}
+.primary:hover::after, .daily:hover::after, .node:not(.locked):hover::after, .retry-main:hover::after { left: 125%; }
+.primary:active, .daily:active, .node:not(.locked):active { transform: scale(.97); }
 .adv-hero.parchment h1 { color: #3a2a14; text-shadow: 0 1px 0 rgba(255,244,214,.6); }
 .adv-hero.parchment .adv-sub { color: #6b5232; }
 .adv-hero.parchment .pet-row { color: #3a2a14; }
