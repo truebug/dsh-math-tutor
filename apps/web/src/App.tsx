@@ -15,6 +15,7 @@ import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core
 import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
 import { battleScore } from './api/battle'
 import { recordStars, starsFor } from './lib/adventure'
+import { submitScore, type ScoreResult } from './lib/score'
 import './styles.css'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
   const [view, setView] = useState<View>('map')
   const [settings, setSettings] = useState<RaceSettings>(defaultSettings())
   const [record, setRecord] = useState<SessionRecord | null>(null)
+  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
   const [raceKey, setRaceKey] = useState(0)
 
   if (!profile) {
@@ -77,6 +79,14 @@ export default function App() {
     saveSession(rec)
     accumulateSession(r.questions, graded.wrongIndexes, r.answers)  // 画像积累（确定性统计）
     battleScore(settings, profile.nickname, graded.correct, graded.answered, r.usedMs)  // 交卷上报
+    // 积分上报：仅开启云端同步时参与（异步不阻塞结算页展示）
+    submitScore({
+      nickname: profile.nickname,
+      mode: settings.mode,
+      level: settings.level,
+      total: graded.total,
+      correct: graded.correct,
+    }).then((sr) => setScoreResult(sr))
     const stars = starsFor(graded.correct, graded.total)
     if (settings.stageId) recordStars(settings.stageId, stars)
     if (settings.daily) recordStars(new Date().toISOString().slice(0, 10), stars, true)
@@ -110,6 +120,7 @@ export default function App() {
         <ResultView
           record={record}
           profile={profile}
+          scoreResult={scoreResult}
           onRetry={startRace}
           onHome={() => setView('map')}
           onOpenMistakes={() => setView('mistakes')}

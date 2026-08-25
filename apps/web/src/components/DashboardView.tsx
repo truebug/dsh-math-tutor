@@ -5,6 +5,8 @@ import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEn
 import { loadProfileData } from '../lib/profile'
 import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 import { STAGES, stagesOf } from '../lib/adventure'
+import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
+import { useEffect } from 'react'
 
 const ALL_STAGES = [...STAGES, ...stagesOf('chinese'), ...stagesOf('english')]
 
@@ -92,6 +94,11 @@ function LineChart({ values, format, color }: { values: number[]; format: (v: nu
 
 export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (qs: Question[]) => void }) {
   const [sync, setSync] = useState(syncEnabled())
+  const [board, setBoard] = useState<{ entries: LeaderboardEntry[]; myRank: number | null } | null>(null)
+
+  useEffect(() => {
+    if (sync) getLeaderboard().then(setBoard)
+  }, [sync])
   const [consent, setConsent] = useState(false)
   const [restoreId, setRestoreId] = useState('')
   const [msg, setMsg] = useState('')
@@ -149,6 +156,21 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
       })()}
 
       <Heatmap onRetry={onRetryMistakes} />
+
+      {sync && board && board.entries.length > 0 && (
+        <div className="pattern-card">
+          <h3 className="chart-title">🏆 全服排行榜{board.myRank ? `（我的排名 #${board.myRank}）` : ''}</h3>
+          <div className="leaderboard">
+            {board.entries.map((e) => (
+              <div key={e.rank} className={`lb-row${board.myRank === e.rank ? ' me' : ''}`}>
+                <span className="lb-rank">{e.rank <= 3 ? ['🥇', '🥈', '🥉'][e.rank - 1] : `#${e.rank}`}</span>
+                <span className="lb-name">{e.nicknameMasked}</span>
+                <span className="lb-pts">{e.totalPoints} 分</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h3 className="chart-title">正确率趋势（最近 {recent.length} 次）</h3>
       <LineChart

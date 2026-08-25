@@ -13,6 +13,7 @@ import { useRef } from 'react'
 import type { LearnerProfile } from '../lib/types'
 import type { RaceSettings, SessionRecord } from '../lib/types'
 import { classifyError, PATTERN_LABELS } from '../lib/errorPatterns'
+import type { ScoreResult } from '../lib/score'
 
 // 题型标签：让 AI 知道错的是哪类题（拼音/古诗/词义/句型……）
 const KIND_LABELS: Record<string, string> = {
@@ -23,6 +24,7 @@ const KIND_LABELS: Record<string, string> = {
 interface Props {
   record: SessionRecord
   profile: LearnerProfile
+  scoreResult?: ScoreResult | null
   onRetry: (settings: RaceSettings) => void
   onHome: () => void
   onOpenMistakes: () => void
@@ -49,7 +51,7 @@ function speakQuestion(q: { text: string }, kind?: string) {
   speakText(m ? m[1] : q.text, isEnglish ? 'en-US' : 'zh-CN')
 }
 
-export default function ResultView({ record, profile, onRetry, onHome, onOpenMistakes }: Props) {
+export default function ResultView({ record, profile, scoreResult, onRetry, onHome, onOpenMistakes }: Props) {
   const stars = starsFor(record.correct, record.total)
   const fxRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -122,6 +124,17 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
         <div className="stat"><b>{fmt(record.usedMs)}</b><span>{record.finishedBy === 'timeout' ? '时间到' : '用时'}</span></div>
         <div className="stat"><b>{avg}s</b><span>平均每题</span></div>
       </div>
+
+      {/* 积分奖励：每日打卡/破个人记录/破全服记录/满分 */}
+      {scoreResult && (scoreResult.dailyBonus + scoreResult.recordBonus + scoreResult.serverRecordBonus + scoreResult.fullScoreBonus > 0) && (
+        <div className="score-bonus">
+          {scoreResult.dailyBonus > 0 && <div className="bonus-row">📅 每日打卡 <b>+{scoreResult.dailyBonus}</b></div>}
+          {scoreResult.recordBonus > 0 && <div className="bonus-row">🏅 破个人记录 <b>+{scoreResult.recordBonus}</b></div>}
+          {scoreResult.serverRecordBonus > 0 && <div className="bonus-row crown">👑 破全服记录 <b>+{scoreResult.serverRecordBonus}</b></div>}
+          {scoreResult.fullScoreBonus > 0 && <div className="bonus-row">💯 满分奖励 <b>+{scoreResult.fullScoreBonus}</b></div>}
+          <div className="bonus-total">总积分 <b>{scoreResult.totalPoints}</b> · 全服排名 <b>#{scoreResult.rank}</b></div>
+        </div>
+      )}
 
       {record.wrong.length > 0 && (
         <div className="wrong-list">

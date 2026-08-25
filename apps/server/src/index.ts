@@ -4,6 +4,7 @@ import { buildReview, type ReviewRequest } from './routes/review.ts'
 import { buildHint, streamHint, type HintRequest } from './routes/hint.ts'
 import { getRoom, joinRoom, reportScore } from './routes/battle.ts'
 import { loadProfile, saveProfile, type ProfileDoc } from './routes/profile.ts'
+import { submitScore, getLeaderboard, getServerBest, type SubmitScoreRequest } from './routes/score.ts'
 
 const FAMILY_RE = /^[a-z0-9-]{6,32}$/
 
@@ -93,6 +94,27 @@ const server = createServer(async (req, res) => {
         room ? json(res, 200, room) : json(res, 404, { error: 'no_room' })
         return
       }
+    }
+    if (req.method === 'POST' && req.url === '/api/score/submit') {
+      const body = (await readBody(req)) as SubmitScoreRequest
+      if (!body?.familyId || !body?.nickname || typeof body.total !== 'number' || typeof body.correct !== 'number') {
+        json(res, 400, { error: 'bad_request' })
+        return
+      }
+      json(res, 200, submitScore(body))
+      return
+    }
+    if (req.method === 'GET' && req.url?.startsWith('/api/score/leaderboard')) {
+      const familyId = new URL(req.url, 'http://x').searchParams.get('familyId') ?? ''
+      json(res, 200, getLeaderboard(familyId))
+      return
+    }
+    if (req.method === 'GET' && req.url?.startsWith('/api/score/best')) {
+      const u = new URL(req.url, 'http://x')
+      const mode = u.searchParams.get('mode') ?? 'G2A'
+      const level = Number(u.searchParams.get('level') ?? 2)
+      json(res, 200, { serverBest: getServerBest(mode, level) })
+      return
     }
     if (req.url?.startsWith('/api/profile/')) {
       const familyId = decodeURIComponent(req.url.split('/')[3] ?? '')

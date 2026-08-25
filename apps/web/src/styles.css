@@ -121,6 +121,26 @@ input[type="range"] { width: 100%; }
 .retry-mini:hover { background: #e2814a; color: #fff; }
 .weak-spot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .retry-main { padding: 6px 16px; font-size: 13px; }
+
+/* 积分奖励（结算页） */
+.score-bonus {
+  margin: 14px 0; padding: 14px 18px; border-radius: 14px;
+  background: linear-gradient(135deg, #fff8e1, #ffecb3);
+  border: 2px solid #f0c040;
+}
+.bonus-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 15px; color: #5d4a1a; }
+.bonus-row b { color: #d4880e; font-size: 17px; }
+.bonus-row.crown b { color: #c62828; }
+.bonus-total { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0c060; text-align: center; color: #6b5232; }
+.bonus-total b { color: #b8860b; }
+
+/* 排行榜（看板页） */
+.leaderboard { display: flex; flex-direction: column; gap: 4px; }
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 8px; font-size: 14px; }
+.lb-row.me { background: rgba(240, 192, 64, .18); font-weight: 600; }
+.lb-rank { width: 34px; text-align: center; }
+.lb-name { flex: 1; color: #445; }
+.lb-pts { color: #b8860b; font-weight: 600; }
 .battle-board { background: #f4fbf6; border-radius: 14px; padding: 12px 14px; }
 .battle-board h3 { margin: 0 0 8px; font-size: 15px; }
 .battle-row { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 4px; border-radius: 8px; }
