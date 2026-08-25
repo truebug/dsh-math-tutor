@@ -192,6 +192,53 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   const scrollRef = useRef<HTMLDivElement>(null)
   const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
   const [unlockFx, setUnlockFx] = useState<string | null>(null)
+  const [activeIdx, setActiveIdx] = useState(-1)   // rail 导航：-1=Hero，0..=关卡索引
+  const [showTop, setShowTop] = useState(false)
+
+  // 空闲时预取当前科目全部关卡图（滚动到即已缓存，翻屏零白屏）
+  useEffect(() => {
+    let alive = true
+    const prefetch = () => {
+      if (!alive) return
+      stagesOf(subject).forEach((st) => {
+        if (STAGE_ART.has(st.id)) {
+          const im = new Image()
+          im.src = `${import.meta.env.BASE_URL}stages/${st.id}.webp`
+        }
+      })
+    }
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback
+    const id = ric ? ric(prefetch) : window.setTimeout(prefetch, 2000)
+    return () => { alive = false; if (!ric) clearTimeout(id) }
+  }, [subject])
+
+  // rail 当前屏追踪 + 返回顶部按钮显隐
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    let raf = 0
+    const onScroll = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        setShowTop(el.scrollTop > el.clientHeight * 0.6)
+        const scenes = el.querySelectorAll<HTMLElement>('.scene')
+        const mid = el.scrollTop + el.clientHeight / 2
+        let cur = -1
+        scenes.forEach((s, j) => { if (s.offsetTop <= mid) cur = j })
+        setActiveIdx(cur)
+      })
+    }
+    onScroll()
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => { el.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf) }
+  }, [subject])
+
+  const scrollToIdx = (j: number) => {
+    const el = scrollRef.current
+    if (!el) return
+    const top = j < 0 ? 0 : el.querySelectorAll<HTMLElement>('.scene')[j]?.offsetTop ?? 0
+    el.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' })
+  }
 
   // 解锁仪式：回到地图时若有新解锁关卡，滚动到它并播放光晕脉冲
   useEffect(() => {
@@ -337,6 +384,8 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
               <img
                 className="scene-art"
                 src={`${import.meta.env.BASE_URL}stages/${st.id}.webp`}
+                loading={i <= 1 ? 'eager' : 'lazy'}
+                decoding="async"
                 alt="" aria-hidden
               />
             ) : (
@@ -368,6 +417,19 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
       <footer className="adv-foot">
         <button className="ghost light" onClick={onFreePractice}>⚙️ 自由练习（家长设置）</button>
       </footer>
+
+      {/* 章节圆点 rail：当前屏高亮，点击直达 */}
+      <nav className="rail" aria-label="关卡导航">
+        <button className={activeIdx < 0 ? 'on' : ''} onClick={() => scrollToIdx(-1)} aria-label="返回首页" />
+        {stagesOf(subject).map((st, j) => (
+          <button key={st.id} className={activeIdx === j ? 'on' : ''} onClick={() => scrollToIdx(j)} aria-label={st.name} />
+        ))}
+      </nav>
+
+      {/* 返回首页上箭头（避开右下角智能助手，放右中） */}
+      {showTop && (
+        <button className="to-top" onClick={() => scrollToIdx(-1)} aria-label="回到顶部">↑</button>
+      )}
     </div>
   )
 }
