@@ -189,7 +189,8 @@ export default function RaceView({ settings, nickname, grade, onAbandon, onFinis
       )}
       <div className={flash === 'ok' ? 'question flash-ok' : flash === 'no' ? 'question flash-no' : 'question'}>
         {isChoice ? q.text : <>{q.a} {OP_GLYPHS[q.op]} {q.b} =</>}
-        {isChoice && /["「]/.test(q.text) && (
+        {/* 语文类（识字/词语/古诗）读出=报答案，答题时禁读；英语读发音是正常考法保留；复盘场景均可读 */}
+        {isChoice && /["「]/.test(q.text) && !['chars', 'chinese', 'poem'].includes(settings.kind ?? '') && (
           <button className="speak-btn" title="朗读" onClick={() => speakQuoted(q.text, settings.kind)}>🔊</button>
         )}
       </div>

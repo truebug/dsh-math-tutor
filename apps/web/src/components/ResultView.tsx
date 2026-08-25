@@ -33,6 +33,22 @@ function fmt(ms: number): string {
   return `${Math.floor(s / 60)}分${s % 60}秒`
 }
 
+// 朗读文本（点评读全文；错题读引号内词字，无引号读题干）
+function speakText(text: string, lang = 'zh-CN') {
+  if (!('speechSynthesis' in window)) return
+  const utt = new SpeechSynthesisUtterance(text)
+  utt.lang = lang
+  utt.rate = 0.9
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utt)
+}
+
+function speakQuestion(q: { text: string }, kind?: string) {
+  const m = q.text.match(/["「]([^"」]+)["」]/)
+  const isEnglish = kind === 'vocab' || kind === 'letters' || kind === 'sentence' || kind === 'antonym'
+  speakText(m ? m[1] : q.text, isEnglish ? 'en-US' : 'zh-CN')
+}
+
 export default function ResultView({ record, profile, onRetry, onHome, onOpenMistakes }: Props) {
   const stars = starsFor(record.correct, record.total)
   const fxRef = useRef<HTMLCanvasElement>(null)
@@ -113,6 +129,7 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
           {record.wrong.map((w, i) => (
             <div key={i} className="wrong-item">
               <span>{w.question.text}</span>
+              <button className="speak-btn" title="朗读" onClick={() => speakQuestion(w.question, record.settings.kind)}>🔊</button>
               <span className="given">你的答案：{w.given ?? '未作答'}</span>
               <span className="right">正确：{w.question.answerText ?? w.question.answer}</span>
             </div>
@@ -125,13 +142,16 @@ export default function ResultView({ record, profile, onRetry, onHome, onOpenMis
           <Sprite grade={profile.grade} bubble={review} />
           <div className="review-card">
             <b>✨ 老师点评</b>
+            <button className="speak-btn" title="朗读点评" onClick={() => speakText(review)}>🔊</button>
             <p>{review}</p>
           </div>
         </>
       ) : (
-        <button className="primary" onClick={askReview} disabled={reviewState === 'loading'}>
-          {reviewState === 'loading' ? '老师正在看错题…' : reviewState === 'error' ? '点评失败，再试一次' : '✨ AI 点评'}
-        </button>
+        <>
+          <button className="primary" onClick={askReview} disabled={reviewState === 'loading'}>
+            {reviewState === 'loading' ? '老师正在看错题…' : reviewState === 'error' ? '点评失败，再试一次' : '✨ AI 点评'}
+          </button>
+        </>
       )}
 
       <div className="btn-row">
