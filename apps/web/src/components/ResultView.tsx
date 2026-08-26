@@ -19,6 +19,7 @@ import type { ScoreResult } from '../lib/score'
 const KIND_LABELS: Record<string, string> = {
   letters: '字母', vocab: '词汇', sentence: '句型', antonym: '反义词',
   chinese: '词语', poem: '古诗', chars: '识字',
+  match: '消消乐', poemchain: '接龙', snake: '贪吃蛇',
 }
 
 interface Props {

@@ -154,6 +154,11 @@ export function vocabTitle(stageId: string): string {
   return VOCAB[stageId]?.title ?? ''
 }
 
+// 游乐场消消乐用：按主题关卡 id 取合并词表 [英文, 中文]
+export function vocabThemes(ids: string[]): Array<[string, string]> {
+  return ids.flatMap((id) => VOCAB[id]?.words ?? [])
+}
+
 // 词汇关：双向选择 —— 英译中 / 中译英 混合（种子决定顺序，可复现）
 export function generateVocabQuestions(seed: number, stageId: string, count: number): Question[] {
   const theme = VOCAB[stageId]

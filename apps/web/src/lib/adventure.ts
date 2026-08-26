@@ -75,10 +75,28 @@ export const CHINESE_STAGES: StageDef[] = [
   { id: 'chi-char2',  name: '千字石窟', emoji: '🗿', desc: '12题 · 2分钟 · 识字读音（下）', count: 12, durationSec: 120, level: 3, ops: [], max: 0, kind: 'chars', subject: 'chinese' },
 ]
 
-export function stagesOf(subject: 'math' | 'chinese' | 'english'): StageDef[] {
+export function stagesOf(subject: 'math' | 'chinese' | 'english' | 'arcade'): StageDef[] {
+  if (subject === 'arcade') return ARCADE_STAGES
   if (subject === 'english') return ENGLISH_STAGES
   if (subject === 'chinese') return CHINESE_STAGES
   return STAGES
+}
+
+// ===== 游乐场大陆：游戏化关卡（独立玩法组件承载，结算走标准答题记录）=====
+// kind=match 单词消消乐（英文↔中文配对消除）；kind=poemchain 古诗词接龙（上句接下句）；kind=snake 数字贪吃蛇（吃正确答案）
+export const ARCADE_STAGES: StageDef[] = [
+  // subject 保留学术科目（驱动 AI 点评分科 prompt）；大陆归属由 ARCADE_STAGES 列表决定
+  { id: 'arc-match1', name: '消消乐·热身', emoji: '🧩', desc: '6对 · 3分钟 · 问候+文具', count: 6,  durationSec: 180, level: 1, ops: [], max: 0, kind: 'match', subject: 'english' },
+  { id: 'arc-match2', name: '消消乐·进阶', emoji: '🎯', desc: '8对 · 3分钟 · 颜色+数字', count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'match', subject: 'english' },
+  { id: 'arc-match3', name: '消消乐·大师', emoji: '🏆', desc: '10对 · 4分钟 · 动物+食物', count: 10, durationSec: 240, level: 3, ops: [], max: 0, kind: 'match', subject: 'english' },
+  { id: 'arc-poem1',  name: '接龙·启蒙',   emoji: '📜', desc: '6句 · 3分钟 · 二上必背',  count: 6,  durationSec: 180, level: 1, ops: [], max: 0, kind: 'poemchain', subject: 'chinese' },
+  { id: 'arc-poem2',  name: '接龙·高手',   emoji: '🖋️', desc: '8句 · 3分钟 · 混序挑战',  count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'poemchain', subject: 'chinese' },
+  { id: 'arc-snake1', name: '贪吃蛇·口算', emoji: '🐍', desc: '8题 · 4分钟 · 20以内',   count: 8,  durationSec: 240, level: 1, ops: [], max: 0, kind: 'snake', subject: 'math' },
+  { id: 'arc-snake2', name: '贪吃蛇·速算', emoji: '⚡', desc: '10题 · 4分钟 · 100以内',  count: 10, durationSec: 240, level: 2, ops: [], max: 0, kind: 'snake', subject: 'math' },
+]
+
+export function arcadeStages(): StageDef[] {
+  return ARCADE_STAGES
 }
 
 export interface AdventureState {
@@ -107,10 +125,15 @@ export function recordStars(id: string, stars: number, daily = false): Adventure
   map[id] = Math.max(map[id] ?? 0, stars)
   // 解锁仪式：本次得星若解锁了下一关，记录 lastUnlock
   if (!daily && stars >= 1) {
-    const idx = STAGES.findIndex((s) => s.id === id)
-    const next = STAGES[idx + 1]
-    if (idx >= 0 && next && (a.stars[next.id] ?? 0) === 0) {
-      a.lastUnlock = next.id
+    // 在所属大陆的解锁链上找下一关（数学/语文/英语/游乐场各自成链）
+    for (const chain of [STAGES, ENGLISH_STAGES, CHINESE_STAGES, ARCADE_STAGES]) {
+      const idx = chain.findIndex((s) => s.id === id)
+      if (idx < 0) continue
+      const next = chain[idx + 1]
+      if (next && (a.stars[next.id] ?? 0) === 0) {
+        a.lastUnlock = next.id
+      }
+      break
     }
   }
   localStorage.setItem(KEY, JSON.stringify(a))
@@ -135,7 +158,7 @@ export function isUnlocked(index: number, a: AdventureState, stages: StageDef[] 
 
 // ===== 科目大陆 =====
 export interface SubjectDef {
-  id: 'math' | 'chinese' | 'english'
+  id: 'math' | 'chinese' | 'english' | 'arcade'
   name: string
   emoji: string
   desc: string
@@ -146,13 +169,14 @@ export const SUBJECTS: SubjectDef[] = [
   { id: 'math', name: '数学大陆', emoji: '🔢', desc: '16 关 · 沪教版 2~4 年级计算', comingSoon: false },
   { id: 'chinese', name: '语文大陆', emoji: '📖', desc: '12 关 · 部编版二上词语+古诗', comingSoon: false },
   { id: 'english', name: '英语大陆', emoji: '🔤', desc: '15 关 · 牛津上海版 1-2 年级', comingSoon: false },
+  { id: 'arcade', name: '游乐场', emoji: '🎡', desc: '7 关 · 消消乐/接龙/贪吃蛇', comingSoon: false },
 ]
 
 const SUBJECT_KEY = 'dsh-math-tutor:subject'
 
 export function currentSubject(): SubjectDef['id'] {
   const v = localStorage.getItem(SUBJECT_KEY)
-  return v === 'chinese' || v === 'english' ? v : 'math'
+  return v === 'chinese' || v === 'english' || v === 'arcade' ? v : 'math'
 }
 
 export function setSubject(id: SubjectDef['id']): void {

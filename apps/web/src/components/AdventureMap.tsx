@@ -19,7 +19,7 @@ interface SceneTheme {
   emoji: string
 }
 
-const SUBJECT_LABEL: Record<string, string> = { math: '数学', chinese: '语文', english: '英语' }
+const SUBJECT_LABEL: Record<string, string> = { math: '数学', chinese: '语文', english: '英语', arcade: '游乐场' }
 
 // 已生成静帧插画的关卡（public/stages/<id>.webp）：有图则替换程序化 SVG 场景
 const STAGE_ART = new Set([
@@ -55,6 +55,14 @@ const SCENES: Record<string, SceneTheme> = {
   'eng-letters1': { sky: ['#2a6a8a', '#52b6c9', '#a5e8f0'], layers: ['#3a8aa8', '#1e5a75', '#0f3a50'], glow: '#fff3b0', emoji: '🏖️' },
   'eng-letters2': { sky: ['#4a5a75', '#7a8aa5', '#b8c4d8'], layers: ['#5c6c88', '#3a4763', '#202a42'], glow: '#e8f0ff', emoji: '🪨' },
   'eng-greet':    { sky: ['#b85c1e', '#e8984a', '#f2d06a'], layers: ['#c97a3a', '#8a5222', '#5c3410'], glow: '#ffe8b0', emoji: '🗼' },
+  // 游乐场大陆：嘉年华配色（紫红帐篷/旋转木马/夜空烟花）
+  'arc-match1': { sky: ['#4a1a5e', '#8a3a8e', '#d06ab8'], layers: ['#6b2a78', '#3f1a52', '#24102f'], glow: '#ffd6f5', emoji: '🧩' },
+  'arc-match2': { sky: ['#5e1a3a', '#a83a62', '#e8788a'], layers: ['#7c2a4c', '#481a2e', '#2a0f1c'], glow: '#ffe0b0', emoji: '🎯' },
+  'arc-match3': { sky: ['#8a5a05', '#c9920a', '#f2c94c'], layers: ['#a8742a', '#6b4a08', '#3d2b04'], glow: '#fff3b0', emoji: '🏆' },
+  'arc-poem1':  { sky: ['#1e4a3a', '#3a7a5c', '#7ac9a0'], layers: ['#2a5c48', '#183a2c', '#0c2118'], glow: '#d8f3dc', emoji: '📜' },
+  'arc-poem2':  { sky: ['#2a2a4a', '#5c4a8a', '#9a7ac9'], layers: ['#3e3463', '#241f42', '#120f24'], glow: '#e0d6ff', emoji: '🖋️' },
+  'arc-snake1': { sky: ['#0f3d1e', '#1e7a3a', '#52c96a'], layers: ['#2a8a48', '#14522a', '#082e14'], glow: '#d8f3a5', emoji: '🐍' },
+  'arc-snake2': { sky: ['#1a1a3a', '#3a3a8a', '#6a6ae0'], layers: ['#2c2c63', '#171740', '#0c0c24'], glow: '#c4d5fd', emoji: '⚡' },
 }
 
 function rng(seed: number) {

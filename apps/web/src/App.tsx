@@ -3,6 +3,9 @@ import OnboardingView from './components/OnboardingView'
 import SetupView from './components/SetupView'
 import MapView from './components/AdventureMap'
 import RaceView from './components/RaceView'
+import WordMatchView from './components/WordMatchView'
+import PoemChainView from './components/PoemChainView'
+import SnakeView from './components/SnakeView'
 import ResultView from './components/ResultView'
 import MistakeBook from './components/MistakeBook'
 import DashboardView from './components/DashboardView'
@@ -119,7 +122,10 @@ export default function App() {
           onOpenMistakes={() => setView('mistakes')}
         />
       )}
-      {view === 'race' && <RaceView key={raceKey} settings={settings} nickname={profile.nickname} grade={profile.grade} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && settings.kind === 'match' && <WordMatchView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && settings.kind === 'poemchain' && <PoemChainView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && settings.kind === 'snake' && <SnakeView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && !['match', 'poemchain', 'snake'].includes(settings.kind ?? '') && <RaceView key={raceKey} settings={settings} nickname={profile.nickname} grade={profile.grade} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'result' && record && (
         <ResultView
           record={record}
