@@ -4,6 +4,10 @@
 > 只用了 LLM 做"事后点评"，DeepSeek Harness 的 agent 能力（插件/工具/记忆注入）
 > 尚未进入运行时。本计划把差距收敛为可执行的四个阶段。
 
+> 状态（2026-08-26）：P0/P1/P2/P3 已全部落地（见 docs/progress.md 2026-08-25）。
+> DSH 真 Runtime 接入评估后暂缓——cordis 约定宿主（host.ts）已满足当前需求，
+> 真接 dsh 只值服务层，待需要跨会话记忆/多 agent 编排时再启。
+
 ## 差距清单（现状 → 目标）
 
 1. **DSH 运行时零接入** → server 接入 `@deepseek-ai/dsh`，把 review/hint 从裸 fetch 改造为 dsh 插件（defineTool + ctx.tools.register），cordis.yml 启用
