@@ -33,8 +33,11 @@
 2. 需要跨会话记忆 / 多 agent 编排 / 官方工具链（MCP、skills）
 3. 服务器有资源跑独立 dsh 运行时进程（coolje00 资源够，主要差部署与监控）
 
-**第二步预检（2026-08-27）**：上游 master 仍停在 `b150a551b8`（2026-08-21，
-0.1.1-rc.2），三个触发信号均未出现，第二步继续待命。每月 fetch 一次上游即可。
+**第二步已部分落地（2026-08-27）**：hint 场景 dsh provider 线上跑通。
+`POST /api/hint?provider=dsh` 走真 dsh 运行时（SDK client spawn 子进程，
+session 持久化 /var/lib/dsh-tutor/sessions 已生效）；默认仍 kimi 直调。
+灰度顺序不变：hint ✅ → review → sprite（`AGENT_PROVIDER=dsh` 全局切换或
+`?provider=dsh` 请求级灰度）。上游每月 fetch 一次即可。
 
 **第二步本地验证通过（2026-08-27）**：`tmp/dsh-local/`（gitignore）最小组合已跑通——
 `dsh-jsonrpc-agent` spawn + cordis.yml（jsonrpc-server/agent-spine/llm-deepseek）+
