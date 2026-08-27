@@ -49,7 +49,7 @@ const SUBJECT_DESC = {
   english: '英语词汇/句型练习（选择题）',
 } as const
 
-export async function buildReview(req: ReviewRequest): Promise<string> {
+export async function buildReview(req: ReviewRequest, provider?: string): Promise<string> {
   const subject = req.subject ?? 'math'
   const acc = Math.round((req.correct / Math.max(req.total, 1)) * 100)
   // 画像注入优先级：服务端画像（familyId 查云端）> 前端捎带 history
@@ -66,6 +66,7 @@ export async function buildReview(req: ReviewRequest): Promise<string> {
   return respond({
     scene: 'review',
     familyId: req.familyId,
+    provider,
     messages: [
       { role: 'system', content: SYSTEMS[subject].replace('{grade}', String(req.grade)) },
       { role: 'user', content: user },
@@ -76,13 +77,14 @@ export async function buildReview(req: ReviewRequest): Promise<string> {
 // ===== DSH 插件壳：注册 HTTP 路由（行为与重构前一致） =====
 export const name = 'review'
 export function apply(ctx: ServerContext) {
-  ctx.routes.register('/api/review', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/review', 'POST', async (_req, res, url, body) => {
     const b = body as ReviewRequest
     if (!b || typeof b.total !== 'number' || !Array.isArray(b.wrongExamples)) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
       return true
     }
-    const text = await buildReview(b)
+    // 灰度：?provider=dsh 仅当前请求走 dsh 运行时（review 场景第二步灰度）
+    const text = await buildReview(b, url.searchParams.get('provider') ?? undefined)
     res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text }))
     return true
   })

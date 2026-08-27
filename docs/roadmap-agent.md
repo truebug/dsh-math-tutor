@@ -36,7 +36,7 @@
 **第二步已部分落地（2026-08-27）**：hint 场景 dsh provider 线上跑通。
 `POST /api/hint?provider=dsh` 走真 dsh 运行时（SDK client spawn 子进程，
 session 持久化 /var/lib/dsh-tutor/sessions 已生效）；默认仍 kimi 直调。
-灰度顺序不变：hint ✅ → review → sprite（`AGENT_PROVIDER=dsh` 全局切换或
+灰度顺序不变：hint ✅ → review ✅ → sprite（`AGENT_PROVIDER=dsh` 全局切换或
 `?provider=dsh` 请求级灰度）。上游每月 fetch 一次即可。
 
 **第二步本地验证通过（2026-08-27）**：`tmp/dsh-local/`（gitignore）最小组合已跑通——
