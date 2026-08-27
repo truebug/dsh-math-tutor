@@ -600,6 +600,12 @@ input[type="range"] { width: 100%; }
 .badge-cell small { font-size: 11px; color: #8a97a8; }
 .badge-cell.earned { background: linear-gradient(160deg, #fffbe8, #fdf0c8); border-color: #f2d98a; }
 .badge-cell.earned small { color: #7c4a03; font-weight: 700; }
+
+/* 昵称冲突选择 */
+.nick-conflict { padding: 12px 14px; margin: 10px 0; border-radius: 12px; background: #fff4e5; border: 2px solid #f2c98a; }
+.nick-conflict b { font-size: 14px; color: #7c4a03; }
+.nick-conflict p { font-size: 12px; color: #a87a2a; margin: 4px 0 8px; }
+.nick-conflict input { width: 100%; box-sizing: border-box; padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #e0cf9a; }
 .poem-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center;
   opacity: .16; pointer-events: none; border-radius: 16px;

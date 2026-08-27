@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Question } from '@dsh-math-tutor/math-generator/core'
-import { loadSessions } from '../lib/storage'
-import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled } from '../lib/sync'
+import { loadSessions, loadProfile } from '../lib/storage'
+import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled, claimNickname, nicknameHasPin, resolveNickname, setNicknamePin } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
 import { metricRates } from '../lib/profile'
 import { metricTrend } from '../lib/profile'
@@ -188,16 +188,63 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
   const [consent, setConsent] = useState(false)
   const [restoreId, setRestoreId] = useState('')
   const [msg, setMsg] = useState('')
+  // 昵称绑定冲突态：null=无冲突；{nick, hasPin}=昵称已被占用，等用户选择
+  const [nickConflict, setNickConflict] = useState<{ nick: string; hasPin: boolean } | null>(null)
+  const [pin, setPin] = useState('')
+  const [newPin, setNewPin] = useState('')
 
-  const enable = () => {
+  const enable = async () => {
     const id = newFamilyId()
     setSync(true)
     pushProfile()
-    setMsg(`已开启。家庭ID：${id}（凭此 ID 可在其他设备恢复）`)
+    // 昵称绑定：同昵称已绑 → 弹冲突选择；否则直接登记
+    const nick = loadProfile()?.nickname ?? ''
+    if (nick) {
+      const r = await claimNickname(nick, id)
+      if (r === 'conflict') {
+        setNickConflict({ nick, hasPin: (await nicknameHasPin(nick)) ?? false })
+        setMsg(`已开启。昵称「${nick}」已被绑定，请确认是否为本人换设备`)
+        return
+      }
+    }
+    setMsg(`已开启。家庭ID：${id}（也可用昵称「${nick}」在其他设备恢复）`)
+  }
+  // 冲突处理 A：我是本人（换设备）→ 解析昵称（可能要 PIN）→ 拉取云端数据
+  const claimAsSelf = async () => {
+    if (!nickConflict) return
+    const fid = await resolveNickname(nickConflict.nick, pin || undefined)
+    if (!fid) { setMsg(nickConflict.hasPin ? 'PIN 不对，请重试' : '解析失败，请重试'); return }
+    const ok = await pullProfile(fid)
+    setMsg(ok ? '已恢复云端数据，刷新页面生效' : '找到了绑定但拉取数据失败')
+    setNickConflict(null)
+  }
+  // 冲突处理 B：我是重名新人 → 保留新 ID，昵称加后缀再登记
+  const claimAsNew = async () => {
+    if (!nickConflict) return
+    const fid = getFamilyId()!
+    await claimNickname(`${nickConflict.nick}-2`, fid)
+    setMsg(`已作为新用户登记（昵称显示为「${nickConflict.nick}-2」），数据互不影响`)
+    setNickConflict(null)
+  }
+  // 可选 PIN：设置后换设备需输码
+  const savePin = async () => {
+    const nick = loadProfile()?.nickname ?? ''
+    const fid = getFamilyId()
+    if (!nick || !fid) return
+    const r = await setNicknamePin(nick, fid, newPin)
+    setMsg(r === 'ok' ? (newPin ? 'PIN 已设置，换设备恢复时需输入' : 'PIN 已清除') : r === 'bad' ? 'PIN 需为 4-6 位数字' : '设置失败，请重试')
+    setNewPin('')
   }
   const restore = async () => {
-    const ok = await pullProfile(restoreId)
-    setMsg(ok ? '已从云端恢复，刷新页面生效' : '未找到该家庭ID的数据')
+    // 支持两种输入：f- 开头按家庭ID恢复；否则按昵称解析（可能要求 PIN）
+    let fid = restoreId.trim()
+    if (!fid.startsWith('f-')) {
+      const hasPin = await nicknameHasPin(fid)
+      const p = hasPin ? (window.prompt('该昵称设有 PIN，请输入 4-6 位数字：') ?? '') : undefined
+      fid = (await resolveNickname(fid, p)) ?? ''
+    }
+    const ok = fid ? await pullProfile(fid) : false
+    setMsg(ok ? '已从云端恢复，刷新页面生效' : '未找到该 ID/昵称（或 PIN 不对）')
     if (ok) setSync(true)
   }
   const sessions = loadSessions()
@@ -312,6 +359,25 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
         {sync ? (
           <>
             <p className="adv-sub">已开启 · 家庭ID：<code>{getFamilyId()}</code> · 换设备输入此 ID 即可恢复</p>
+            {/* 昵称冲突选择：同昵称已被绑定时的两条路 */}
+            {nickConflict && (
+              <div className="nick-conflict">
+                <b>昵称「{nickConflict.nick}」已被使用</b>
+                <p>如果这个昵称是你（换设备/换浏览器），请选择恢复；如果是重名的另一位小朋友，请选择新开档案。</p>
+                {nickConflict.hasPin && (
+                  <input placeholder="该昵称设有 PIN，请输入" value={pin} onChange={(e) => setPin(e.target.value)} inputMode="numeric" maxLength={6} />
+                )}
+                <div className="btn-row">
+                  <button className="primary" onClick={claimAsSelf}>是我本人，恢复数据</button>
+                  <button className="ghost" onClick={claimAsNew}>重名新人，新开档案</button>
+                </div>
+              </div>
+            )}
+            {/* 可选 PIN：给昵称加把锁（换设备恢复时需输入） */}
+            <div className="code-row">
+              <input placeholder="可选：设置恢复 PIN（4-6位数字）" value={newPin} onChange={(e) => setNewPin(e.target.value)} inputMode="numeric" maxLength={6} />
+              <button className="ghost" onClick={savePin}>{newPin ? '设置' : '清除'} PIN</button>
+            </div>
             <button className="ghost" onClick={() => { disableSync(); setSync(false); setMsg('已停止同步，数据保留在本机') }}>停止同步</button>
           </>
         ) : (

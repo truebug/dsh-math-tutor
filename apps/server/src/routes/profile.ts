@@ -2,8 +2,33 @@
 // 存储：data/profiles/<familyId>.json（MVP 用 JSON 文件，后续可换 SQLite）
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { createHash } from 'node:crypto'
 
 const DIR = join(process.cwd(), 'data', 'profiles')
+const NICK_FILE = join(process.cwd(), 'data', 'nicknames.json')
+
+// ===== 昵称索引：昵称 → 绑定（familyId + 可选 PIN 哈希）=====
+// 昵称是可绑定的展示属性，familyId(UUID) 才是数据主键；重名时冲突由用户选择合并/新开
+interface NickEntry { familyId: string; pinHash?: string }
+type NickIndex = Record<string, NickEntry>
+
+function loadNicks(): NickIndex {
+  if (!existsSync(NICK_FILE)) return {}
+  try { return JSON.parse(readFileSync(NICK_FILE, 'utf8')) as NickIndex } catch { return {} }
+}
+
+function saveNicks(idx: NickIndex): void {
+  mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+  writeFileSync(NICK_FILE, JSON.stringify(idx))
+}
+
+function normNick(n: string): string {
+  return n.trim().toLowerCase().slice(0, 20)
+}
+
+function hashPin(pin: string): string {
+  return createHash('sha256').update(`dsh-tutor-pin:${pin}`).digest('hex')
+}
 
 export interface ProfileDoc {
   version: 1
@@ -61,6 +86,54 @@ export function apply(ctx: ServerContext) {
       updatedAt: '',
     })
     json(res, 200, { ok: true })
+    return true
+  })
+
+  // 绑定昵称：开启同步时登记。同昵称已被他人绑定 → 409 冲突（前端弹选择）
+  ctx.routes.register('/api/profile/claim-nickname', 'POST', async (_req, res, _url, body) => {
+    const b = body as { nickname?: string; familyId?: string }
+    const nick = normNick(b?.nickname ?? '')
+    if (!nick || !b?.familyId || !FAMILY_RE.test(b.familyId)) { json(res, 400, { error: 'bad_request' }); return true }
+    const idx = loadNicks()
+    const existing = idx[nick]
+    if (existing && existing.familyId !== b.familyId) {
+      json(res, 409, { conflict: true, hasPin: !!existing.pinHash })
+      return true
+    }
+    idx[nick] = { familyId: b.familyId, pinHash: existing?.pinHash }
+    saveNicks(idx)
+    json(res, 200, { ok: true, nickname: nick })
+    return true
+  })
+
+  // 昵称解析（换设备找回）：昵称+PIN → familyId；PIN 错误 403，未设 PIN 直接放行
+  ctx.routes.register('/api/profile/resolve-nickname', 'POST', async (_req, res, _url, body) => {
+    const b = body as { nickname?: string; pin?: string }
+    const nick = normNick(b?.nickname ?? '')
+    if (!nick) { json(res, 400, { error: 'bad_request' }); return true }
+    const entry = loadNicks()[nick]
+    if (!entry) { json(res, 404, { error: 'not_found' }); return true }
+    if (entry.pinHash && entry.pinHash !== hashPin(b?.pin ?? '')) {
+      json(res, 403, { error: 'pin_required_or_wrong' })
+      return true
+    }
+    json(res, 200, { familyId: entry.familyId })
+    return true
+  })
+
+  // 设置/更新 PIN（可选，在看板设置；设置后换设备必须输码）
+  ctx.routes.register('/api/profile/set-pin', 'POST', async (_req, res, _url, body) => {
+    const b = body as { familyId?: string; nickname?: string; pin?: string }
+    const nick = normNick(b?.nickname ?? '')
+    if (!b?.familyId || !FAMILY_RE.test(b.familyId) || !nick) { json(res, 400, { error: 'bad_request' }); return true }
+    const pin = (b.pin ?? '').trim()
+    if (pin && !/^\d{4,6}$/.test(pin)) { json(res, 400, { error: 'pin_must_be_4_6_digits' }); return true }
+    const idx = loadNicks()
+    const entry = idx[nick]
+    if (!entry || entry.familyId !== b.familyId) { json(res, 403, { error: 'not_bound' }); return true }
+    idx[nick] = pin ? { ...entry, pinHash: hashPin(pin) } : { familyId: entry.familyId }  // 空 pin = 清除
+    saveNicks(idx)
+    json(res, 200, { ok: true, hasPin: !!pin })
     return true
   })
 }

@@ -4,6 +4,11 @@
 
 ## 2026-08-27
 
+- **昵称绑定 + 冲突处理（方案 C）**：服务器 `nicknames.json` 索引（昵称→familyId+
+  可选 PIN 哈希），三个新路由：claim-nickname（同昵称 409 冲突）/resolve-nickname
+  （PIN 校验）/set-pin（4-6 位数字，可清除）。前端：开启同步时自动登记昵称，
+  冲突弹「是我本人恢复 / 重名新人新开」选择；恢复入口同时支持家庭 ID 和昵称；
+  看板可选设 PIN 加锁。三线实测通过（绑定→冲突→PIN 拦截→PIN 放行）。
 - **dsh 真运行时灰度三步全落地**（3a9b7e9/cc14e0d/f9f4e79）：
   - 本地验证：`dsh-jsonrpc-agent` spawn + cordis.yml 最小组合跑通 Kimi k3
     （llm-deepseek 适配器 baseURL 直指 Kimi 端点，无需自写适配器）。

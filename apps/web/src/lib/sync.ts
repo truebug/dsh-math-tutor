@@ -72,3 +72,49 @@ export async function pullProfile(familyId: string): Promise<boolean> {
 export function disableSync(): void {
   localStorage.removeItem(FAMILY_KEY)  // 仅本地停止同步；云端数据家长可联系管理员删除
 }
+
+// ===== 昵称绑定（方案 C：昵称→familyId 索引 + 可选 PIN）=====
+export async function claimNickname(nickname: string, familyId: string): Promise<'ok' | 'conflict' | 'error'> {
+  try {
+    const res = await fetch('/api/profile/claim-nickname', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nickname, familyId }),
+    })
+    if (res.status === 409) return 'conflict'
+    return res.ok ? 'ok' : 'error'
+  } catch { return 'error' }
+}
+
+export async function nicknameHasPin(nickname: string): Promise<boolean | null> {
+  try {
+    const res = await fetch('/api/profile/resolve-nickname', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nickname }),
+    })
+    if (res.ok) return false          // 未设 PIN 直接解析成功
+    if (res.status === 403) return true
+    return null                        // 404 未绑定 / 其他
+  } catch { return null }
+}
+
+export async function resolveNickname(nickname: string, pin?: string): Promise<string | null> {
+  try {
+    const res = await fetch('/api/profile/resolve-nickname', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nickname, pin }),
+    })
+    if (!res.ok) return null
+    return ((await res.json()) as { familyId?: string }).familyId ?? null
+  } catch { return null }
+}
+
+export async function setNicknamePin(nickname: string, familyId: string, pin: string): Promise<'ok' | 'bad' | 'error'> {
+  try {
+    const res = await fetch('/api/profile/set-pin', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nickname, familyId, pin }),
+    })
+    if (res.ok) return 'ok'
+    return res.status === 400 ? 'bad' : 'error'
+  } catch { return 'error' }
+}
