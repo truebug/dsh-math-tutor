@@ -1,8 +1,26 @@
 # 沪教版 2~5 年级英语知识点对照表
 
-> 搜索引擎未能取回官方目录（2026-08-24 实测必应/DDG 均返空页）。
-> 以下入门内容选取**教材无关的通用基础**（26 字母 + 高频问候词），
-> 具体单元词表待实体教材核对后补充修正。教材：上海教育出版社《英语（牛津上海版）》。
+> ⚠️ **换版警示（2026-08-27 核实）**：牛津上海版已停用作新授教材。
+> 上海 2024 秋起启用上教社新版《英语》（2024 年国家教材委员会审核通过），
+> 逐年替换：2024 一年级 → 2025 二年级 → 2026 秋三年级换新版。
+> 本仓库现有英语词库基于**旧版牛津上海版**（一年级起点），与新教材单元不对齐，
+> 存量内容保留作"通用基础练习"，新关卡一律以新教材词表为准。
+
+## 新教材锚点（已核实，TapXWorld/ChinaTextbook 收录的 2024 新版扫描件）
+
+**《英语（三年级起点）三年级上册》**（上海教育出版社，2024 审核版）结构：
+
+| Module | Unit | 主题 |
+|---|---|---|
+| M1 Getting ready | U1 Welcome to school! / U2 What's interesting about families? / U3 What do we look like? | 入学·家庭·外貌 |
+| M2 My family | U4 They are my neighbours / U5 Who are my friends? / U6 What do we do on holidays? | 邻居·朋友·假期 |
+| M3 My colourful life | U7 What do we know about weather? / U8 What can you do with money? / U9 What are you doing? | 天气·金钱·现在进行时 |
+| M4 Having fun | U10 Numbers / U11 The toy museum / U12 Shapes | 数字·玩具·形状 |
+
+书末附分单元词表（扫描件 p67+ 已定位，待逐页提取入库）。
+新词库来源即此册及后续册次；提取后新建 `english-v2.ts`，旧 VOCAB 仅服务存量二年级关。
+
+## 二年级（存量，旧牛津版对齐，暂不回改）
 
 ## 二年级（已上线内容）
 
