@@ -33,6 +33,17 @@
 2. 需要跨会话记忆 / 多 agent 编排 / 官方工具链（MCP、skills）
 3. 服务器有资源跑独立 dsh 运行时进程（coolje00 资源够，主要差部署与监控）
 
+**第二步预检（2026-08-27）**：上游 master 仍停在 `b150a551b8`（2026-08-21，
+0.1.1-rc.2），三个触发信号均未出现，第二步继续待命。每月 fetch 一次上游即可。
+
+## 主动性补全（2026-08-27）
+
+- 练习后复盘邀请：结算页错题列表上方小精灵气泡 CTA（🧚 趁热打铁 → 错题本）
+- 勋章系统：`lib/badges.ts` 14 枚（集星/满星/连击打卡/累计答题/错题重练五线），
+  确定性判定零 LLM；结算页新勋章弹窗 + 看板勋章墙（已获得点亮/未获得灰显进度）
+- 推荐规则月度 review 闭环：`scripts/recommend-review.mjs`（画像 JSON 进，
+  采纳率/命中率阈值告警出，人工+AI 联合 review 清单）
+
 ## 差距清单（现状 → 目标）
 
 1. **DSH 运行时零接入** → server 接入 `@deepseek-ai/dsh`，把 review/hint 从裸 fetch 改造为 dsh 插件（defineTool + ctx.tools.register），cordis.yml 启用

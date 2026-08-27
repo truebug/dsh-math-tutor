@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import OnboardingView from './components/OnboardingView'
 import SetupView from './components/SetupView'
 import MapView from './components/AdventureMap'
@@ -20,6 +20,7 @@ import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core
 import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
 import { battleScore } from './api/battle'
 import { recordStars, starsFor } from './lib/adventure'
+import { earnedIds, diffBadges, type Badge } from './lib/badges'
 import { submitScore, type ScoreResult } from './lib/score'
 import { bumpMetric } from './lib/profile'
 import './styles.css'
@@ -30,7 +31,9 @@ export default function App() {
   const [settings, setSettings] = useState<RaceSettings>(defaultSettings())
   const [record, setRecord] = useState<SessionRecord | null>(null)
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
+  const [newBadges, setNewBadges] = useState<Badge[]>([])
   const [raceKey, setRaceKey] = useState(0)
+  const badgesBeforeRef = useRef<Set<string>>(new Set())
 
   if (!profile) {
     return (
@@ -41,6 +44,8 @@ export default function App() {
   }
 
   const startRace = (s: RaceSettings) => {
+    // 练习前快照：结算时 diff 出本次新获得的勋章
+    badgesBeforeRef.current = earnedIds()
     // 画像反哺出题：仅个人日常练习启用；竞赛码导入/错题重练锁定参数
     if (!s.imported && !s.customQuestions) {
       const { ratio, applied, reason } = adaptiveCarryRatio(LEVELS[s.level].carryRatio)
@@ -100,6 +105,9 @@ export default function App() {
     if (settings.stageId) recordStars(settings.stageId, stars)
     if (settings.daily) recordStars(new Date().toISOString().slice(0, 10), stars, true)
     setRecord(rec)
+    // 勋章 diff：本次练习后新获得的（recordStars/saveSession 已先落库，此刻 earnedIds 反映最新状态）
+    const after = earnedIds()
+    setNewBadges(diffBadges(badgesBeforeRef.current, after))
     setView('result')
   }
 
@@ -122,6 +130,7 @@ export default function App() {
           onChange={setSettings}
           onStart={() => startRace(settings)}
           onOpenMistakes={() => setView('mistakes')}
+          newBadges={newBadges}
         />
       )}
       {view === 'race' && settings.kind === 'match' && <WordMatchView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}

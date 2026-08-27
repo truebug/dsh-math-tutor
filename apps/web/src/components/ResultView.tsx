@@ -14,6 +14,7 @@ import type { LearnerProfile } from '../lib/types'
 import type { RaceSettings, SessionRecord } from '../lib/types'
 import { classifyError, PATTERN_LABELS } from '../lib/errorPatterns'
 import type { ScoreResult } from '../lib/score'
+import type { Badge } from '../lib/badges'
 
 // 题型标签：让 AI 知道错的是哪类题（拼音/古诗/词义/句型……）
 const KIND_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ interface Props {
   onRetry: (settings: RaceSettings) => void
   onHome: () => void
   onOpenMistakes: () => void
+  newBadges?: Badge[]
 }
 
 function fmt(ms: number): string {
@@ -53,7 +55,7 @@ function speakQuestion(q: { text: string }, kind?: string) {
   speakText(m ? m[1] : q.text, isEnglish ? 'en-US' : 'zh-CN')
 }
 
-export default function ResultView({ record, profile, scoreResult, onRetry, onHome, onOpenMistakes }: Props) {
+export default function ResultView({ record, profile, scoreResult, onRetry, onHome, onOpenMistakes, newBadges }: Props) {
   const stars = starsFor(record.correct, record.total)
   const fxRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -121,6 +123,22 @@ export default function ResultView({ record, profile, scoreResult, onRetry, onHo
       <p className="praise">{praise}</p>
       <p className="stars-line">{'⭐'.repeat(stars)}{'☆'.repeat(3 - stars)} <small>{pet.emoji} {pet.name}</small></p>
 
+      {/* 新勋章：本次练习解锁的，弹窗庆祝 */}
+      {newBadges && newBadges.length > 0 && (
+        <div className="badge-toast">
+          <b>🎉 获得新勋章！</b>
+          <div className="badge-toast-row">
+            {newBadges.map((b) => (
+              <div key={b.id} className="badge-item">
+                <span className="badge-emoji">{b.emoji}</span>
+                <b>{b.name}</b>
+                <small>{b.desc}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="stats">
         <div className="stat"><b>{record.correct}</b><span>答对 / {record.total} 题</span></div>
         <div className="stat"><b>{Math.round(record.accuracy * 100)}%</b><span>正确率</span></div>
@@ -141,6 +159,15 @@ export default function ResultView({ record, profile, scoreResult, onRetry, onHo
 
       {record.wrong.length > 0 && (
         <div className="wrong-list">
+          {/* 主动性：练习后复盘邀请（小精灵主动开口，引导趁热打铁） */}
+          <div className="recap-invite">
+            <span className="recap-sprite">🧚</span>
+            <div className="recap-text">
+              <b>小精灵：这次有 {record.wrong.length} 道错题，趁热打铁效果最好！</b>
+              <p>现在花一分钟看看错在哪，明天就不容易再错啦。</p>
+            </div>
+            <button className="primary small" onClick={onOpenMistakes}>去复盘 →</button>
+          </div>
           <h3>本次错题（{record.wrong.length}）</h3>
           {record.wrong.map((w, i) => (
             <div key={i} className="wrong-item">

@@ -5,6 +5,7 @@ import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEn
 import { loadProfileData } from '../lib/profile'
 import { metricRates } from '../lib/profile'
 import { metricTrend } from '../lib/profile'
+import { badgeWall } from '../lib/badges'
 import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 import { STAGES, stagesOf } from '../lib/adventure'
 import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
@@ -250,6 +251,30 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
       })()}
 
       <Heatmap onRetry={onRetryMistakes} />
+
+      {/* 勋章墙：已获得点亮 + 未获得灰色带进度提示 */}
+      {(() => {
+        const { earned, pending } = badgeWall()
+        return (
+          <div className="pattern-card">
+            <h3 className="chart-title">🎖️ 勋章墙（{earned.length}/{earned.length + pending.length}）</h3>
+            <div className="badge-wall">
+              {earned.map((b) => (
+                <div key={b.id} className="badge-cell earned" title={b.desc}>
+                  <span className="badge-emoji">{b.emoji}</span>
+                  <small>{b.name}</small>
+                </div>
+              ))}
+              {pending.map(({ badge: b, hint }) => (
+                <div key={b.id} className="badge-cell" title={b.desc}>
+                  <span className="badge-emoji dim">{b.emoji}</span>
+                  <small>{b.name}{hint ? ` ${hint}` : ''}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {sync && <WeeklyReport />}
 
