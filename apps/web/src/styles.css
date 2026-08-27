@@ -662,3 +662,64 @@ input[type="range"] { width: 100%; }
 }
 .node small { color: #6b5232; }
 .node.locked { opacity: .75; }
+
+/* 每周成长报告（可打印） */
+.growth-report { background: #fff; border: 1px solid #e3ebf5; }
+.gr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.gr-period { margin: 2px 0 0; font-size: 12px; color: #8a94a8; }
+.gr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+.gr-stat {
+  background: linear-gradient(180deg, #f6faff, #eef4fd); border: 1px solid #dce8f6;
+  border-radius: 12px; padding: 10px 8px; text-align: center;
+}
+.gr-stat b { display: block; font-size: 26px; color: #2a4a7a; line-height: 1.1; }
+.gr-stat b small { font-size: 13px; font-weight: 500; color: #5a6f92; }
+.gr-stat span { font-size: 12px; color: #66788f; }
+.delta { font-weight: 700; margin-left: 2px; }
+.delta.up { color: #2e9e5b; }
+.delta.down { color: #d4564e; }
+.delta.flat { color: #98a4b5; }
+.gr-chart { margin: 4px 0 10px; }
+.gr-chart h4, .gr-ai h4 { margin: 8px 0 6px; font-size: 13px; color: #556; font-weight: 600; }
+.gr-bars { display: flex; align-items: flex-end; gap: 6px; height: 110px; }
+.gr-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; }
+.gr-bar-area {
+  position: relative; flex: 1; width: 100%; max-width: 34px;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.gr-bar {
+  width: 100%; min-height: 2px; border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, #7fb2f0, #4a90e2);
+}
+.gr-dot {
+  position: absolute; left: 50%; transform: translate(-50%, 50%);
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #f0a840; border: 2px solid #fff; box-shadow: 0 0 0 1px #e0c080;
+}
+.gr-bar-num { font-size: 11px; color: #66788f; height: 14px; }
+.gr-bar-label { font-size: 11px; color: #98a4b5; }
+.gr-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 10px; }
+.gr-table th {
+  text-align: left; color: #8a94a8; font-weight: 500; font-size: 12px;
+  padding: 6px 8px; border-bottom: 2px solid #e3ebf5;
+}
+.gr-table td { padding: 7px 8px; border-bottom: 1px solid #eef3f9; color: #445; }
+.gr-highlights p { margin: 5px 0; font-size: 13px; color: #556; line-height: 1.6; }
+.gr-highlights b { color: #2a4a7a; }
+.gr-weak b { color: #c96a2e; }
+.gr-ai { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #dce8f6; }
+.gr-ai p { margin: 4px 0; line-height: 1.8; color: #445; white-space: pre-wrap; font-size: 14px; }
+
+/* 打印：只输出成长报告卡片，适 A4 */
+@media print {
+  body * { visibility: hidden; }
+  .growth-report, .growth-report * { visibility: visible; }
+  .growth-report {
+    position: absolute; top: 0; left: 0; width: 100%;
+    border: none; box-shadow: none; padding: 8mm;
+  }
+  .no-print { display: none !important; }
+  .gr-stat b { font-size: 22px; }
+  .gr-bars { height: 90px; }
+  .gr-bar { background: #4a90e2; }
+}
