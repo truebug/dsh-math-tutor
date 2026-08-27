@@ -4,6 +4,23 @@
 
 ## 2026-08-27
 
+- **dsh 真运行时灰度三步全落地**（3a9b7e9/cc14e0d/f9f4e79）：
+  - 本地验证：`dsh-jsonrpc-agent` spawn + cordis.yml 最小组合跑通 Kimi k3
+    （llm-deepseek 适配器 baseURL 直指 Kimi 端点，无需自写适配器）。
+  - hint：`/api/hint?provider=dsh` 线上跑通，session 持久化
+    `/var/lib/dsh-tutor/sessions` 生效（服务器 Node v22.19 支持 zstd）。
+  - review：`/api/review?provider=dsh` 跑通，familyId 会话锚点注入。
+  - sprite：新增 `POST /api/sprite-advice`——agent 自主决策小精灵开口内容
+    （实测自主结合错因统计与推荐关），dsh→kimi→前端本地规则三层降级；
+    前端本地规则即时出泡、agent 回复后原地升级。
+  - 部署形态：SDK client 按需 spawn 子进程非常驻服务；崩溃自动重孵。
+  - 事故记录：一次部署误将前端 src 覆盖后端目录导致 404，已重铺修复
+    （后端代码全在 git，无损）。
+- **主动性补全 + 勋章系统**（84357c8）：结算页小精灵复盘邀请气泡
+  （练习前建议→练习中干预→练习后复盘链路闭环）；14 枚勋章
+  （集星/满星/连击打卡/累计答题/错题重练五线，纯本地判定），结算页新勋章
+  弹窗 + 看板勋章墙（灰显带进度）；`scripts/recommend-review.mjs`
+  月度推荐规则 review 报告（采纳率/命中率阈值告警）。
 - **教材换版核实（高年级题库 P0 前置）**：确认牛津上海版英语已停用，
   2024 秋起上教社新版《英语》逐年替换（2026 秋三年级换新版）；
   从 ChinaTextbook 拿到 2024 审核版《英语（三年级起点）三上》扫描件，
@@ -11,6 +28,8 @@
   数学/语文 curriculum 文档同步标注换版风险（数学待新版目录、
   语文待修订版词语表复核）。结论：存量二年级内容保留，
   新关卡一律以新教材词表为准。
+  - 语文二上复核通过（53cc6c8）：依据 PDF 即 2024 修订版（版权页有章），
+    目录篇目与 12 关映射逐一核对一致，语文可宣称同步。
 - **三层契约落地**（5ec4988）：sprite.ts 决策入口 + agent.ts provider
   网关（AGENT_PROVIDER 可切，默认 kimi）+ roadmap 迁移映射表，
   为接 dsh/任意 agent 框架铺路，纯重构行为不变。
