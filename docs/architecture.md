@@ -26,6 +26,25 @@
 └─────────────────────────────────────────────────┘
 ```
 
+## 运行时现状（2026-08-27 后以此为准）
+
+```
+浏览器（React SPA）
+  └─ /api/* → apps/server（裸 node:http，cordis 约定插件壳 host.ts）
+       ├─ routes/（review/hint/battle/score/profile/weekly/sprite 七插件）
+       ├─ services/agent.ts   Agent 网关 respond()：唯一 provider 出口
+       │    ├─ kimi（默认）：services/llm.ts 直调 Kimi OpenAI 兼容端点
+       │    └─ dsh（灰度）：services/dsh.ts → spawn dsh 子进程
+       │         （stdio JSON-RPC，cordis.yml 见 dsh-runtime/，
+       │          Kimi 经 dsh-llm-deepseek 适配器接入；familyId 会话锚点；
+       │          session 持久化 /var/lib/dsh-tutor/sessions）
+       ├─ services/learnerCtx.ts  画像摘要注入（agent 记得孩子）
+       └─ data/  profiles/<familyId>.json + nicknames.json（昵称→UUID 索引）
+```
+
+灰度控制：`AGENT_PROVIDER` 环境变量全局切换，或 `?provider=dsh` 请求级灰度。
+sprite 场景默认走 dsh，降级链 dsh→kimi→前端本地规则。
+
 ## 传统概念的取舍
 
 | 传统概念 | 结论 | 说明 |

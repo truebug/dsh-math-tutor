@@ -14,12 +14,23 @@
 ## 服务器现状（coolje00）
 
 - Node：`/opt/node22/bin/node`（v22.19.0，npmmirror 手动安装）
-- 后端：`/opt/dsh-math-tutor/server/`（src + .env，`.env` 含 LLM key，仅服务端）
+- 后端：`/opt/dsh-math-tutor/server/`（src + .env + node_modules + dsh-runtime/）
+  - `.env` 含 LLM key（仅服务端）
+  - `node_modules`：`@deepseek-ai/dsh-sdk-client`（agent 网关 dsh provider 用）
+  - `dsh-runtime/`：dsh 运行时（cordis.yml + 独立 node_modules）
+- dsh 会话持久化：`/var/lib/dsh-tutor/sessions/`
 - 服务：`systemctl status dsh-math-tutor`（Restart=always）
 - nginx 配置：`/etc/nginx/sites-enabled/default`（2008 server 块内新增两个 location）
 - 备份：`/root/default.bak.*`（注意：备份勿放 sites-enabled，会被 nginx 加载）
 
 ## 更新部署流程
+
+> ⚠️ 前后端分开 scp，各自在自己的目录下执行（曾发生前端 src 误覆盖后端的事故）。
+
+数据文件：`server/data/profiles/<familyId>.json`（云端画像）、
+`server/data/nicknames.json`（昵称索引：昵称→familyId+可选PIN哈希）。
+dsh-runtime 依赖变更时（很少）：
+`cd /opt/dsh-math-tutor/server/dsh-runtime && PATH=/opt/node22/bin:$PATH npm install --omit=dev`
 
 ```bash
 # 本地（仓库根目录）
