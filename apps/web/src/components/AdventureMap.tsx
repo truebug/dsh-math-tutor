@@ -5,6 +5,8 @@ import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loa
 import { adaptiveStageTune } from '../lib/profile'
 import { bumpMetric } from '../lib/profile'
 import { spriteAdvice } from '../lib/sprite'
+import { fetchSpriteAdvice } from '../api/sprite'
+import { loadProfileData } from '../lib/profile'
 import Sprite from './Sprite'
 import { sfx } from '../lib/sound'
 import TreasureMapBg from './TreasureMapBg'
@@ -327,7 +329,23 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
   }, [recommend?.stage.id])
 
   // 主动性：小精灵"今日建议"气泡（决策已收敛到 lib/sprite.ts，将来接 agent 时 UI 零感知）
-  const todayAdvice = spriteAdvice({ adventure: adv, dailyDone, recommendReason: recommend?.reason ?? null })
+  const localAdvice = spriteAdvice({ adventure: adv, dailyDone, recommendReason: recommend?.reason ?? null })
+  // sprite 场景接 agent：本地规则先出气泡（零等待），服务端 agent 回复后升级内容；失败则保留本地
+  const [agentAdvice, setAgentAdvice] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    const pd = loadProfileData()
+    fetchSpriteAdvice({
+      grade: profile.grade,
+      patterns: pd.patterns,
+      dailyDone,
+      dailyDays: Object.keys(adv.daily).length,
+      recommendReason: recommend?.reason ?? undefined,
+    }).then((text) => { if (alive && text) setAgentAdvice(text) })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.grade, dailyDone, recommend?.stage.id])
+  const todayAdvice = agentAdvice ?? localAdvice
 
   return (
     <div className="adventure" ref={scrollRef}>

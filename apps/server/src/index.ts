@@ -9,6 +9,7 @@ import * as battle from './routes/battle.ts'
 import * as score from './routes/score.ts'
 import * as profile from './routes/profile.ts'
 import * as weekly from './routes/weekly.ts'
+import * as sprite from './routes/sprite.ts'
 
 const { ctx, dispatch } = createHost()
 
@@ -19,7 +20,7 @@ ctx.routes.register('/api/health', 'GET', async (_req, res) => {
   return true
 })
 
-loadPlugins(ctx, [review, hint, battle, score, profile, weekly] as Plugin[])
+loadPlugins(ctx, [review, hint, battle, score, profile, weekly, sprite] as Plugin[])
 
 const server = createServer(async (req, res) => {
   try {
