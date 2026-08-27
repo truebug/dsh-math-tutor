@@ -36,6 +36,18 @@
 **第二步预检（2026-08-27）**：上游 master 仍停在 `b150a551b8`（2026-08-21，
 0.1.1-rc.2），三个触发信号均未出现，第二步继续待命。每月 fetch 一次上游即可。
 
+**第二步本地验证通过（2026-08-27）**：`tmp/dsh-local/`（gitignore）最小组合已跑通——
+`dsh-jsonrpc-agent` spawn + cordis.yml（jsonrpc-server/agent-spine/llm-deepseek）+
+`DeepSeekHarness.run()` 拿到 Kimi k3 真实回复。关键结论：
+
+- ✅ **Kimi 适配成立**：`dsh-llm-deepseek` 的 `baseURL` 直指 `https://api.kimi.com/coding/v1`，
+  `apiKeyEnv` 读 LLM_API_KEY，`models: [{id: k3}]` 即可，无需自写适配器
+- ⚠️ **Node 需 ≥22.15**：`session-persistence-jsonl` 依赖 node:zlib zstd；
+  本机 22.12 试跑时去掉持久化插件通过。服务器部署前确认/升级 Node
+- ⚠️ cordis.yml 必填项：`agent-spine` 需 `workspaceContext.maxBytes`；
+  stdout 纪律（不挂 stdout logger）
+- 部署形态确认：server 按需 spawn 子进程（非常驻服务），stdin EOF 自动回收
+
 ## 主动性补全（2026-08-27）
 
 - 练习后复盘邀请：结算页错题列表上方小精灵气泡 CTA（🧚 趁热打铁 → 错题本）

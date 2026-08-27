@@ -6,3 +6,6 @@ dist/
 .DS_Store
 coverage/
 apps/server/data/
+
+# dsh 本地试验（含 node_modules 与密钥）
+tmp/dsh-local/
