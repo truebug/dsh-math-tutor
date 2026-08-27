@@ -1,5 +1,5 @@
 // 家长周报（P3）：LLM 基于一周画像生成成长简报（不含身份信息）
-import { chat } from '../services/llm.ts'
+import { respond } from '../services/agent.ts'
 import type { ServerContext } from '../host.ts'
 import { loadProfile } from './profile.ts'
 
@@ -48,10 +48,14 @@ export async function buildWeeklyReport(familyId: string): Promise<string | null
     topPattern && topPattern[1] > 0 ? `主要薄弱点：${labels[topPattern[0]] ?? topPattern[0]}（累计${topPattern[1]}次）。` : '',
   ].join('\n')
 
-  return chat([
-    { role: 'system', content: `你是孩子的学习成长顾问，给家长写本周简报。要求：先说进步和亮点，再温和指出一个最值得关注的薄弱点和一条具体可执行的家庭配合建议。不超过 150 字，语气温和专业，不用 markdown，不提 AI。` },
-    { role: 'user', content: summary },
-  ], 400)
+  return respond({
+    scene: 'weekly',
+    maxTokens: 400,
+    messages: [
+      { role: 'system', content: `你是孩子的学习成长顾问，给家长写本周简报。要求：先说进步和亮点，再温和指出一个最值得关注的薄弱点和一条具体可执行的家庭配合建议。不超过 150 字，语气温和专业，不用 markdown，不提 AI。` },
+      { role: 'user', content: summary },
+    ],
+  })
 }
 
 export const name = 'weekly'

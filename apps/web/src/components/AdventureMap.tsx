@@ -2,10 +2,9 @@
 // 零资源实现：SVG 程序化山脊剪影 × 3 景深层，滚动时差速移动
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { STAGES, SUBJECTS, currentSubject, setSubject, stagesOf, isUnlocked, loadAdventure, consumeUnlock, recommendStage, petStage, titleFor, totalStars, dailySettings, todayKey } from '../lib/adventure'
-import { loadProfileData } from '../lib/profile'
 import { adaptiveStageTune } from '../lib/profile'
 import { bumpMetric } from '../lib/profile'
-import { dominantAdvice } from '../lib/errorPatterns'
+import { spriteAdvice } from '../lib/sprite'
 import Sprite from './Sprite'
 import { sfx } from '../lib/sound'
 import TreasureMapBg from './TreasureMapBg'
@@ -327,16 +326,8 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recommend?.stage.id])
 
-  // 主动性：画像驱动"今日建议"气泡（打开地图时小精灵主动开口）
-  const todayAdvice = (() => {
-    const pd = loadProfileData()
-    const tip = dominantAdvice(pd.patterns)
-    const dailyCount = Object.keys(adv.daily).length
-    if (tip) return `今天开始之前：${tip}`
-    if (dailyCount > 0 && !dailyDone) return '今天还没打卡每日挑战哦，完成后有加分奖励！'
-    if (recommend) return `我看好你哦～${recommend.reason}`
-    return null
-  })()
+  // 主动性：小精灵"今日建议"气泡（决策已收敛到 lib/sprite.ts，将来接 agent 时 UI 零感知）
+  const todayAdvice = spriteAdvice({ adventure: adv, dailyDone, recommendReason: recommend?.reason ?? null })
 
   return (
     <div className="adventure" ref={scrollRef}>

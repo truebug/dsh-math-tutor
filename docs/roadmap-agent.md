@@ -8,6 +8,31 @@
 > DSH 真 Runtime 接入评估后暂缓——cordis 约定宿主（host.ts）已满足当前需求，
 > 真接 dsh 只值服务层，待需要跨会话记忆/多 agent 编排时再启。
 
+## 接入预备（2026-08-27 三层契约，纯重构行为不变）
+
+经复盘修正：上游 dsh 是否破坏性变更不构成拒绝接入的理由——只要三层切分做好，
+换 dsh / 换 openclaw / 换任何 agent 框架都只是改一个 provider 实现。当前契约：
+
+| 层 | 现状 | 接 agent 时 |
+|---|---|---|
+| 感知/记忆 | `profile.ts` 画像 JSON（前端）+ `services/learnerCtx.ts` 服务端摘要 | 不动，作为 agent 工具的 read 面 |
+| 决策/表达 | `lib/sprite.ts`（前端规则入口）+ `services/agent.ts` respond()（唯一 provider 出口） | **唯一替换点**：spriteAdvice 内部改调 agent；respond() 增 dsh provider |
+| 呈现 | `Sprite` 气泡 / 结算页点评卡 | 不动，内容来源换了 UI 零感知 |
+
+**迁移映射（届时照表施工，预计 2-3 天）**
+
+- `lib/sprite.ts spriteAdvice()` 规则集 → agent 系统提示词 + 画像工具
+- `services/learnerCtx.ts buildLearnerContext()` → `ctx.tools.register('get-learner-context')`
+- `services/agent.ts respond()` → 增 `AGENT_PROVIDER=dsh` 分支（SDK client → 独立运行时）
+- 错题查询/积分提交（routes/battle.ts、routes/score.ts 内的纯函数）→ 对应 agent 工具
+- 灰度顺序：hint → review → sprite（逐场景切流量，AGENT_PROVIDER 环境变量控制）
+
+**接入触发信号**（任一即启动第二步）
+
+1. dsh 发布 0.2/稳定版（当前 0.1.1-rc.2，2026-08-21 后上游无新提交）
+2. 需要跨会话记忆 / 多 agent 编排 / 官方工具链（MCP、skills）
+3. 服务器有资源跑独立 dsh 运行时进程（coolje00 资源够，主要差部署与监控）
+
 ## 差距清单（现状 → 目标）
 
 1. **DSH 运行时零接入** → server 接入 `@deepseek-ai/dsh`，把 review/hint 从裸 fetch 改造为 dsh 插件（defineTool + ctx.tools.register），cordis.yml 启用

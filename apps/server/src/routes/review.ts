@@ -1,4 +1,4 @@
-import { chat } from '../services/llm.ts'
+import { respond } from '../services/agent.ts'
 import type { ServerContext } from '../host.ts'
 import { buildLearnerContext } from '../services/learnerCtx.ts'
 
@@ -63,10 +63,14 @@ export async function buildReview(req: ReviewRequest): Promise<string> {
         : '全部答对。',
     context ? `孩子近期情况：${context}` : '',
   ].join('\n')
-  return chat([
-    { role: 'system', content: SYSTEMS[subject].replace('{grade}', String(req.grade)) },
-    { role: 'user', content: user },
-  ])
+  return respond({
+    scene: 'review',
+    familyId: req.familyId,
+    messages: [
+      { role: 'system', content: SYSTEMS[subject].replace('{grade}', String(req.grade)) },
+      { role: 'user', content: user },
+    ],
+  })
 }
 
 // ===== DSH 插件壳：注册 HTTP 路由（行为与重构前一致） =====

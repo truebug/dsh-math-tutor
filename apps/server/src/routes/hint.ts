@@ -1,5 +1,6 @@
 // 小精灵讲解：答错后点击触发，LLM 生成简短儿童友好讲解（不携带身份信息）
-import { chat, chatStream } from '../services/llm.ts'
+import { chatStream } from '../services/llm.ts'
+import { respond } from '../services/agent.ts'
 import { buildLearnerContext } from '../services/learnerCtx.ts'
 
 export interface HintRequest {
@@ -15,10 +16,15 @@ const SYSTEM = `你是一位温柔的小学{grade}年级助教小精灵。孩子
 不用 markdown，不要提 AI、模型等词。`
 
 export async function buildHint(req: HintRequest): Promise<string> {
-  return chat([
-    { role: 'system', content: SYSTEM.replace('{grade}', String(req.grade)) },
-    { role: 'user', content: hintUser(req) },
-  ], 300)
+  return respond({
+    scene: 'hint',
+    familyId: req.familyId,
+    maxTokens: 300,
+    messages: [
+      { role: 'system', content: SYSTEM.replace('{grade}', String(req.grade)) },
+      { role: 'user', content: hintUser(req) },
+    ],
+  })
 }
 
 export function streamHint(req: HintRequest): AsyncGenerator<string> {
