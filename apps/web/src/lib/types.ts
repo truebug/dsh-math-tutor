@@ -13,7 +13,7 @@ export interface RaceSettings {
   imported?: boolean      // 是否来自竞赛码导入（导入=锁定参数，不做自适应，保证同码同题）
   domain?: 'int' | 'dec'  // dec = 小数加减（四年级）
   kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese' | 'poem' | 'chars'  // 英语选择题内容（不使用数字出题器）
-    | 'match' | 'poemchain' | 'snake'  // 游乐场：游戏关（独立组件承载，结束时合成标准答题记录）
+    | 'match' | 'poemchain' | 'snake' | 'whack' | 'memory'  // 游乐场：游戏关（独立组件承载，结束时合成标准答题记录）
   subject?: Subject       // 科目（用于 AI 点评分科 prompt）
   stageId?: string      // 闯关 ID（成绩用于记星）
   daily?: boolean       // 每日挑战（成绩记入 daily 星）

@@ -99,3 +99,44 @@ export function snakeRounds(stageId: string, seed: number, count: number, level:
 export function snakeTickMs(level: number): number {
   return level >= 3 ? 150 : level === 2 ? 190 : 230
 }
+
+// ===== 打地鼠：九宫格冒卡片，敲中与提示匹配的 =====
+import { CHAR_POOL } from './chineseChars'
+
+export interface WhackRound {
+  prompt: string      // 提示（拼音 / 中文词义）
+  target: string      // 正确卡片（汉字 / 英文单词）
+  decoys: string[]    // 干扰卡片
+}
+
+export function whackRounds(stageId: string, seed: number, count: number): { rounds: WhackRound[]; questions: Question[] } {
+  const rng = mulberry32(seed)
+  // 语文关：拼音 → 汉字；英语关：中文 → 英文（问候+学校主题）
+  const isChinese = stageId === 'arc-whack1'
+  const pool: Array<[string, string]> = isChinese
+    ? CHAR_POOL.slice(0, 58)   // 上册字库
+    : vocabThemes(['eng-greet', 'eng-school']).map(([en, zh]) => [zh, en] as [string, string])
+  const picked = shuffle(pool, rng).slice(0, Math.min(count, pool.length))
+  const rounds = picked.map(([prompt, target]) => {
+    const decoys = shuffle(pool.filter(([, t]) => t !== target), rng).slice(0, 8).map(([, t]) => t)
+    return { prompt, target, decoys }
+  })
+  const questions = rounds.map((r, index) => {
+    const options = shuffle([r.target, ...r.decoys.slice(0, 3)], rng)
+    const text = isChinese ? `拼音 "${r.prompt}" 对应的字是？` : `「${r.prompt}」的英文是？`
+    return { index, a: 0, b: 0, op: 'add' as const, text, answer: 0, carry: false, options, answerText: r.target }
+  })
+  return { rounds, questions }
+}
+
+// ===== 翻牌记忆：卡片扣着，凭记忆配对 =====
+const MEMORY_THEMES: Record<string, string[]> = {
+  'arc-memory1': ['eng-body', 'eng-family'],
+  'arc-memory2': ['eng-action', 'eng-weather'],
+}
+
+export function memoryPairs(stageId: string, seed: number, count: number): MatchPair[] {
+  const pool = vocabThemes(MEMORY_THEMES[stageId] ?? MEMORY_THEMES['arc-memory1'])
+  const rng = mulberry32(seed)
+  return shuffle(pool, rng).slice(0, Math.min(count, pool.length)).map(([en, zh]) => ({ en, zh }))
+}

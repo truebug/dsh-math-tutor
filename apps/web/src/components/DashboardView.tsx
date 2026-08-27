@@ -4,6 +4,7 @@ import { loadSessions } from '../lib/storage'
 import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
 import { metricRates } from '../lib/profile'
+import { metricTrend } from '../lib/profile'
 import { PATTERN_LABELS, dominantAdvice } from '../lib/errorPatterns'
 import { STAGES, stagesOf } from '../lib/adventure'
 import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
@@ -132,6 +133,50 @@ function LineChart({ values, format, color }: { values: number[]; format: (v: nu
   )
 }
 
+// 指标趋势：14 天 推荐采纳率/反哺命中率 双折线（null 天断线不画点）
+function MetricTrendChart() {
+  const { days, rec, hit } = metricTrend(14)
+  const hasData = rec.some((v) => v !== null) || hit.some((v) => v !== null)
+  if (!hasData) return null
+  const W = 440
+  const H = 120
+  const step = (W - 16) / (days.length - 1)
+  const toY = (v: number) => H - 12 - v * (H - 32)
+  const series = (values: Array<number | null>, color: string) => {
+    const pts = values.map((v, i) => (v === null ? null : ([8 + i * step, toY(v)] as const)))
+    // 断线分段：连续非 null 段各自成 polyline
+    const segs: string[] = []
+    let cur: string[] = []
+    pts.forEach((p) => {
+      if (p) cur.push(`${p[0]},${p[1]}`)
+      else if (cur.length > 1) { segs.push(cur.join(' ')); cur = [] } else { cur = [] }
+    })
+    if (cur.length > 1) segs.push(cur.join(' '))
+    return (
+      <g>
+        {segs.map((s, i) => <polyline key={i} points={s} fill="none" stroke={color} strokeWidth="2.5" />)}
+        {pts.map((p, i) => p && <circle key={i} cx={p[0]} cy={p[1]} r="3.5" fill={color} />)}
+      </g>
+    )
+  }
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart">
+        <line x1="8" y1={toY(1)} x2={W - 8} y2={toY(1)} stroke="#d7e4f5" strokeDasharray="4" />
+        <line x1="8" y1={toY(0.5)} x2={W - 8} y2={toY(0.5)} stroke="#eef2f7" strokeDasharray="4" />
+        <line x1="8" y1={toY(0)} x2={W - 8} y2={toY(0)} stroke="#d7e4f5" />
+        {series(rec, '#4a90e2')}
+        {series(hit, '#e2904a')}
+      </svg>
+      <div className="chart-range">
+        <span>{days[0]}</span>
+        <span><i className="legend" style={{ background: '#4a90e2' }} /> 推荐采纳率 <i className="legend" style={{ background: '#e2904a' }} /> 反哺命中率</span>
+        <span>{days[days.length - 1]}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (qs: Question[]) => void }) {
   const [sync, setSync] = useState(syncEnabled())
   const [board, setBoard] = useState<{ entries: LeaderboardEntry[]; myRank: number | null } | null>(null)
@@ -199,6 +244,7 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
                 {hitRate !== null && `🎯 反哺命中率 ${Math.round(hitRate * 100)}%（${pd.metrics!.adaptHit}/${pd.metrics!.adaptShown}）`}
               </p>
             )}
+            <MetricTrendChart />
           </div>
         )
       })()}

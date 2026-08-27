@@ -28,6 +28,7 @@ export interface ProfileData {
     recAdopted: number    // 推荐采纳次数（点击推荐进入关卡）
     adaptShown: number    // 画像反哺生效次数（题量/进退位被自适应调整）
     adaptHit: number      // 反哺后当次成绩达标次数（正确率 ≥85%）
+    daily?: Record<string, { recShown: number; recAdopted: number; adaptShown: number; adaptHit: number }>  // 按日切片（趋势图）
   }
 }
 
@@ -138,6 +139,11 @@ export function bumpMetric(key: 'recShown' | 'recAdopted' | 'adaptShown' | 'adap
   const p = loadProfileData()
   p.metrics ??= { recShown: 0, recAdopted: 0, adaptShown: 0, adaptHit: 0 }
   p.metrics[key] += 1
+  // 按日切片（趋势图用，向后兼容旧数据）
+  const day = new Date().toISOString().slice(0, 10)
+  p.metrics.daily ??= {}
+  p.metrics.daily[day] ??= { recShown: 0, recAdopted: 0, adaptShown: 0, adaptHit: 0 }
+  p.metrics.daily[day][key] += 1
   saveProfileData(p)
 }
 
@@ -148,4 +154,20 @@ export function metricRates(): { recRate: number | null; hitRate: number | null 
     recRate: m.recShown > 0 ? m.recAdopted / m.recShown : null,
     hitRate: m.adaptShown > 0 ? m.adaptHit / m.adaptShown : null,
   }
+}
+
+// 指标趋势：最近 days 天的 推荐采纳率 / 反哺命中率 逐日序列（无数据的天为 null）
+export function metricTrend(days = 14): { days: string[]; rec: Array<number | null>; hit: Array<number | null> } {
+  const m = loadProfileData().metrics
+  const daysArr: string[] = []
+  const rec: Array<number | null> = []
+  const hit: Array<number | null> = []
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+    daysArr.push(d.slice(5))   // MM-DD
+    const slice = m?.daily?.[d]
+    rec.push(slice && slice.recShown > 0 ? slice.recAdopted / slice.recShown : null)
+    hit.push(slice && slice.adaptShown > 0 ? slice.adaptHit / slice.adaptShown : null)
+  }
+  return { days: daysArr, rec, hit }
 }

@@ -63,6 +63,10 @@ const SCENES: Record<string, SceneTheme> = {
   'arc-poem2':  { sky: ['#2a2a4a', '#5c4a8a', '#9a7ac9'], layers: ['#3e3463', '#241f42', '#120f24'], glow: '#e0d6ff', emoji: '🖋️' },
   'arc-snake1': { sky: ['#0f3d1e', '#1e7a3a', '#52c96a'], layers: ['#2a8a48', '#14522a', '#082e14'], glow: '#d8f3a5', emoji: '🐍' },
   'arc-snake2': { sky: ['#1a1a3a', '#3a3a8a', '#6a6ae0'], layers: ['#2c2c63', '#171740', '#0c0c24'], glow: '#c4d5fd', emoji: '⚡' },
+  'arc-whack1': { sky: ['#4a3a1a', '#8a6a3a', '#c9a86a'], layers: ['#6b522a', '#3f301a', '#241c0f'], glow: '#ffe8b0', emoji: '🔨' },
+  'arc-whack2': { sky: ['#2a4a5e', '#4a7a9a', '#7ab8c9'], layers: ['#3a5c78', '#223a4e', '#12232f'], glow: '#d6f0ff', emoji: '🐹' },
+  'arc-memory1': { sky: ['#3a2a5e', '#6a4a9e', '#a88ad0'], layers: ['#4c3a78', '#2c224e', '#17122c'], glow: '#e8d6ff', emoji: '🃏' },
+  'arc-memory2': { sky: ['#5e2a2a', '#9e4a4a', '#d08a8a'], layers: ['#783a3a', '#4e2222', '#2c1212'], glow: '#ffd6d6', emoji: '🎴' },
 }
 
 function rng(seed: number) {

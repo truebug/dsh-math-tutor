@@ -556,6 +556,26 @@ input[type="range"] { width: 100%; }
 .snake-pad .pad { width: 64px; height: 52px; border-radius: 14px; border: 2px solid #2a5c3c; background: #dcfce7; font-size: 22px; color: #166534; cursor: pointer; touch-action: manipulation; }
 .snake-pad .pad:active { background: #bbf7d0; transform: scale(0.95); }
 .snake-pad .up { grid-area: up; } .snake-pad .down { grid-area: down; } .snake-pad .left { grid-area: left; } .snake-pad .right { grid-area: right; }
+
+/* 打地鼠 */
+.whack-prompt { font-size: clamp(16px, 3.8vw, 22px); color: #4a3c14; margin: 0; }
+.whack-prompt b { color: #b45309; }
+.whack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 480px; }
+.whack-hole { position: relative; aspect-ratio: 1; border-radius: 50% 50% 42% 42%; background: radial-gradient(ellipse at 50% 30%, #6b4a26, #4a3018); border: 3px solid #3a2410; cursor: pointer; overflow: visible; }
+.whack-card { display: flex; align-items: center; justify-content: center; position: absolute; left: 12%; right: 12%; top: 8%; bottom: 22%; border-radius: 12px; background: #fffdf2; font-size: clamp(15px, 3.6vw, 24px); font-weight: 800; color: #3a2a10; box-shadow: 0 4px 10px #0006; animation: pop 0.25s; }
+@keyframes pop { from { transform: translateY(30%) scale(0.6); opacity: 0; } }
+.whack-hole.hit-ok { outline: 4px solid #4ade80; }
+.whack-hole.hit-no { outline: 4px solid #f87171; }
+.whack-burst { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 40px; animation: burst 0.5s; pointer-events: none; }
+@keyframes burst { from { transform: scale(0.3); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+
+/* 翻牌记忆 */
+.match-card.memory { background: linear-gradient(160deg, #3a2a5e, #5e3a8e); color: transparent; border-color: #6a4a9e; }
+.match-card.memory.up.en { background: linear-gradient(160deg, #eef4ff, #dbeafe); color: #1e3a8a; }
+.match-card.memory.up.zh { background: linear-gradient(160deg, #fef6e8, #fdeecd); color: #7c4a03; }
+
+/* 指标趋势图图例 */
+.chart-range .legend { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 4px 0 10px; }
 .poem-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center;
   opacity: .16; pointer-events: none; border-radius: 16px;

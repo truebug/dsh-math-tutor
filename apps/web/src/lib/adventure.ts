@@ -93,6 +93,10 @@ export const ARCADE_STAGES: StageDef[] = [
   { id: 'arc-poem2',  name: '接龙·高手',   emoji: '🖋️', desc: '8句 · 3分钟 · 混序挑战',  count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'poemchain', subject: 'chinese' },
   { id: 'arc-snake1', name: '贪吃蛇·口算', emoji: '🐍', desc: '8题 · 4分钟 · 20以内',   count: 8,  durationSec: 240, level: 1, ops: [], max: 0, kind: 'snake', subject: 'math' },
   { id: 'arc-snake2', name: '贪吃蛇·速算', emoji: '⚡', desc: '10题 · 4分钟 · 100以内',  count: 10, durationSec: 240, level: 2, ops: [], max: 0, kind: 'snake', subject: 'math' },
+  { id: 'arc-whack1', name: '地鼠·识字',   emoji: '🔨', desc: '8轮 · 3分钟 · 读音敲字', count: 8,  durationSec: 180, level: 1, ops: [], max: 0, kind: 'whack', subject: 'chinese' },
+  { id: 'arc-whack2', name: '地鼠·单词',   emoji: '🐹', desc: '8轮 · 3分钟 · 词义敲词', count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'whack', subject: 'english' },
+  { id: 'arc-memory1', name: '翻牌·热身',  emoji: '🃏', desc: '6对 · 3分钟 · 身体+家庭', count: 6,  durationSec: 180, level: 1, ops: [], max: 0, kind: 'memory', subject: 'english' },
+  { id: 'arc-memory2', name: '翻牌·挑战',  emoji: '🎴', desc: '8对 · 3分钟 · 动作+天气', count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'memory', subject: 'english' },
 ]
 
 export function arcadeStages(): StageDef[] {
