@@ -70,13 +70,24 @@ export function apply(ctx: ServerContext) {
     res.end()
     return true
   })
-  ctx.routes.register('/api/hint', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/hint', 'POST', async (_req, res, url, body) => {
     const b = body as HintRequest
     if (!b?.question || b.correctAnswer === undefined) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
       return true
     }
-    const text = await buildHint(b)
+    // 灰度：?provider=dsh 仅当前请求走 dsh 运行时（hint 场景先行）
+    const provider = url.searchParams.get('provider') ?? undefined
+    const text = await respond({
+      scene: 'hint',
+      familyId: b.familyId,
+      provider,
+      maxTokens: 300,
+      messages: [
+        { role: 'system', content: SYSTEM.replace('{grade}', String(b.grade)) },
+        { role: 'user', content: hintUser(b) },
+      ],
+    })
     res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text }))
     return true
   })
