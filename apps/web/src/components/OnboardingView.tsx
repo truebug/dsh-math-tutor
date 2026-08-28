@@ -3,6 +3,7 @@ import type { Gender, LearnerProfile, Subject } from '../lib/types'
 
 interface Props {
   onDone: (p: LearnerProfile) => void
+  onTry?: () => void
 }
 
 const GENDERS: Array<{ id: Gender; label: string }> = [
@@ -17,7 +18,7 @@ const SUBJECTS: Array<{ id: Subject; label: string }> = [
   { id: 'english', label: '🔤 英语' },
 ]
 
-export default function OnboardingView({ onDone }: Props) {
+export default function OnboardingView({ onDone, onTry }: Props) {
   const [nickname, setNickname] = useState('')
   const [gender, setGender] = useState<Gender>('secret')
   const [age, setAge] = useState(8)
@@ -120,6 +121,11 @@ export default function OnboardingView({ onDone }: Props) {
 
       {error && <p className="error">{error}</p>}
       <button className="primary big" onClick={submit}>开始我的练习之旅 🚀</button>
+      {onTry && (
+        <button className="ghost big try-btn" onClick={onTry}>
+          先随便逛逛，试玩一关 🎈
+        </button>
+      )}
       <p className="privacy">信息仅保存在这台设备的浏览器里，不会上传。</p>
     </div>
   )

@@ -127,6 +127,23 @@ export default function SnakeView({ settings, onAbandon, onFinish }: Props) {
     if ((d === 'up' && cur !== 'down') || (d === 'down' && cur !== 'up') || (d === 'left' && cur !== 'right') || (d === 'right' && cur !== 'left')) pendingRef.current = d
   }
 
+  // 触屏滑动转向：iPad 上直接划屏比点方向盘更跟手
+  const touchRef = useRef<{ x: number; y: number } | null>(null)
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touchRef.current = { x: t.clientX, y: t.clientY }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchRef.current
+    touchRef.current = null
+    if (!start) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return   // 防误触
+    steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'))
+  }
+
   const q = rounds[roundIdx].question
   const done = answersRef.current.filter((a) => a !== null).length
   return (
@@ -137,7 +154,7 @@ export default function SnakeView({ settings, onAbandon, onFinish }: Props) {
         <span className="game-progress">{done} / {rounds.length}</span>
       </header>
       <p className="snake-q">{q.a} {OP_GLYPHS[q.op]} {q.b} = <b>?</b> <small>去吃正确的数字！</small></p>
-      <div className="snake-board" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
+      <div className="snake-board" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {Array.from({ length: COLS * ROWS }, (_, i) => {
           const x = i % COLS
           const y = Math.floor(i / COLS)

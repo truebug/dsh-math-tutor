@@ -8,6 +8,7 @@ import { sfx } from '../lib/sound'
 import { useEffect } from 'react'
 import BattleBoard from './BattleBoard'
 import Sprite from './Sprite'
+import ShareCard from './ShareCard'
 import { burst } from '../lib/particles'
 import { useRef } from 'react'
 import type { LearnerProfile } from '../lib/types'
@@ -28,6 +29,7 @@ interface Props {
   record: SessionRecord
   profile: LearnerProfile
   scoreResult?: ScoreResult | null
+  guest?: boolean
   onRetry: (settings: RaceSettings) => void
   onHome: () => void
   onOpenMistakes: () => void
@@ -55,7 +57,7 @@ function speakQuestion(q: { text: string }, kind?: string) {
   speakText(m ? m[1] : q.text, isEnglish ? 'en-US' : 'zh-CN')
 }
 
-export default function ResultView({ record, profile, scoreResult, onRetry, onHome, onOpenMistakes, newBadges }: Props) {
+export default function ResultView({ record, profile, scoreResult, guest, onRetry, onHome, onOpenMistakes, newBadges }: Props) {
   const stars = starsFor(record.correct, record.total)
   const fxRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -180,7 +182,13 @@ export default function ResultView({ record, profile, scoreResult, onRetry, onHo
         </div>
       )}
 
-      {review ? (
+      {guest ? (
+        <div className="guest-cta">
+          <b>🎈 试玩完成！成绩只保存在这次浏览里</b>
+          <p>创建专属档案后，练习记录、星星、勋章和宠物都会帮你一直保存，还能解锁 AI 点评和全服排行榜。</p>
+          <button className="primary big" onClick={() => window.location.reload()}>创建我的专属档案 →</button>
+        </div>
+      ) : review ? (
         <>
           <Sprite grade={profile.grade} bubble={review} />
           <div className="review-card">
@@ -201,16 +209,19 @@ export default function ResultView({ record, profile, scoreResult, onRetry, onHo
         <button className="primary" onClick={() => onRetry({ ...settings, seed: Math.floor(Math.random() * 1e9) })}>
           再来一组 🔁
         </button>
+        <ShareCard record={record} nickname={profile.nickname} />
         <button className="ghost" onClick={onOpenMistakes}>错题本 📒</button>
         <button className="ghost" onClick={onHome}>返回首页</button>
       </div>
 
-      <BattleBoard code={encodeRaceCode(settings)} me={profile.nickname} />
+      {!guest && <BattleBoard code={encodeRaceCode(settings)} me={profile.nickname} />}
 
-      <p className="race-code-line">
-        本次竞赛码：<code>{encodeRaceCode(settings)}</code>
-        <button className="ghost" onClick={() => navigator.clipboard?.writeText(encodeRaceCode(settings))}>复制</button>
-      </p>
+      {!guest && (
+        <p className="race-code-line">
+          本次竞赛码：<code>{encodeRaceCode(settings)}</code>
+          <button className="ghost" onClick={() => navigator.clipboard?.writeText(encodeRaceCode(settings))}>复制</button>
+        </p>
+      )}
     </div>
   )
 }

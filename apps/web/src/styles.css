@@ -663,6 +663,22 @@ input[type="range"] { width: 100%; }
 .node small { color: #6b5232; }
 .node.locked { opacity: .75; }
 
+/* 访客试玩：入口与结算引导 */
+.try-btn { margin-top: 8px; width: 100%; }
+.guest-cta {
+  margin: 12px 0; padding: 14px 18px; border-radius: 14px; text-align: center;
+  background: linear-gradient(135deg, #eaf6ff, #f4f0ff); border: 2px solid #bcd8f5;
+}
+.guest-cta b { color: #2a4a7a; }
+.guest-cta p { font-size: 13px; color: #66788f; line-height: 1.7; margin: 6px 0 10px; }
+
+/* 成绩单分享卡 */
+.share-card { margin: 10px 0; text-align: center; }
+.share-canvas {
+  width: 100%; max-width: 320px; border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(60, 40, 15, .25);
+}
+
 /* 每周成长报告（可打印） */
 .growth-report { background: #fff; border: 1px solid #e3ebf5; }
 .gr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
