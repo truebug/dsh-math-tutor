@@ -3,6 +3,13 @@
 // 全量 1042 词带音标的 Anki 牌组交叉核对）+ 沪教版（三年级起点）教材词表，
 // 见 docs/curriculum/english.md
 import { mulberry32, type Question } from '@dsh-math-tutor/math-generator/core'
+import { IPA_MAP } from './english-ipa'
+
+// 题干展示音标：英译中题目在英文词后附 IPA（取自旧牛津体系映射，帮助拼读）
+function withIpa(en: string): string {
+  const ipa = IPA_MAP[en.toLowerCase()]?.[0]
+  return ipa ? `${en} /${ipa}/` : en
+}
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
@@ -170,7 +177,7 @@ export function generateVocabQuestions(seed: number, stageId: string, count: num
   return picked.map(([en, zh], index) => {
     const enToZh = rng() < 0.6 // 英译中为主，中译英为辅
     return enToZh
-      ? toChoice(index, `"${en}" 的中文意思是？`, zh, zhPool, rng)
+      ? toChoice(index, `"${withIpa(en)}" 的中文意思是？`, zh, zhPool, rng)
       : toChoice(index, `「${zh}」用英语怎么说？`, en, enPool, rng)
   })
 }

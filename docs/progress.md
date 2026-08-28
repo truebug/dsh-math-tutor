@@ -4,6 +4,12 @@
 
 ## 2026-08-28
 
+- **英语词库音标接入（旧牛津体系）**：`djfml/englishoxfordshanghaiedition`
+  anki 牌组（1042 词带音标）解包提取 925 词条 + 手工补 44 个低年级高频词
+  （问候短语/家庭成员等，标准 DJ 音标），生成 `lib/english-ipa.ts` 映射
+  （969 词条）。词汇题英译中题干附音标展示（`"pen /pen/" 的中文意思是？`），
+  现有 232 词覆盖率 100%。ANKI 牌组解析：anki21b = zstd 压缩 SQLite。
+
 - **P0 教材核实·第二轮（Kimi 联网搜索突破）**：发现 Kimi coding 端点支持
   Anthropic 兼容 `POST /coding/v1/messages` + 服务端 `web_search_20250305`
   工具（搜索服务端执行，无需客户端回声；k3 仅接受 temperature=1；OpenAI
