@@ -10,5 +10,8 @@ apps/server/data/
 # dsh 本地试验（含 node_modules 与密钥）
 tmp/dsh-local/
 
-# 个人参考资料与打印产物（课程表等，不入库）
-docs/ref/output/
+# 课程表打印产物（个人定制，不入库）
+docs/ref/output/课程表-A4双面.pdf
+docs/ref/output/schedule.html
+docs/ref/课程表.jpg
+docs/ref/.DS_Store

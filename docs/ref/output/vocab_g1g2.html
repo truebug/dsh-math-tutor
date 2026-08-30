@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>上海五四制沪教版 一二年级英语词汇总表</title>
+<style>
+  @page { size: A4 portrait; margin: 9mm 9mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+    color: #2c2216; font-size: 10pt; line-height: 1.55;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { page-break-after: always; }
+  .page.last { page-break-after: auto; }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 2.5px solid #b8860b; padding-bottom: 1.2mm; margin-bottom: 1.5mm;
+  }
+  header h1 { font-size: 13pt; color: #5d4a1a; letter-spacing: 1px; }
+  header .tag { font-size: 8pt; color: #8a6f47; }
+  .grade-title {
+    font-size: 10pt; font-weight: 700; color: #2a4a7a;
+    margin: 1.2mm 0 1mm; padding-left: 2mm; border-left: 4px solid #4a90e2;
+  }
+  .cols { display: flex; gap: 0 4mm; }
+  .col { flex: 1; min-width: 0; }
+  .unit { break-inside: avoid; margin-bottom: 2.2mm; }
+  .unit-head {
+    font-weight: 700; color: #b8860b; font-size: 9pt;
+    border-bottom: 1px dashed #d4b96a; margin-bottom: 0.8mm; padding-bottom: 0.3mm;
+  }
+  .word { display: flex; justify-content: space-between; gap: 2mm; padding: 0.15mm 0; }
+  .word .en { font-weight: 600; color: #1d2d44; white-space: nowrap; }
+  .word .ipa { color: #8a94a8; font-size: 8.5pt; font-family: "Lucida Sans Unicode", sans-serif; flex: 1; padding-left: 1.5mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .word .zh { color: #66788f; font-size: 8.5pt; white-space: nowrap; }
+  .compact { font-size: 9pt; line-height: 1.4; }
+  .compact .unit-head { font-size: 9.5pt; }
+  .compact .unit { margin-bottom: 0.9mm; }
+  .compact .ipa { font-size: 7.5pt; }
+  .compact .zh { font-size: 8pt; }
+  footer { margin-top: 1.5mm; border-top: 1px dashed #c9b285; padding-top: 0.8mm; font-size: 7pt; color: #98a4b5; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>📚 一二年级英语词汇总表</h1>
+    <span class="tag">上海五四制·沪教版 · 一年级上册</span>
+  </header>
+  <div class="cols" id="g1a"></div>
+  <footer><span>词汇按教材单元顺序整理，附音标与释义</span><span>第 1 页 · 共 4 页</span></footer>
+</div>
+
+<div class="page">
+  <header>
+    <h1>📚 一二年级英语词汇总表</h1>
+    <span class="tag">上海五四制·沪教版 · 二年级上册</span>
+  </header>
+  <div class="cols" id="g2a"></div>
+  <footer><span>词汇按教材单元顺序整理，附音标与释义</span><span>第 2 页 · 共 4 页</span></footer>
+</div>
+
+<div class="page">
+  <header>
+    <h1>📚 一二年级英语词汇总表</h1>
+    <span class="tag">上海五四制·沪教版 · 一年级下册</span>
+  </header>
+  <div class="cols" id="g1b"></div>
+  <footer><span>词汇按教材单元顺序整理，附音标与释义</span><span>第 3 页 · 共 4 页</span></footer>
+</div>
+
+<div class="page last">
+  <header>
+    <h1>📚 一二年级英语词汇总表</h1>
+    <span class="tag">上海五四制·沪教版 · 二年级下册</span>
+  </header>
+  <div class="cols compact" id="g2b"></div>
+</div>
+
+  <footer><span>词汇按教材单元顺序整理，附音标与释义</span><span>知识大陆 · 120.27.200.203:2008/dsh-math-tutor</span></footer>
+</div>
+
+
+
+<script>
+const DATA = {
+  g1a: [
+    ['U1', [['hello','həˈləʊ','你好'],['hi','haɪ','嗨'],['I','aɪ','我'],['am','æm','是'],['you','juː','你'],['are','ɑː','是']]],
+    ['U2', [['classmate','ˈklɑːsmeɪt','同学'],['friend','frend','朋友'],['this','ðɪs','这；这个'],['is','ɪz','是'],['my','maɪ','我的'],['your','jɔː','你的']]],
+    ['U3', [['eye','aɪ','眼睛'],['ear','ɪə','耳朵'],['nose','nəʊz','鼻子'],['mouth','maʊθ','嘴巴'],['face','feɪs','脸']]],
+    ['U4', [['hand','hænd','手'],['arm','ɑːm','手臂'],['leg','leɡ','腿'],['foot','fʊt','脚'],['body','ˈbɒdi','身体']]],
+    ['U5', [['father','ˈfɑːðə','父亲'],['mother','ˈmʌðə','母亲'],['brother','ˈbrʌðə','兄弟'],['sister','ˈsɪstə','姐妹'],['me','miː','我（宾格）']]],
+    ['U6', [['play','pleɪ','玩'],['together','təˈɡeðə','一起'],['happy','ˈhæpi','开心的']]],
+    ['U7', [['book','bʊk','书'],['ruler','ˈruːlə','尺子'],['pencil','ˈpensəl','铅笔'],['rubber','ˈrʌbə','橡皮'],['schoolbag','ˈskuːlbæɡ','书包']]],
+    ['U8', [['red','red','红色'],['yellow','ˈjeləʊ','黄色'],['blue','bluː','蓝色'],['green','ɡriːn','绿色'],['white','waɪt','白色'],['black','blæk','黑色']]],
+    ['U9', [['apple','ˈæpəl','苹果'],['pear','peə','梨'],['peach','piːtʃ','桃子'],['orange','ˈɒrɪndʒ','橙子'],['banana','bəˈnɑːnə','香蕉']]],
+    ['U10', [['one','wʌn','一'],['two','tuː','二'],['three','θriː','三'],['four','fɔː','四'],['five','faɪv','五'],['six','sɪks','六'],['seven','ˈsevən','七'],['eight','eɪt','八'],['nine','naɪn','九'],['ten','ten','十']]],
+    ['U11', [['cat','kæt','猫'],['dog','dɒɡ','狗'],['bird','bɜːd','鸟'],['rabbit','ˈræbɪt','兔子'],['duck','dʌk','鸭子'],['pig','pɪɡ','猪']]],
+    ['U12', [['sunny','ˈsʌni','晴朗的'],['cloudy','ˈklaʊdi','多云的'],['rainy','ˈreɪni','多雨的'],['windy','ˈwɪndi','多风的'],['cold','kəʊld','冷的'],['hot','hɒt','热的']]],
+  ],
+  g1b: [
+    ['U1', [['door','dɔː','门'],['window','ˈwɪndəʊ','窗'],['desk','desk','课桌'],['chair','tʃeə','椅子'],['blackboard','ˈblækbɔːd','黑板']]],
+    ['U2', [['bee','biː','蜜蜂'],['butterfly','ˈbʌtəflaɪ','蝴蝶'],['frog','frɒɡ','青蛙'],['ladybird','ˈleɪdibɜːd','瓢虫']]],
+    ['U3', [['ball','bɔːl','球'],['doll','dɒl','洋娃娃'],['bicycle','ˈbaɪsɪkl','自行车'],['kite','kaɪt','风筝'],['robot','ˈrəʊbɒt','机器人']]],
+    ['U4', [['rice','raɪs','米饭'],['noodles','ˈnuːdəlz','面条'],['bread','bred','面包'],['egg','eɡ','鸡蛋'],['milk','mɪlk','牛奶'],['water','ˈwɔːtə','水'],['juice','dʒuːs','果汁'],['cake','keɪk','蛋糕']]],
+    ['U5', [['tea','tiː','茶'],['coffee','ˈkɒfi','咖啡'],['cola','ˈkəʊlə','可乐'],['milk shake','mɪlk ʃeɪk','奶昔']]],
+    ['U6', [['T-shirt','ˈtiːʃɜːt','T恤'],['dress','dres','连衣裙'],['shirt','ʃɜːt','衬衫'],['shorts','ʃɔːts','短裤'],['socks','sɒks','袜子'],['shoes','ʃuːz','鞋子']]],
+    ['U7', [['candle','ˈkændəl','蜡烛'],['gift','ɡɪft','礼物'],['card','kɑːd','卡片'],['party','ˈpɑːti','聚会']]],
+    ['U8', [['run','rʌn','跑'],['swim','swɪm','游泳'],['skate','skeɪt','滑冰'],['ride a bicycle','raɪd ə ˈbaɪsɪkl','骑自行车'],['play football','pleɪ ˈfʊtbɔːl','踢足球']]],
+    ['U9', [['bedroom','ˈbedruːm','卧室'],['kitchen','ˈkɪtʃɪn','厨房'],['bathroom','ˈbɑːθruːm','浴室'],['living room','ˈlɪvɪŋ ruːm','客厅'],['garden','ˈɡɑːdən','花园']]],
+    ['U10', [['get up','ɡet ʌp','起床'],['go to school','ɡəʊ tə skuːl','去上学'],['have lunch','hæv lʌntʃ','吃午饭'],['go home','ɡəʊ həʊm','回家'],['go to bed','ɡəʊ tə bed','上床睡觉']]],
+  ],
+  g2a: [
+    ['U1', [['get up','ɡet ʌp','起床'],['brush my teeth','brʌʃ maɪ tiːθ','刷牙'],['wash my face','wɒʃ maɪ feɪs','洗脸'],['get dressed','ɡet drest','穿衣服'],['have breakfast','hæv ˈbrekfəst','吃早饭']]],
+    ['U2', [['on the desk','ɒn ðə desk','在课桌上'],['in the box','ɪn ðə bɒks','在盒子里'],['under the bed','ˈʌndə ðə bed','在床下'],['tidy my room','ˈtaɪdi maɪ ruːm','整理房间']]],
+    ['U3', [['by car','baɪ kɑː','乘小汽车'],['on foot','ɒn fʊt','步行'],['by bus','baɪ bʌs','乘公交'],['go to school','ɡəʊ tə skuːl','去上学']]],
+    ['U4', [['run','rʌn','跑'],['jump','dʒʌmp','跳'],['play ping-pong','pleɪ ˈpɪŋpɒŋ','打乒乓球'],['play basketball','pleɪ ˈbɑːskɪtbɔːl','打篮球'],['play football','pleɪ ˈfʊtbɔːl','踢足球']]],
+    ['U5', [['star','stɑː','星星'],['sun','sʌn','太阳'],['cloud','klaʊd','云'],['moon','muːn','月亮']]],
+    ['U6', [['seahorse','ˈsiːhɔːs','海马'],['dolphin','ˈdɒlfɪn','海豚'],['clownfish','ˈklaʊnfɪʃ','小丑鱼']]],
+    ['U7', [['spring','sprɪŋ','春天'],['summer','ˈsʌmə','夏天'],['autumn','ˈɔːtəm','秋天'],['winter','ˈwɪntə','冬天']]],
+    ['U8', [['apple','ˈæpəl','苹果'],['pear','peə','梨'],['banana','bəˈnɑːnə','香蕉'],['grape','ɡreɪp','葡萄'],['orange','ˈɒrɪndʒ','橙子']]],
+    ['U9', [['smell','smel','闻'],['taste','teɪst','尝'],['touch','tʌtʃ','摸'],['see','siː','看见'],['hear','hɪə','听见']]],
+    ['U10', [['draw a picture','drɔː ə ˈpɪktʃə','画画'],['read a book','riːd ə bʊk','读书'],['make breakfast','meɪk ˈbrekfəst','做早饭'],['talk about myself','tɔːk əˈbaʊt maɪˈself','谈谈我自己']]],
+  ],
+  g2b: [
+    ['U1', [['feed the cows','fiːd ðə kaʊz','喂奶牛'],['see a film','siː ə fɪlm','看电影'],['visit grandma and grandpa','ˈvɪzɪt','看望祖父母'],['have a good time','hæv ə ɡʊd taɪm','玩得开心']]],
+    ['U2', [['do the housework','duː ðə ˈhaʊswɜːk','做家务'],['tidy my room','ˈtaɪdi maɪ ruːm','整理房间'],['make the bed','meɪk ðə bed','铺床'],['dish','dɪʃ','餐具；菜']]],
+    ['U3', [['happy','ˈhæpi','开心的'],['excited','ɪkˈsaɪtɪd','兴奋的'],['upset','ʌpˈset','难过的'],['angry','ˈæŋɡri','生气的']]],
+    ['U4', [['play music','pleɪ ˈmjuːzɪk','演奏音乐'],['sing and dance','sɪŋ ənd dɑːns','唱歌跳舞'],['talk with the baby','tɔːk wɪð ðə ˈbeɪbi','和宝宝说话']]],
+    ['U5', [['play a game','pleɪ ə ɡeɪm','玩游戏'],['share','ʃeə','分享'],['have a go','hæv ə ɡəʊ','试一试']]],
+    ['U6', [['nice','naɪs','好的'],['cook','kʊk','做饭'],['great','ɡreɪt','很棒的'],['teacher','ˈtiːtʃə','老师']]],
+    ['U7', [['tree','triː','树'],['leaf','liːf','叶子'],['flower','ˈflaʊə','花'],['grass','ɡrɑːs','草']]],
+    ['U8', [['duck','dʌk','鸭子'],['pond','pɒnd','池塘'],['frog','frɒɡ','青蛙'],['lake','leɪk','湖'],['fish','fɪʃ','鱼'],['river','ˈrɪvə','河'],['shark','ʃɑːk','鲨鱼'],['sea','siː','海']]],
+    ['U9', [['wash my hands','wɒʃ maɪ hændz','洗手'],['before eating','bɪˈfɔː ˈiːtɪŋ','吃东西前'],['after using the toilet','ˈɑːftə','上厕所后'],['dirty','ˈdɜːti','脏的'],['clean','kliːn','干净的']]],
+    ['U10', [['drink some milk','drɪŋk sʌm mɪlk','喝点牛奶'],['say good night','seɪ ɡʊd naɪt','说晚安'],['sleep','sliːp','睡觉'],['read a story','riːd ə ˈstɔːri','读故事']]],
+  ],
+}
+
+function unitHtml(u, words) {
+  return `<div class="unit"><div class="unit-head">${u}</div>` +
+    words.map(([en, ipa, zh]) =>
+      `<div class="word"><span class="en">${en}</span><span class="ipa">/${ipa}/</span><span class="zh">${zh}</span></div>`
+    ).join('') + '</div>'
+}
+for (const [gid, units] of Object.entries(DATA)) {
+  const el = document.getElementById(gid)
+  // 按「词数+1(标题)」贪心均衡分到三列，保证打印时不跨页溢出
+  const heights = units.map(([, w]) => w.length + 1)
+  const total = heights.reduce((a, b) => a + b, 0)
+  const target = Math.ceil(total / 3)
+  const cols = [[]]
+  let cur = 0
+  for (let i = 0; i < units.length; i += 1) {
+    if (cur > 0 && cur + heights[i] > target && cols.length < 3) { cols.push([]); cur = 0 }
+    cols[cols.length - 1].push(i)
+    cur += heights[i]
+  }
+  el.innerHTML = cols.map((idxs) =>
+    `<div class="col">${idxs.map((i) => unitHtml(units[i][0], units[i][1])).join('')}</div>`
+  ).join('')
+}
+</script>
+</body>
+</html>
