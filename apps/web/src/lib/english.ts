@@ -43,116 +43,97 @@ export function generateLetterQuestions(seed: number, from: number, to: number, 
   })
 }
 
-// 主题词库：[英文, 中文]。来源：牛津上海版一年级起点 1A-2B 主题单元
+// 主题词库：[英文, 中文]。来源：上教社2024新版《英语》二年级上册官方词汇表
+// （2025秋启用，课本附录照片 docs/ref/english_g2.1.jpg / english_g2.2.jpg 转录，
+//  见 docs/curriculum/english.md）。关卡 ID 沿用旧主题（进度/星级记录不受影响）。
 const VOCAB: Record<string, { title: string; words: Array<[string, string]> }> = {
   'eng-greet': {
-    title: '问候与课堂用语',
+    title: 'Unit 1 Hello!（问候）',
     words: [
-      ['hello', '你好'], ['hi', '嗨'], ['goodbye', '再见'], ['good morning', '早上好'],
-      ['good afternoon', '下午好'], ['good evening', '晚上好'], ['thank you', '谢谢'],
-      ['sorry', '对不起'], ['please', '请'], ['yes', '是的'], ['no', '不是'],
-      ['stand up', '起立'], ['sit down', '坐下'], ['come in', '进来'], ['open the door', '开门'],
-      ['close the window', '关窗'], ['look at the blackboard', '看黑板'], ['listen', '听'],
-      ['here you are', '给你'], ['hurry up', '快点'],
+      ['morning', '早晨；上午'], ['hi', '喂'], ['no', '不；不对'],
+      ['Ms', '女士'], ['yes', '对；是'],
     ],
   },
   'eng-school': {
-    title: '文具与课堂',
+    title: 'Unit 2 Come and play!（学校）',
     words: [
-      ['pen', '钢笔'], ['pencil', '铅笔'], ['pencil-case', '铅笔盒'], ['ruler', '尺子'],
-      ['eraser', '橡皮'], ['crayon', '蜡笔'], ['book', '书'], ['bag', '书包'],
-      ['sharpener', '卷笔刀'], ['school', '学校'], ['classroom', '教室'], ['blackboard', '黑板'],
-      ['door', '门'], ['window', '窗户'], ['desk', '课桌'], ['chair', '椅子'],
+      ['classroom', '教室'], ['welcome', '欢迎'], ['clean', '打扫'],
+      ['paper', '纸'], ['let us', '让我们'], ['tidy', '整理'],
     ],
   },
   'eng-body': {
-    title: '我的身体',
+    title: 'Unit 3 I love Dad and Mum.（家人）',
     words: [
-      ['head', '头'], ['face', '脸'], ['nose', '鼻子'], ['mouth', '嘴巴'], ['eye', '眼睛'],
-      ['ear', '耳朵'], ['arm', '手臂'], ['finger', '手指'], ['leg', '腿'], ['foot', '脚'],
-      ['body', '身体'], ['hair', '头发'], ['hand', '手'], ['long', '长的'], ['short', '短的'],
-      ['big', '大的'], ['small', '小的'],
+      ['dad', '爸爸'], ['mum', '妈妈'], ['father', '父亲；爸爸'],
+      ['mother', '母亲；妈妈'], ['family', '家；家庭'], ['smile', '微笑'],
+      ['cook', '烹饪；做饭'], ['plant', '种植'],
     ],
   },
   'eng-color': {
-    title: '颜色与数字',
+    title: 'Unit 4 Where am I?（户外）',
     words: [
-      ['red', '红色'], ['yellow', '黄色'], ['green', '绿色'], ['blue', '蓝色'], ['purple', '紫色'],
-      ['white', '白色'], ['black', '黑色'], ['orange', '橙色'], ['pink', '粉色'], ['brown', '棕色'],
-      ['one', '一'], ['two', '二'], ['three', '三'], ['four', '四'], ['five', '五'],
-      ['six', '六'], ['seven', '七'], ['eight', '八'], ['nine', '九'], ['ten', '十'],
+      ['forest', '森林'], ['zoo', '动物园'], ['farm', '农场'],
+      ['flower', '花'], ['where', '哪里'],
     ],
   },
   'eng-animal': {
-    title: '动物朋友',
+    title: 'Unit 5 Lovely animals（动物）',
     words: [
-      ['cat', '猫'], ['dog', '狗'], ['monkey', '猴子'], ['panda', '熊猫'], ['rabbit', '兔子'],
-      ['duck', '鸭子'], ['pig', '猪'], ['bird', '鸟'], ['bear', '熊'], ['elephant', '大象'],
-      ['mouse', '老鼠'], ['squirrel', '松鼠'], ['tiger', '老虎'], ['lion', '狮子'],
-      ['zebra', '斑马'], ['giraffe', '长颈鹿'], ['fox', '狐狸'], ['goose', '鹅'],
+      ['rabbit', '兔'], ['bird', '鸟'], ['fish', '鱼'], ['snake', '蛇'],
+      ['duck', '鸭'], ['monkey', '猴'], ['panda', '熊猫'], ['elephant', '大象'],
+      ['bear', '熊'], ['frog', '青蛙'], ['lovely', '可爱的'],
     ],
   },
   'eng-food': {
-    title: '美食与饮料',
+    title: 'Unit 6 Yummy vegetables（蔬菜）',
     words: [
-      ['cake', '蛋糕'], ['bread', '面包'], ['hot dog', '热狗'], ['hamburger', '汉堡包'],
-      ['chicken', '鸡肉'], ['French fries', '薯条'], ['juice', '果汁'], ['milk', '牛奶'],
-      ['water', '水'], ['tea', '茶'], ['apple', '苹果'], ['banana', '香蕉'],
-      ['orange', '橙子'], ['pear', '梨'], ['egg', '鸡蛋'], ['pineapple', '菠萝'],
+      ['carrot', '胡萝卜'], ['onion', '洋葱'], ['potato', '土豆'],
+      ['sweet potato', '红薯'], ['tomato', '西红柿'], ['salad', '色拉'],
+      ['vegetable', '蔬菜'], ['chop', '切碎'], ['yummy', '美味的'],
     ],
   },
   'eng-toy': {
-    title: '玩具与物品',
+    title: 'Unit 7 Weather fun（天气）',
     words: [
-      ['doll', '洋娃娃'], ['balloon', '气球'], ['ball', '球'], ['kite', '风筝'],
-      ['car', '小汽车'], ['plane', '飞机'], ['boat', '小船'], ['bus', '公共汽车'],
-      ['bicycle', '自行车'], ['train', '火车'], ['robot', '机器人'], ['watch', '手表'],
-      ['clock', '时钟'], ['umbrella', '雨伞'], ['cap', '帽子'], ['box', '盒子'],
+      ['weather', '天气'], ['rainy', '多雨的'], ['sunny', '晴朗的'],
+      ['cloudy', '多云的'], ['windy', '多风的'], ['raincoat', '雨衣'],
+      ['boots', '靴子'],
     ],
   },
   'eng-clothes': {
-    title: '衣物穿戴',
+    title: 'Unit 8 Fun with clothes（服装）',
     words: [
-      ['coat', '外套'], ['skirt', '短裙'], ['shirt', '衬衫'], ['jacket', '夹克'],
-      ['dress', '连衣裙'], ['T-shirt', 'T恤衫'], ['shoe', '鞋子'], ['sock', '袜子'],
-      ['hat', '帽子'], ['scarf', '围巾'], ['clean', '干净的'], ['dirty', '脏的'],
-      ['new', '新的'], ['old', '旧的'], ['wear', '穿着'], ['wash', '洗'],
+      ['cap', '帽子'], ['T-shirt', 'T恤（衫）'], ['coat', '外套；大衣'],
+      ['socks', '袜子'], ['shoes', '鞋子'], ['dress up', '打扮'],
     ],
   },
   'eng-weather': {
-    title: '天气与户外',
+    title: 'Unit 9 Big and small（大小）',
     words: [
-      ['rain', '下雨'], ['wind', '风'], ['snow', '雪'], ['sun', '太阳'],
-      ['cloud', '云'], ['sky', '天空'], ['hot', '热的'], ['cold', '冷的'],
-      ['warm', '温暖的'], ['cool', '凉爽的'], ['park', '公园'], ['zoo', '动物园'],
-      ['playground', '操场'], ['spring', '春天'], ['summer', '夏天'], ['winter', '冬天'],
+      ['bear', '熊'], ['frog', '青蛙'], ['small', '小的'],
     ],
   },
   'eng-number': {
-    title: '数字进阶',
+    title: 'Unit 10 My five senses（感官）',
     words: [
-      ['eleven', '十一'], ['twelve', '十二'], ['thirteen', '十三'], ['fourteen', '十四'],
-      ['fifteen', '十五'], ['sixteen', '十六'], ['seventeen', '十七'], ['eighteen', '十八'],
-      ['nineteen', '十九'], ['twenty', '二十'], ['thirty', '三十'], ['forty', '四十'],
-      ['fifty', '五十'], ['hundred', '一百'], ['how many', '多少（数量）'], ['how much', '多少钱'],
+      ['ear', '耳朵'], ['eye', '眼睛'], ['hand', '手'],
+      ['mouth', '嘴；口'], ['nose', '鼻子'], ['smell', '闻（气味）'],
+      ['taste', '品尝'], ['touch', '触摸'],
     ],
   },
   'eng-action': {
-    title: '动作能力',
+    title: 'Unit 11 Fun on the farm（农场）',
     words: [
-      ['run', '跑'], ['jump', '跳'], ['swim', '游泳'], ['fly', '飞'],
-      ['draw', '画画'], ['sing', '唱歌'], ['dance', '跳舞'], ['write', '写字'],
-      ['read', '阅读'], ['play', '玩'], ['ride', '骑'], ['skate', '滑冰'],
-      ['climb', '爬'], ['walk', '走'], ['hop', '单脚跳'], ['can', '会；能'],
+      ['duck', '鸭'], ['pig', '猪'], ['animal', '动物'],
+      ['grass', '草；草地'], ['grow', '种植'], ['feed', '喂养'],
     ],
   },
   'eng-family': {
-    title: '家人与人物',
+    title: 'Unit 12 Ready for school（上学准备）',
     words: [
-      ['mum', '妈妈'], ['mother', '母亲'], ['father', '父亲'], ['brother', '兄弟'],
-      ['sister', '姐妹'], ['baby', '宝宝'], ['family', '家庭'], ['friend', '朋友'],
-      ['teacher', '老师'], ['classmate', '同学'], ['doctor', '医生'], ['boy', '男孩'],
-      ['girl', '女孩'], ['me', '我'], ['you', '你'], ['they', '他们'],
+      ['schoolbag', '书包'], ['pencil', '铅笔'], ['pen', '钢笔'],
+      ['crayon', '彩色蜡笔（或粉笔、铅笔）'], ['ruler', '尺'],
+      ['book', '书；书籍'], ['pack', '收拾（行李）'],
     ],
   },
 }

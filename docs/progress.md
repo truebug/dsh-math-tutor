@@ -2,6 +2,19 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-08-30
+
+- **英语词库切换新版教材（P0 落地）**：用户拍照提供上教社 2024 新版《英语》
+  二年级上册官方词汇表（docs/ref/english_g2.1.jpg / english_g2.2.jpg，
+  2025 秋启用，12 单元 71 词条 + Mini Project）。12 个词汇关卡全部替换为
+  新教材单元词库（关卡 ID 沿用旧主题，用户进度/星级无损），标题改为
+  「Unit N 中文主题」；旧主题扩展词移出主线。IPA 映射补 20 个新教材词，
+  总计 989 条，新词库音标覆盖率 100%。关卡 count=12 大于单主题词数
+  （5-11 词），出题函数自动取 min 截断，已确认无异常。
+- **课程表 PDF**：docs/ref/课程表.jpg 转录为打印版 HTML→PDF（Chrome
+  headless），A4 纵向一张双面两张同款（docs/ref/output/，已 gitignore，
+  不入库）。
+
 ## 2026-08-28
 
 - **英语词库音标接入（旧牛津体系）**：`djfml/englishoxfordshanghaiedition`

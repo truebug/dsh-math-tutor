@@ -9,3 +9,6 @@ apps/server/data/
 
 # dsh 本地试验（含 node_modules 与密钥）
 tmp/dsh-local/
+
+# 个人参考资料与打印产物（课程表等，不入库）
+docs/ref/output/
