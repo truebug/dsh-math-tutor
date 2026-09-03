@@ -21,7 +21,13 @@ export async function respond(req: AgentRequest): Promise<string> {
   const provider = req.provider ?? process.env.AGENT_PROVIDER ?? 'kimi'
   switch (provider) {
     case 'dsh':
-      return dshRespond({ messages: req.messages, maxTokens: req.maxTokens, familyId: req.familyId })
+      try {
+        return await dshRespond({ messages: req.messages, maxTokens: req.maxTokens, familyId: req.familyId })
+      } catch (err) {
+        // 全量放开后的兜底：dsh 失败（崩溃/超时/额度）自动降级 kimi，不让孩子看见报错
+        console.warn('[agent] dsh 失败降级 kimi:', err instanceof Error ? err.message : err)
+        return chat(req.messages, req.maxTokens)
+      }
     case 'kimi':
     default:
       return chat(req.messages, req.maxTokens)

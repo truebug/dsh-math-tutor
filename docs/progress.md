@@ -2,6 +2,14 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-09-03
+
+- **dsh 全量放开**：`AGENT_PROVIDER=dsh` 写入服务器 .env，hint/review/sprite
+  三场景全部默认走 dsh 运行时（不再需 `?provider=dsh`）。`agent.ts` 加兜底：
+  dsh 失败（崩溃/超时/额度）自动降级 kimi 直调，日志记 `console.warn`，
+  用户无感。线上验证：hint（数学 7+8=13→15 讲解）与 review（语文古诗点评）
+  均返回正常，familyId 会话锚点落盘 `/var/lib/dsh-tutor/sessions/`。
+
 ## 2026-08-30
 
 - **英语词库切换新版教材（P0 落地）**：用户拍照提供上教社 2024 新版《英语》
