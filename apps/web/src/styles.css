@@ -726,6 +726,16 @@ input[type="range"] { width: 100%; }
 .gr-ai { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #dce8f6; }
 .gr-ai p { margin: 4px 0; line-height: 1.8; color: #445; white-space: pre-wrap; font-size: 14px; }
 
+/* 周目标卡片 */
+.goal-card { background: linear-gradient(135deg, #fff8e1, #fff3d6); border: 1px solid #f0c040; }
+.goal-text { margin: 6px 0; font-size: 14px; color: #5d4a1a; font-weight: 600; }
+.goal-form { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.goal-form select, .goal-form input {
+  padding: 6px 10px; border: 1px solid #d4b96a; border-radius: 8px; font-size: 13px;
+  background: #fff;
+}
+.goal-form input[type="number"] { width: 80px; }
+
 /* 打印：只输出成长报告卡片，适 A4 */
 @media print {
   body * { visibility: hidden; }

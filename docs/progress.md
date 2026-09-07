@@ -4,6 +4,10 @@
 
 ## 2026-09-07
 
+- **孩子端「设目标」入口**：DashboardView 勋章墙后新增 `GoalCard`——
+  正确率/题量两种目标类型 + 自定义描述，保存/修改/清除；
+  设定后小精灵 sprite-advice 会主动提醒进度（「冲85%」）。
+
 - **skill/goal 试验落地**：
   - skill：`dsh-runtime/plugins/tutor-skill.ts` 注册「错因→建议」规则包
     （进退位≥2次→专项练习、看错符号→提醒慢一点、未打卡→招呼热身），

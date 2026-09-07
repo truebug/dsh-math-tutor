@@ -12,6 +12,90 @@ import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
 import { useEffect } from 'react'
 import GrowthReport from './GrowthReport'
 
+// 周目标卡片：设定/查看/清除，agent 看到后会主动提醒进度
+interface GoalDoc {
+  kind: 'accuracy' | 'count'
+  target: number
+  label: string
+  weekStart: string
+  createdAt: string
+}
+
+function GoalCard() {
+  const [goal, setGoal] = useState<GoalDoc | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [kind, setKind] = useState<'accuracy' | 'count'>('accuracy')
+  const [target, setTarget] = useState(85)
+  const [label, setLabel] = useState('进退位正确率到 85%')
+
+  const familyId = getFamilyId()
+  useEffect(() => {
+    if (!familyId) return
+    fetch(`/api/profile/goal?familyId=${encodeURIComponent(familyId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((g) => setGoal(g))
+      .catch(() => {})
+  }, [familyId])
+
+  const save = async () => {
+    if (!familyId) return
+    const g: GoalDoc = {
+      kind, target, label,
+      weekStart: new Date(Date.now() - (new Date().getDay() - 1) * 86400000).toISOString().slice(0, 10),
+      createdAt: new Date().toISOString(),
+    }
+    await fetch('/api/profile/goal', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ familyId, goal: g }),
+    })
+    setGoal(g); setEditing(false)
+  }
+
+  const clear = async () => {
+    if (!familyId) return
+    await fetch('/api/profile/goal', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ familyId, goal: null }),
+    })
+    setGoal(null); setEditing(false)
+  }
+
+  if (!familyId) return null
+  return (
+    <div className="pattern-card goal-card">
+      <h3 className="chart-title">🎯 本周目标</h3>
+      {goal && !editing ? (
+        <>
+          <p className="goal-text">{goal.label}</p>
+          <div className="btn-row">
+            <button className="ghost small" onClick={() => setEditing(true)}>修改</button>
+            <button className="ghost small danger" onClick={clear}>清除</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="goal-form">
+            <select value={kind} onChange={(e) => setKind(e.target.value as 'accuracy' | 'count')}>
+              <option value="accuracy">正确率目标</option>
+              <option value="count">题量目标</option>
+            </select>
+            {kind === 'accuracy' ? (
+              <input type="number" min={50} max={100} value={target} onChange={(e) => setTarget(Number(e.target.value))} />
+            ) : (
+              <input type="number" min={10} max={500} value={target} onChange={(e) => setTarget(Number(e.target.value))} />
+            )}
+            <input type="text" placeholder="目标描述（如：进退位正确率到 85%）" value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+          <div className="btn-row">
+            <button className="primary small" onClick={save}>保存目标</button>
+            {goal && <button className="ghost small" onClick={() => setEditing(false)}>取消</button>}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 const ALL_STAGES = [...STAGES, ...stagesOf('chinese'), ...stagesOf('english')]
 
 interface StageStat { name: string; emoji: string; total: number; wrong: number; questions: Question[] }
@@ -284,6 +368,9 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
           </div>
         )
       })()}
+
+      {/* 周目标：设定后小精灵会主动提醒进度 */}
+      {sync && <GoalCard />}
 
       {sync && <GrowthReport />}
 
