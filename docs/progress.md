@@ -2,6 +2,15 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-09-07
+
+- **dsh 0.1.2-rc.1 升级评估与阻断**：npm `latest` 已转正 0.1.2-rc.1（9/3），
+  本地实测新启动方式（`dshBin` + `profile: 'sdk'` + `patches`）——sdk profile
+  不带任何 patch 也报 cordis `INACTIVE_EFFECT`（cannot create effect on
+  inactive context），属 0.1.2 运行时内部兼容 bug，与我们配置无关。
+  **结论：暂缓升级，继续 0.1.1-rc.2**（现网全量 4 天零降级，14 会话锚点）。
+  待 0.1.2 后续 rc 修复或我们报 issue 后再跟进。
+
 ## 2026-09-03
 
 - **dsh 全量放开**：`AGENT_PROVIDER=dsh` 写入服务器 .env，hint/review/sprite
