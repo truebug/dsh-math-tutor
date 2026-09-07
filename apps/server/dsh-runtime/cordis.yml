@@ -23,3 +23,5 @@
     root: /var/lib/dsh-tutor/sessions
 - id: session-checkpoints
   name: '@deepseek-ai/dsh-session-checkpoint-policy'
+# 小精灵建议规则 skill（错因→建议映射），agent 自主调用
+- name: file:./plugins/tutor-skill.ts

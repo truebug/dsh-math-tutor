@@ -37,7 +37,16 @@ export interface ProfileDoc {
   profileData: unknown    // 确定性统计 + AI 点评历史
   adventure: unknown      // 星星/解锁/每日挑战
   sessions: unknown[]     // 练习记录（上限 200 条）
+  goal?: GoalDoc | null    // 周目标（agent 主动推进用）
   updatedAt: string
+}
+
+export interface GoalDoc {
+  kind: 'accuracy' | 'count'   // 正确率目标 / 题量目标
+  target: number                // accuracy: 0-100；count: 题数
+  label: string                 // 展示文本（如「进退位正确率到 85%」）
+  weekStart: string             // ISO 日期（周一）
+  createdAt: string
 }
 
 export function loadProfile(familyId: string): ProfileDoc | null {
@@ -64,6 +73,25 @@ export function apply(ctx: ServerContext) {
   const json = (res: import('node:http').ServerResponse, status: number, b: unknown) => {
     res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(b))
   }
+  // 周目标：设置/查询（必须在 /api/profile/* 通配符之前注册，否则被先匹配）
+  ctx.routes.register('/api/profile/goal', 'POST', async (_req, res, _url, body) => {
+    const b = body as { familyId?: string; goal?: GoalDoc | null }
+    if (!b?.familyId || !FAMILY_RE.test(b.familyId)) { json(res, 400, { error: 'bad_request' }); return true }
+    const doc = loadProfile(b.familyId)
+    if (!doc) { json(res, 404, { error: 'not_found' }); return true }
+    doc.goal = b.goal ?? null
+    saveProfile(b.familyId, doc)
+    json(res, 200, { ok: true })
+    return true
+  })
+  ctx.routes.register('/api/profile/goal', 'GET', async (_req, res, url) => {
+    const familyId = url.searchParams.get('familyId') ?? ''
+    if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return true }
+    const doc = loadProfile(familyId)
+    doc?.goal ? json(res, 200, doc.goal) : json(res, 404, { error: 'no_goal' })
+    return true
+  })
+
   ctx.routes.register('/api/profile/*', 'GET', async (_req, res, url) => {
     const familyId = decodeURIComponent(url.pathname.split('/')[3] ?? '')
     if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return true }
@@ -83,6 +111,7 @@ export function apply(ctx: ServerContext) {
       profileData: doc.profileData ?? null,
       adventure: doc.adventure ?? null,
       sessions: Array.isArray(doc.sessions) ? doc.sessions.slice(0, 200) : [],
+      goal: doc.goal ?? null,
       updatedAt: '',
     })
     json(res, 200, { ok: true })
@@ -136,4 +165,5 @@ export function apply(ctx: ServerContext) {
     json(res, 200, { ok: true, hasPin: !!pin })
     return true
   })
+
 }

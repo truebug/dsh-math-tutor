@@ -1,7 +1,7 @@
 // 小精灵今日建议（sprite 场景）：画像上下文进，agent 自主决定说什么
 // 灰度第三步：默认走 dsh（真 agent 决策），异常自动降级 kimi 直调；前端另有本地规则兜底
 import { respond } from '../services/agent.ts'
-import { buildLearnerContext } from '../services/learnerCtx.ts'
+import { buildLearnerContext, goalProgress } from '../services/learnerCtx.ts'
 import type { ServerContext } from '../host.ts'
 
 export interface SpriteAdviceRequest {
@@ -20,6 +20,10 @@ const SYSTEM = `你是藏在寻宝地图里的小精灵，陪孩子（{grade}年
 3. 不用 markdown，不要提 AI、模型、数据等词
 4. 如果实在没什么值得说的（比如孩子刚注册还没练过），只回复两个字：沉默`
 
+// dsh 模式下追加 skill 提示：告诉 agent 有规则包可用（skill 由 cordis 插件注册进 catalog）
+const SYSTEM_DSH_SUFFIX = `
+5. 你可以调用 skill「tutor-advice-rules」获取错因到建议的映射规则，按规则给建议`
+
 function buildUser(req: SpriteAdviceRequest, ctx: string | null): string {
   const p = req.patterns ?? {}
   const entries = Object.entries(p).filter(([, n]) => (n ?? 0) > 0)
@@ -37,14 +41,15 @@ function buildUser(req: SpriteAdviceRequest, ctx: string | null): string {
 
 export async function buildSpriteAdvice(req: SpriteAdviceRequest, provider?: string): Promise<string | null> {
   const ctx = req.familyId ? buildLearnerContext(req.familyId) : null
-  const messages = [
-    { role: 'system' as const, content: SYSTEM.replace('{grade}', String(req.grade)) },
-    { role: 'user' as const, content: buildUser(req, ctx) },
-  ]
-  // sprite 默认走 dsh（真 agent 决策）；dsh 异常降级 kimi 直调，再异常抛给前端本地规则兜底
+  const goal = req.familyId ? goalProgress(req.familyId) : null
   const chain = provider ? [provider] : ['dsh', 'kimi']
   for (const p of chain) {
     try {
+      const system = SYSTEM.replace('{grade}', String(req.grade)) + (p === 'dsh' ? SYSTEM_DSH_SUFFIX : '')
+      const messages = [
+        { role: 'system' as const, content: system },
+        { role: 'user' as const, content: buildUser(req, ctx) + (goal ? `\n周目标进度：${goal}` : '') },
+      ]
       const text = await respond({ scene: 'sprite', familyId: req.familyId, provider: p, maxTokens: 200, messages })
       if (text && !text.includes('沉默')) return text.trim()
       return null

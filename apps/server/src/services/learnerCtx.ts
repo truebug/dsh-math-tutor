@@ -50,3 +50,27 @@ export function buildLearnerContext(familyId: string): string | null {
 
   return parts.length > 0 ? parts.join('；') : null
 }
+
+// 周目标进度：计算本周目标完成情况，供 sprite 主动提醒
+export function goalProgress(familyId: string): string | null {
+  const doc = loadProfile(familyId)
+  const goal = doc?.goal
+  if (!goal) return null
+  const sessions = (doc.sessions ?? []) as SessionLite[]
+  const weekStart = new Date(goal.weekStart).getTime()
+  const weekSessions = sessions.filter((s) => s.date && new Date(s.date).getTime() >= weekStart)
+  if (goal.kind === 'accuracy') {
+    const total = weekSessions.reduce((s, x) => s + (x.total ?? 0), 0)
+    const correct = weekSessions.reduce((s, x) => s + (x.correct ?? 0), 0)
+    if (total === 0) return `本周目标「${goal.label}」，还没开始练习`
+    const acc = Math.round((correct / total) * 100)
+    return acc >= goal.target
+      ? `本周目标「${goal.label}」已达成（${acc}%）！`
+      : `本周目标「${goal.label}」，当前 ${acc}%（还差 ${goal.target - acc}%）`
+  }
+  // count 目标
+  const done = weekSessions.reduce((s, x) => s + (x.total ?? 0), 0)
+  return done >= goal.target
+    ? `本周目标「${goal.label}」已达成（${done} 题）！`
+    : `本周目标「${goal.label}」，已完成 ${done}/${goal.target} 题`
+}

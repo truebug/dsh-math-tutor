@@ -4,6 +4,16 @@
 
 ## 2026-09-07
 
+- **skill/goal 试验落地**：
+  - skill：`dsh-runtime/plugins/tutor-skill.ts` 注册「错因→建议」规则包
+    （进退位≥2次→专项练习、看错符号→提醒慢一点、未打卡→招呼热身），
+    cordis.yml 挂载，sprite-advice 的 dsh 模式追加 skill 调用提示。
+    线上验证：agent 按规则输出「先打卡，再练进退位小专项」。
+  - goal：`ProfileDoc.goal` 周目标字段 + `/api/profile/goal` POST/GET 路由
+    （路由注册顺序修复：goal 必须在 `/api/profile/*` 通配符之前）。
+    `learnerCtx.goalProgress()` 计算本周目标进度注入 sprite prompt。
+    线上验证：设「进退位正确率到 85%」目标后，sprite 响应含「冲85%」提醒。
+
 - **dsh 0.1.2-rc.1 升级评估与阻断**：npm `latest` 已转正 0.1.2-rc.1（9/3），
   本地实测新启动方式（`dshBin` + `profile: 'sdk'` + `patches`）——sdk profile
   不带任何 patch 也报 cordis `INACTIVE_EFFECT`（cannot create effect on
