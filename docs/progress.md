@@ -2,6 +2,15 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-09-13
+
+- **dsh 0.1.5-rc.1 升级评估**：npm `latest` 已到 0.1.5-rc.1（9/10），
+  新增 dsh-tool-goal/dsh-goal-round-driver/dsh-tool-skill 等能力线。
+  本地验证受阻：本机 Node v19.7.0 低于 dsh 要求的 ≥22.15（zstd 持久化依赖），
+  无法确认 0.1.2 的 cordis INACTIVE_EFFECT 兼容 bug 是否修复。
+  **结论：暂缓升级**——现网 0.1.1-rc.2 稳定运行（6 天零降级、14 会话锚点），
+  0.1.5 没有非升不可的新能力。等本机 Node 升级或官方修复说明后再跟进。
+
 ## 2026-09-07
 
 - **孩子端「设目标」入口**：DashboardView 勋章墙后新增 `GoalCard`——
