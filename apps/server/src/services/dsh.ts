@@ -71,3 +71,15 @@ export async function dshRespond(req: DshRequest): Promise<string> {
     throw err
   }
 }
+
+// 健康检查：dsh 运行时能否正常启动并返回（用于部署后验证，防止配置错误静默降级）
+export async function dshHealthCheck(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const h = await getHarness()
+    const r = await h.run('hi', { sessionId: 'health-check' })
+    if (!r.finalResponse) return { ok: false, error: 'empty_response' }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}

@@ -221,3 +221,11 @@
   宠物养成（🥚→🐉）、连击火焰、Canvas 粒子（余烬/星星雨）。
 - **Phase 1/2**：100 以内加减法、表内乘除法（含琐碎题过滤与进退位占比分级）。
 - **MVP**：本地出题（种子确定性）+ 计时 + 自动判分 + 错题本 + 竞赛码。
+## 2026-09-13
+
+- **修复 dsh skill 插件加载失败（降级根因）**：cordis.yml 引用的 `@deepseek-ai/dsh-skill`
+  从 0.1.2 才发布且 peer 依赖 dsh-llm/scope ^0.1.2，与 0.1.1 运行时冲突，永不加载。
+  方案：错因→建议规则内联进 sprite.ts 的 SYSTEM（dsh/kimi 两路一致），
+  移除 cordis.yml 的 skills/tutor-skill 条目与插件文件。
+- **部署事故修复**：同步 dsh-runtime 时误删服务器 node_modules，已重装并验证
+  sprite-advice provider=dsh 正常返回、日志无降级无报错。

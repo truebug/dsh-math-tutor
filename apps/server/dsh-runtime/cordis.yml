@@ -23,5 +23,5 @@
     root: /var/lib/dsh-tutor/sessions
 - id: session-checkpoints
   name: '@deepseek-ai/dsh-session-checkpoint-policy'
-# 小精灵建议规则 skill（错因→建议映射），agent 自主调用
-- name: file:./plugins/tutor-skill.ts
+# 注：@deepseek-ai/dsh-skill 从 0.1.2 才发布且依赖 dsh-llm/scope 0.1.2，
+# 与当前 0.1.1 运行时 peer 冲突，不可用；错因→建议规则已内联进 sprite.ts 的 SYSTEM。

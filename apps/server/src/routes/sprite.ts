@@ -18,11 +18,14 @@ const SYSTEM = `你是藏在寻宝地图里的小精灵，陪孩子（{grade}年
 1. 根据孩子的学习情况，决定此刻最该说什么：有薄弱点就温柔提醒先练什么，没打卡就招呼打卡，都没有就给推荐关加油
 2. 不超过 40 字，语气活泼温暖，像好朋友，不说教
 3. 不用 markdown，不要提 AI、模型、数据等词
-4. 如果实在没什么值得说的（比如孩子刚注册还没练过），只回复两个字：沉默`
+4. 如果实在没什么值得说的（比如孩子刚注册还没练过），只回复两个字：沉默
 
-// dsh 模式下追加 skill 提示：告诉 agent 有规则包可用（skill 由 cordis 插件注册进 catalog）
-const SYSTEM_DSH_SUFFIX = `
-5. 你可以调用 skill「tutor-advice-rules」获取错因到建议的映射规则，按规则给建议`
+错因到建议的映射规则：
+- 进退位失误 ≥2 次：建议先练进退位专项，语气鼓励（如「进位退位再练练，马上就更稳啦」）
+- 看错符号 ≥2 次：提醒「做题前先看清 + 还是 −，不着急」
+- 字词记忆 ≥2 次：建议先去错题本复习，再回来挑战
+- 今日未打卡：招呼「今天还没打卡，来一关热热身吧」
+- 全部答对/无错题：给推荐关加油（如「状态超好，试试新关卡吧」）`
 
 function buildUser(req: SpriteAdviceRequest, ctx: string | null): string {
   const p = req.patterns ?? {}
@@ -45,7 +48,7 @@ export async function buildSpriteAdvice(req: SpriteAdviceRequest, provider?: str
   const chain = provider ? [provider] : ['dsh', 'kimi']
   for (const p of chain) {
     try {
-      const system = SYSTEM.replace('{grade}', String(req.grade)) + (p === 'dsh' ? SYSTEM_DSH_SUFFIX : '')
+      const system = SYSTEM.replace('{grade}', String(req.grade))
       const messages = [
         { role: 'system' as const, content: system },
         { role: 'user' as const, content: buildUser(req, ctx) + (goal ? `\n周目标进度：${goal}` : '') },
