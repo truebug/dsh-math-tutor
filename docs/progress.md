@@ -5,11 +5,14 @@
 ## 2026-09-13
 
 - **dsh 0.1.5-rc.1 升级评估**：npm `latest` 已到 0.1.5-rc.1（9/10），
-  新增 dsh-tool-goal/dsh-goal-round-driver/dsh-tool-skill 等能力线。
-  本地验证受阻：本机 Node v19.7.0 低于 dsh 要求的 ≥22.15（zstd 持久化依赖），
-  无法确认 0.1.2 的 cordis INACTIVE_EFFECT 兼容 bug 是否修复。
-  **结论：暂缓升级**——现网 0.1.1-rc.2 稳定运行（6 天零降级、14 会话锚点），
-  0.1.5 没有非升不可的新能力。等本机 Node 升级或官方修复说明后再跟进。
+  新增 goal/skill/persona/webhook 能力线（dsh-tool-goal/dsh-goal-round-driver/
+  dsh-skill-filesystem 等 72 个依赖）。**结论：暂缓升级**——
+  ① 现网 0.1.1-rc.2 + 手写 goal/skill 已闭环（6 天 5 次降级但可接受，
+  14 会话锚点）；② 0.1.5 的官方实现对我们不是非升不可；③ 0.1.2 的
+  cordis INACTIVE_EFFECT 兼容 bug 是否修复未知（本机 Node v19 无法验证，
+  v24 下 dsh 包结构变化 bin.js 路径缺失）。触发升级信号：0.1.5 正式版
+  发布 + 官方 changelog 明确修复 sdk profile 兼容问题，或出现手写无法
+  覆盖的新能力（如 agent 自主多轮 goal 推进）。
 
 ## 2026-09-07
 
