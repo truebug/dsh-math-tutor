@@ -2,6 +2,16 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-09-17
+
+- **dsh 0.1.5-rc.2 升级预验证（通过）**：本地 Node 24 + 真实 Kimi key 端到端实测，
+  两项历史阻断全部解除——① 0.1.2 的 sdk profile INACTIVE_EFFECT bug 已修复；
+  ② dsh-skill 在 0.1.5 线 peer 自洽（skill/goal 能力线可恢复真注册）。
+  新启动方式（dsh CLI + profile 'sdk' + patch 叠加层）跑通：Kimi 网关走
+  DEEPSEEK_BASE_URL env 零 patch 覆盖，persona/models/thinking 走 tutor.patch.yml，
+  会话锚点复用正常，首轮 ~16s / 复用 ~6.6s。迁移清单（约半天）与触发信号
+  （0.1.5 正式版发布）详见 docs/roadmap-agent.md。**现网维持 0.1.1-rc.2 不动。**
+
 ## 2026-09-13
 
 - **dsh 0.1.5-rc.1 升级评估**：npm `latest` 已到 0.1.5-rc.1（9/10），
