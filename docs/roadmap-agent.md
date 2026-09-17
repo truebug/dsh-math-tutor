@@ -82,3 +82,35 @@ session 持久化 /var/lib/dsh-tutor/sessions 已生效）；默认仍 kimi 直�
 - API Key 不出服务端；画像摘要不含身份信息；监护人明示同意才可上云
 - 出题/判分永远确定性本地完成，LLM 只做讲解/鼓励/推荐
 - 画像为纯 JSON 资产，与厂商/宿主无关，换框架不丢
+
+## dsh 0.1.5-rc.2 升级预验证（2026-09-17，本地 Node 24 实测通过）
+
+**结论：技术通道已打通，等正式版即可迁移。**
+
+验证方法：/tmp 隔离目录装 `@deepseek-ai/dsh@0.1.5-rc.2` + `dsh-sdk-client@0.1.5-rc.2`，
+真实 Kimi key 端到端跑 sprite 场景两轮会话。
+
+**逐项结果**
+- ✅ INACTIVE_EFFECT（0.1.2 阻断 bug）已修复：sdk profile 正常启动，无 patch 报错
+- ✅ demo 包已废弃：`dsh-sdk-jsonrpc-demo`/`dsh-agent-spine-demo` 不在 0.1.5 线；
+  新启动方式 = dsh CLI + `profile: 'sdk'` + `--patch` 叠加层（cordis.yml 不再需要，
+  base profile 自带 llm/session/持久化/工具/凭证全套）
+- ✅ Kimi 接入零 patch：`DEEPSEEK_BASE_URL` env 覆盖 baseURL（env 优先级最高），
+  `DEEPSEEK_API_KEY` 传 key；`thinking: disabled` + k3 模型目录走 patch（按 id 合并）
+- ✅ persona 可配：`system-prompt` 插件的 personaPrefix/personaSuffix 进 patch
+  （实测「小精灵」人格生效，输出带"小精灵说"前缀）
+- ✅ 会话锚点：同 sessionId 第二轮记得上下文；jsonl 落盘 `$DSH_HOME/sessions/`
+- ✅ skill/goal 能力线齐了：dsh-skill、dsh-skill-filesystem、dsh-goal、
+  dsh-goal-round-driver、dsh-tool-goal 全在 0.1.5 依赖树内，peer 自洽——
+  升级后 tutor-skill 可恢复为真正的 skill catalog 注册（当前为 prompt 内联）
+- ✅ 延迟：冷启动首轮 ~16s（模型调用占大头），同会话第二轮 ~6.6s
+
+**迁移清单（正式版发布后，预估半天）**
+1. `dsh-runtime/package.json` → 只留 `@deepseek-ai/dsh` + `dsh-sdk-client`（版本钉正式版）
+2. 删 `cordis.yml`；新增 `tutor.patch.yml`（llm-deepseek: thinking/models；system-prompt: persona）
+3. `services/dsh.ts` 改造：`launch{command,args}` → `{profile:'sdk', patches, provider, model, env}`；
+   env 注入 `DEEPSEEK_API_KEY/DEEPSEEK_BASE_URL/DSH_HOME`，PATH 前置 node22 目录
+4. 服务器 systemd 加 `DSH_HOME=/var/lib/dsh-tutor`；会话目录随 DSH_HOME 迁移
+5. （可选）tutor-skill.ts 恢复为 skill 插件挂载 dsh-skill-filesystem
+
+**升级触发信号（维持）**：npm latest 出现 0.1.5 正式版（非 rc/alpha）。
