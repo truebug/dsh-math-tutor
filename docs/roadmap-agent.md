@@ -97,6 +97,9 @@ session 持久化 /var/lib/dsh-tutor/sessions 已生效）；默认仍 kimi 直�
   base profile 自带 llm/session/持久化/工具/凭证全套）
 - ✅ Kimi 接入零 patch：`DEEPSEEK_BASE_URL` env 覆盖 baseURL（env 优先级最高），
   `DEEPSEEK_API_KEY` 传 key；`thinking: disabled` + k3 模型目录走 patch（按 id 合并）
+  （更正 2026-09-23：外部评估称需 `llm-pi-ai` 手写 route 接 Kimi——不需要，
+  llm-deepseek 适配器原生 env 覆盖即可；llm-pi-ai 仅多 provider 路由场景才用。
+  生态评估归档：docs/ref/dsh-ecosystem-assessment-20260923.md）
 - ✅ persona 可配：`system-prompt` 插件的 personaPrefix/personaSuffix 进 patch
   （实测「小精灵」人格生效，输出带"小精灵说"前缀）
 - ✅ 会话锚点：同 sessionId 第二轮记得上下文；jsonl 落盘 `$DSH_HOME/sessions/`
