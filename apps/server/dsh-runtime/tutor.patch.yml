@@ -13,11 +13,9 @@
     # 小精灵人格（默认是 coding agent 人格，必须覆盖；personaSuffix 清空 cwd 提示）
     personaPrefix: 你是藏在寻宝地图里的小精灵，陪孩子一起学语文、数学和英语。
     personaSuffix: ''
-# 关闭 web 搜索/抓取工具：四场景均为纯对话不需要工具；
-# web-search-deepseek 默认会拿注入的 key 打 DeepSeek 搜索 API（401 失败且不干净）
+# web 搜索/抓取工具：抓取（fetch）无需 key 直接可用；
+# 搜索走 DeepSeek Anthropic 兼容端点，用独立 env 传 DeepSeek key——
+# 注意不可复用 DEEPSEEK_API_KEY（它被我们注入的是 Kimi key，会 401）
 - id: web-search-deepseek
-  disabled: true
-- id: web-fetch-http
-  disabled: true
-- id: tool-web
-  disabled: true
+  config:
+    apiKeyEnv: DEEPSEEK_SEARCH_API_KEY
