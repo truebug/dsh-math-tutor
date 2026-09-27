@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import OnboardingView from './components/OnboardingView'
 import SetupView from './components/SetupView'
 import MapView from './components/AdventureMap'
@@ -23,6 +23,7 @@ import { recordStars, starsFor } from './lib/adventure'
 import { earnedIds, diffBadges, type Badge } from './lib/badges'
 import { submitScore, type ScoreResult } from './lib/score'
 import { bumpMetric } from './lib/profile'
+import { reportVisit } from './lib/visit'
 import './styles.css'
 
 export default function App() {
@@ -36,6 +37,9 @@ export default function App() {
   const [newBadges, setNewBadges] = useState<Badge[]>([])
   const [raceKey, setRaceKey] = useState(0)
   const badgesBeforeRef = useRef<Set<string>>(new Set())
+
+  // 匿名访客上报（仅随机 UUID + 是否建档，不含任何身份信息）
+  useEffect(() => { reportVisit(!!profile) }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!profile && !guest) {
     return (

@@ -4,6 +4,10 @@
 
 ## 2026-09-27
 
+- **匿名访客画像上线**：`/api/visit`（POST 上报 + GET stats 聚合 14 天）+
+  `data/visits.jsonl`。前端 `lib/visit.ts` 随机 UUID 存 localStorage、打开页面
+  上报一次；App 挂载触发；DashboardView 新增「🌍 站点访客」卡片
+  （今日/近 7 天/累计，区分建档）。隐私：只记 UUID+日期+是否建档，无 IP/UA。
 - **dsh 升级 0.1.1-rc.2 → 0.1.5-rc.3（完成，线上运行中）**：进入小步跟踪模式，
   不再等正式版。① 本地 Node 24 冒烟 rc.3 通过（Kimi 链路/persona/会话锚点，
   首轮 12.4s、复用 9.4s）；② 启动方式换代：cordis.yml 废弃 → dsh CLI +

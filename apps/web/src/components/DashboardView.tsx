@@ -11,6 +11,24 @@ import { STAGES, stagesOf } from '../lib/adventure'
 import { getLeaderboard, type LeaderboardEntry } from '../lib/score'
 import { useEffect } from 'react'
 import GrowthReport from './GrowthReport'
+import { fetchVisitStats, type VisitStats } from '../lib/visit'
+
+// 站点访客卡片：全站匿名访客统计（只读，任何人可见；不含身份信息）
+function VisitorCard() {
+  const [stats, setStats] = useState<VisitStats | null>(null)
+  useEffect(() => { fetchVisitStats().then(setStats) }, [])
+  if (!stats || stats.total === 0) return null
+  const today = stats.daily[stats.daily.length - 1]
+  const week = stats.daily.slice(-7).reduce((s, d) => s + d.visitors, 0)
+  return (
+    <div className="pattern-card">
+      <h3 className="chart-title">🌍 站点访客（匿名统计）</h3>
+      <p className="metric-line">
+        今日 {today?.visitors ?? 0} 位（建档 {today?.registered ?? 0}） · 近 7 天 {week} 位 · 累计 {stats.total} 位
+      </p>
+    </div>
+  )
+}
 
 // 周目标卡片：设定/查看/清除，agent 看到后会主动提醒进度
 interface GoalDoc {
@@ -373,6 +391,8 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
       {sync && <GoalCard />}
 
       {sync && <GrowthReport />}
+
+      <VisitorCard />
 
       {sync && board && board.entries.length > 0 && (
         <div className="pattern-card">
