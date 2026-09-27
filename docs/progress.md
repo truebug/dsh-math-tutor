@@ -169,7 +169,7 @@
 ## 2026-08-26
 
 - **游乐场大陆上线**（5578c5b）：藏宝图第四块大陆 🎡，7 关独立解锁链，
-  智慧树面板同步收录，已部署 coolje00。
+  智慧树面板同步收录，已部署 <DEPLOY_HOST>。
   - 单词消消乐 ×3 关（kind=match）：英文↔中文卡片配对消除，首点即中记对、
     错配记错；词库复用 VOCAB 主题（`vocabThemes()` 按关合并）。
   - 古诗词接龙 ×2 关（kind=poemchain）：上句接下句四选一连击，复用 POEMS
@@ -189,7 +189,7 @@
 ## 2026-08-25
 
 - **Agent 化路线 P0→P3 全落地**（对照 vision 反思 DSH 运行时零接入差距，
-  计划见 `docs/roadmap-agent.md`，已部署 coolje00）：
+  计划见 `docs/roadmap-agent.md`，已部署 <DEPLOY_HOST>）：
   - P0 插件架构（3c89151）：服务端迁移最小化 cordis 约定宿主 `host.ts`，
     review/hint/battle/score/profile 五路由改造为 name+apply(ctx) 插件，
     index.ts 收敛为分发器，纯重构行为不变。
@@ -237,7 +237,7 @@
 
 ## 2026-08-23
 
-- **首次上线**：coolje00 复用 2008 端口（/dsh-math-tutor/ + /api/ → 127.0.0.1:8787）。
+- **首次上线**：<DEPLOY_HOST> 复用 2008 端口（/dsh-math-tutor/ + /api/ → 127.0.0.1:8787）。
 - **AI 点评**：/api/review 匿名错题摘要 → LLM（已切换 Kimi k3，.env 四行换厂商）。
 - **多人对战**：竞赛码即房间号，join/score/state，成绩页 2s 轮询排行榜。
 - **错因聚类**：看错符号/进退位失误/计算错误，看板分布条 + 口诀建议。

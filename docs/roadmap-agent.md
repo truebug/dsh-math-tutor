@@ -31,7 +31,7 @@
 
 1. dsh 发布 0.2/稳定版（当前 0.1.1-rc.2，2026-08-21 后上游无新提交）
 2. 需要跨会话记忆 / 多 agent 编排 / 官方工具链（MCP、skills）
-3. 服务器有资源跑独立 dsh 运行时进程（coolje00 资源够，主要差部署与监控）
+3. 服务器有资源跑独立 dsh 运行时进程（<DEPLOY_HOST> 资源够，主要差部署与监控）
 
 **第二步已部分落地（2026-08-27）**：hint 场景 dsh provider 线上跑通。
 `POST /api/hint?provider=dsh` 走真 dsh 运行时（SDK client spawn 子进程，

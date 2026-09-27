@@ -1,7 +1,7 @@
 # 目录结构与初始化参考
 
 > 本文档记录项目初始化时的目录设计，随结构演进同步更新。
-> 关键约束：最终以 **Web 网页形式发布到线上 nginx 服务器**（coolje00/coolje01 类），详见 README「Web 部署约束」一节与 `docs/deployment.md`。
+> 关键约束：最终以 **Web 网页形式发布到线上 nginx 服务器**（内网 nginx 服务器），详见 README「Web 部署约束」一节与 `docs/deployment.md`。
 
 ```
 dsh-math-tutor/

@@ -34,7 +34,7 @@
 
 ## Web 部署约束
 
-本项目目标环境为已有 nginx 服务器（coolje00/coolje01 类），架构与技术选型必须满足以下约束：
+本项目目标环境为已有 nginx 服务器（内网 nginx 服务器），架构与技术选型必须满足以下约束：
 
 - **前端纯静态化**：`apps/web` 必须 `vite build` 产出纯静态文件，直接放入 nginx 站点目录即可运行，不依赖 Node 运行时。
 - **后端轻量可反代**：`apps/server` 以普通 HTTP 服务监听 `127.0.0.1:<port>`，由 nginx 反向代理转发（如 `/api/` → `127.0.0.1:8787`）；用 systemd 守护，不占用 80/443。
@@ -117,7 +117,7 @@ dsh-math-tutor/
 - [ ] Phase 7b-2: 知识点级动态推荐
 - [x] 游戏化：寻宝卷轴地图（视差剪影）、十三关、每日挑战、宠物养成、连击/粒子反馈、解锁仪式
 - [x] 画像上云：家庭 ID 即凭证，监护人同意后同步，跨设备恢复；AI 点评携带历史画像
-- [x] 上线：coolje00 nginx 2008 端口（/dsh-math-tutor/ 静态 + /api/ 反代）
+- [x] 上线：<DEPLOY_HOST> nginx 2008 端口（/dsh-math-tutor/ 静态 + /api/ 反代）
 - [ ] 数学插件稳定后拆分为独立仓库，并打 `dsh-plugin` topic 便于社区发现
 
 > ⚠️ DeepSeek Harness 处于 developer preview，官方声明存在兼容性破坏变更，因此 package.json 中必须精确锁定 `@deepseek-ai/dsh@0.1.1-rc.2`。

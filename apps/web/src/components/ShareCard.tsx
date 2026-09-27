@@ -52,7 +52,9 @@ function draw(canvas: HTMLCanvasElement, record: SessionRecord, nickname: string
   c.fillStyle = '#b8860b'; c.font = 'bold 30px sans-serif'
   c.fillText(praise, W / 2, 560)
   c.fillStyle = '#98a4b5'; c.font = '20px sans-serif'
-  c.fillText('和我一起挑战 → 120.27.200.203:2008/dsh-math-tutor', W / 2, 736)
+  // 动态站点地址：不写死服务器 IP/域名（公开仓库约束），随部署环境自动生效
+  const site = typeof window !== 'undefined' ? window.location.host + window.location.pathname.replace(/\/$/, '') : ''
+  c.fillText(`和我一起挑战 → ${site}`, W / 2, 736)
 }
 
 export default function ShareCard({ record, nickname }: Props) {
