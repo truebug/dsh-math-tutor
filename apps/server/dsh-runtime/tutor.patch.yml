@@ -1,0 +1,15 @@
+# dsh-math-tutor patch 叠加层（dsh 0.1.5 线，profile 'sdk' + --patch 机制）
+# base profile 自带 llm/session/持久化/工具/凭证全套，本文件只覆盖差异项。
+# Kimi 网关/key 由宿主进程经 DEEPSEEK_BASE_URL / DEEPSEEK_API_KEY env 注入（零 patch）。
+- id: llm-deepseek
+  config:
+    thinking: disabled            # Kimi coding 端点不支持 thinking
+    models:
+      - id: k3
+        name: Kimi-K3
+        contextWindow: 262144
+- id: system-prompt
+  config:
+    # 小精灵人格（默认是 coding agent 人格，必须覆盖；personaSuffix 清空 cwd 提示）
+    personaPrefix: 你是藏在寻宝地图里的小精灵，陪孩子一起学语文、数学和英语。
+    personaSuffix: ''

@@ -2,6 +2,21 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-09-27
+
+- **dsh 升级 0.1.1-rc.2 → 0.1.5-rc.3（完成，线上运行中）**：进入小步跟踪模式，
+  不再等正式版。① 本地 Node 24 冒烟 rc.3 通过（Kimi 链路/persona/会话锚点，
+  首轮 12.4s、复用 9.4s）；② 启动方式换代：cordis.yml 废弃 → dsh CLI +
+  profile 'sdk' + tutor.patch.yml（thinking/models/persona 三项差异）；
+  ③ `dsh.ts` 改造：client 从 dsh-runtime/node_modules 动态加载（版本同源），
+  Kimi key/网关走 DEEPSEEK_API_KEY/DEEPSEEK_BASE_URL env 零 patch；
+  ④ 上线踩坑并修复：DSH_HOME 属"启动环境"变量，dsh 0.1.5 拒绝从 .env 读取，
+  改 systemd `Environment=` 注入；旧会话锚点（0.1.1 格式）备份作废
+  （sessions.bak-0.1.1）；⑤ 验证：sprite 三场景（carry/word/无画像）全部正常
+  返回且按规则映射，当前进程零降级零报错，新锚点落盘 /var/lib/dsh-tutor/sessions/。
+  回退预案保留：dsh-runtime.bak-0.1.1。
+  此后新 RC/正式版 → 冒烟 → 小步升级。
+
 ## 2026-09-17
 
 - **dsh 0.1.5-rc.2 升级预验证（通过）**：本地 Node 24 + 真实 Kimi key 端到端实测，
