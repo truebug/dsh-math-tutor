@@ -116,4 +116,7 @@ session 持久化 /var/lib/dsh-tutor/sessions 已生效）；默认仍 kimi 直�
 4. 服务器 systemd 加 `DSH_HOME=/var/lib/dsh-tutor`；会话目录随 DSH_HOME 迁移
 5. （可选）tutor-skill.ts 恢复为 skill 插件挂载 dsh-skill-filesystem
 
-**升级触发信号（维持）**：npm latest 出现 0.1.5 正式版（非 rc/alpha）。
+**升级状态（2026-09-27 更新：已放弃"等正式版"策略）**：已升级至 0.1.5-rc.3 上线运行
+（commit 1e7fd06，见 docs/progress.md 2026-09-27）。此后进入小步跟踪模式：
+新 RC/正式版 → 本地冒烟（复用 /tmp 脚本）→ 小步升级（改动收敛在 dsh.ts + dsh-runtime/）。
+上述迁移清单已由本次升级执行完毕。
