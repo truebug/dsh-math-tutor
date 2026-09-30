@@ -40,7 +40,7 @@ export default function VoiceChat({ grade }: Props) {
   const recRef = useRef<SpeechRecognitionLike | null>(null)
   const voiceOk = !!SR
 
-  const send = async (message: string) => {
+  const send = async (message: string, fromVoice = false) => {
     if (!message.trim() || busy) return
     setBusy(true)
     setReply('')
@@ -51,6 +51,7 @@ export default function VoiceChat({ grade }: Props) {
         body: JSON.stringify({
           grade,
           message,
+          viaVoice: fromVoice,
           familyId: syncEnabled() ? getFamilyId() ?? undefined : undefined,
         }),
         signal: AbortSignal.timeout(60_000),
@@ -80,7 +81,7 @@ export default function VoiceChat({ grade }: Props) {
         else interim += r[0].transcript
       }
       setHeard(final || interim)
-      if (final) void send(final)
+      if (final) void send(final, true)
     }
     rec.onerror = () => setListening(false)
     rec.onend = () => setListening(false)
@@ -124,7 +125,7 @@ export default function VoiceChat({ grade }: Props) {
       ) : (
         <p className="voice-note">这个浏览器不支持语音输入，打字也可以哦</p>
       )}
-      <form className="voice-text" onSubmit={(e) => { e.preventDefault(); void send(textInput); setTextInput('') }}>
+      <form className="voice-text" onSubmit={(e) => { e.preventDefault(); void send(textInput, false); setTextInput('') }}>
         <input value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder="也可以打字…" maxLength={200} />
         <button type="submit" disabled={busy || !textInput.trim()}>发送</button>
       </form>

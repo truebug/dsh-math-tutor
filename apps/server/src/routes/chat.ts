@@ -4,11 +4,24 @@
 import { respond } from '../services/agent.ts'
 import { buildLearnerContext, goalProgress } from '../services/learnerCtx.ts'
 import type { ServerContext } from '../host.ts'
+import { mkdirSync, appendFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const METRICS_FILE = join(process.cwd(), 'data', 'chat-metrics.jsonl')
+
+// 语音链路埋点：只记次数与输入方式（voice/text），不含对话内容
+function trackChat(viaVoice: boolean): void {
+  try {
+    mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+    appendFileSync(METRICS_FILE, JSON.stringify({ d: new Date().toISOString().slice(0, 10), v: viaVoice ? 1 : 0 }) + '\n')
+  } catch { /* 埋点失败不影响对话 */ }
+}
 
 export interface ChatRequest {
   grade: 2 | 3 | 4 | 5
   message: string         // 语音转写文本（可能含同音错字）
   familyId?: string       // 已开启云端同步时，会话锚点（小精灵记得这孩子）
+  viaVoice?: boolean      // 语音输入（true）或打字降级（false）
 }
 
 // 语音识别错词 → 正确教学术语（第 0 步实测暴露的失败模式：通用语言模型不识领域词）
@@ -62,6 +75,7 @@ export function apply(ctx: ServerContext) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end('{"error":"bad_request"}')
       return true
     }
+    trackChat(!!b.viaVoice)
     try {
       const text = await buildChatReply(b, url.searchParams.get('provider') ?? undefined)
       res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text }))
