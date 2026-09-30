@@ -6,7 +6,7 @@
 import { chat, type ChatMessage } from './llm.ts'
 import { dshRespond } from './dsh.ts'
 
-export type AgentScene = 'review' | 'hint' | 'weekly' | 'sprite'
+export type AgentScene = 'review' | 'hint' | 'weekly' | 'sprite' | 'chat'
 
 export interface AgentRequest {
   scene: AgentScene

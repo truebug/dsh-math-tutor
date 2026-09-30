@@ -11,6 +11,7 @@ import * as profile from './routes/profile.ts'
 import * as weekly from './routes/weekly.ts'
 import * as sprite from './routes/sprite.ts'
 import * as visit from './routes/visit.ts'
+import * as chat from './routes/chat.ts'
 
 const { ctx, dispatch } = createHost()
 
@@ -21,7 +22,7 @@ ctx.routes.register('/api/health', 'GET', async (_req, res) => {
   return true
 })
 
-loadPlugins(ctx, [review, hint, battle, score, profile, weekly, sprite, visit] as Plugin[])
+loadPlugins(ctx, [review, hint, battle, score, profile, weekly, sprite, visit, chat] as Plugin[])
 
 const server = createServer(async (req, res) => {
   try {

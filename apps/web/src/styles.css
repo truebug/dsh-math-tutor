@@ -749,3 +749,19 @@ input[type="range"] { width: 100%; }
   .gr-bars { height: 90px; }
   .gr-bar { background: #4a90e2; }
 }
+
+/* 语音对话小精灵 */
+.voice-fab { position: fixed; right: 16px; bottom: 84px; z-index: 12; width: 52px; height: 52px; border-radius: 50%; border: none; background: #4a90e2; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.3); transition: transform .15s; }
+.voice-fab:hover { transform: scale(1.1); }
+.voice-panel { position: fixed; right: 16px; bottom: 84px; z-index: 13; width: min(320px, calc(100vw - 32px)); background: #243246; border-radius: 16px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.4); color: #eee; }
+.voice-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 10px; }
+.voice-close { background: none; border: none; color: #9ab; font-size: 16px; cursor: pointer; }
+.voice-mic { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; background: #4a90e2; color: #fff; cursor: pointer; touch-action: none; user-select: none; }
+.voice-mic.listening { background: #e2574a; }
+.voice-mic:disabled { opacity: .6; }
+.voice-text { display: flex; gap: 8px; margin-top: 10px; }
+.voice-text input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4c66; background: #1a2332; color: #eee; font-size: 14px; }
+.voice-text button { padding: 8px 14px; border: none; border-radius: 8px; background: #4a90e2; color: #fff; cursor: pointer; }
+.voice-heard { margin: 10px 0 0; font-size: 13px; color: #9ab; }
+.voice-reply { margin: 8px 0 0; font-size: 15px; line-height: 1.6; }
+.voice-note { margin: 10px 0 0; font-size: 11px; color: #6b7a90; }

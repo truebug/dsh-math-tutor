@@ -8,6 +8,7 @@ import { spriteAdvice } from '../lib/sprite'
 import { fetchSpriteAdvice } from '../api/sprite'
 import { loadProfileData } from '../lib/profile'
 import Sprite from './Sprite'
+import VoiceChat from './VoiceChat'
 import { sfx } from '../lib/sound'
 import TreasureMapBg from './TreasureMapBg'
 import ParticleField from './ParticleField'
@@ -493,6 +494,7 @@ export default function AdventureMap({ profile, onStartStage, onFreePractice }: 
 
       {/* 主动性：小精灵画像驱动今日建议（无画像数据时不显示） */}
       {todayAdvice && <Sprite grade={profile.grade} bubble={todayAdvice} />}
+      <VoiceChat grade={profile.grade} />
 
       {/* 智慧树·全关卡导航面板 */}
       {atlasOpen && (

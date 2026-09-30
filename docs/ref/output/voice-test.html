@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>语音识别实测（内部技术验证）</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; background: #1a2332; color: #eee; }
+  h1 { font-size: 20px; }
+  #btn { width: 100%; padding: 24px; font-size: 22px; border: none; border-radius: 16px; background: #4a90e2; color: #fff; touch-action: none; user-select: none; }
+  #btn.holding { background: #e2574a; }
+  #log { margin-top: 16px; font-size: 15px; line-height: 1.8; }
+  .row { padding: 8px 12px; background: #243246; border-radius: 10px; margin-bottom: 8px; }
+  .interim { opacity: .55; }
+  #stats { margin-top: 16px; padding: 12px; background: #243246; border-radius: 10px; font-size: 14px; }
+  #support { margin-top: 12px; font-size: 13px; color: #9ab; }
+  textarea { width: 100%; height: 60px; font-size: 14px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h1>🎤 语音识别实测</h1>
+<p style="font-size:14px;color:#9ab">让孩子对着设备说下面任意一句，按住按钮说话、松开结束：</p>
+<ol style="font-size:14px;color:#cde">
+  <li>进退位是什么意思呀</li>
+  <li>七加八等于几</li>
+  <li>我想练一练语文</li>
+  <li>小精灵你还记得我吗</li>
+  <li>嗯……那个……我想想（长犹豫句）</li>
+</ol>
+<button id="btn">按住说话</button>
+<div id="log"></div>
+<div id="stats">已完成 0 句，识别成功 0 句</div>
+<div id="support"></div>
+<textarea id="note" placeholder="备注：哪句识别错了？孩子原话是什么？"></textarea>
+<script>
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+const support = document.getElementById('support')
+if (!SR) {
+  support.textContent = '❌ 此浏览器不支持 SpeechRecognition（需 Chrome 或 Safari 14.1+）'
+  document.getElementById('btn').disabled = true
+} else {
+  support.textContent = '✅ 支持 SpeechRecognition · UA: ' + (/iPad|iPhone/.test(navigator.userAgent) ? 'iOS/iPadOS' : '其他')
+}
+const btn = document.getElementById('btn')
+const log = document.getElementById('log')
+const stats = document.getElementById('stats')
+let rec = null, holding = false, total = 0, ok = 0
+
+function start(e) {
+  e.preventDefault()
+  if (!SR || holding) return
+  holding = true
+  btn.classList.add('holding')
+  btn.textContent = '正在听…松开结束'
+  rec = new SR()
+  rec.lang = 'zh-CN'
+  rec.interimResults = true
+  rec.continuous = false
+  const row = document.createElement('div')
+  row.className = 'row'
+  row.textContent = '…'
+  log.prepend(row)
+  rec.onresult = (ev) => {
+    let interim = '', final = ''
+    for (const r of ev.results) {
+      if (r.isFinal) final += r[0].transcript
+      else interim += r[0].transcript
+    }
+    row.innerHTML = (final ? '<b>' + final + '</b>' : '') + (interim ? ' <span class="interim">' + interim + '</span>' : '')
+    if (final) { total++; ok++; update() }
+  }
+  rec.onerror = (ev) => {
+    row.innerHTML = '⚠️ ' + ev.error
+    if (ev.error !== 'no-speech') { total++; update() }
+  }
+  rec.onend = () => {
+    holding = false
+    btn.classList.remove('holding')
+    btn.textContent = '按住说话'
+  }
+  rec.start()
+}
+function stop(e) {
+  if (e) e.preventDefault()
+  if (rec && holding) rec.stop()
+}
+function update() { stats.textContent = `已完成 ${total} 句，识别成功 ${ok} 句` }
+btn.addEventListener('pointerdown', start)
+btn.addEventListener('pointerup', stop)
+btn.addEventListener('pointercancel', stop)
+btn.addEventListener('pointerleave', stop)
+</script>
+</body>
+</html>
