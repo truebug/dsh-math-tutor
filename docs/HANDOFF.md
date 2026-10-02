@@ -44,7 +44,7 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 
 - **版本**：0.1.5-rc.3（09-27 从 0.1.1-rc.2 升级，进入小步跟踪模式：新 RC/正式版 → 冒烟 → 小步升级）
 - **架构**：三层切分——`services/agent.ts`（35 行唯一替换点，provider 可配 dsh/kimi，dsh 失败自动降级 kimi）+
-  `services/dsh.ts`（85 行适配层）+ `dsh-runtime/`（独立目录、独立依赖）
+  `services/dsh.ts`（98 行适配层）+ `dsh-runtime/`（独立目录、独立依赖）
 - **启动方式**：dsh CLI + `profile: 'sdk'` + `dsh-runtime/tutor.patch.yml` 叠加层
   （cordis.yml 已在 0.1.5 废弃；patch 内容：llm-deepseek thinking:disabled + k3 模型目录 +
   system-prompt 小精灵人格 + web-search-deepseek 用独立 env）
@@ -52,8 +52,10 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
   经 `DEEPSEEK_API_KEY`/`DEEPSEEK_BASE_URL` env 注入 dsh 子进程——**没有 DeepSeek 对话 API 混进来**
 - **web 搜索**：DeepSeek 官方搜索端点，用独立 env `DEEPSEEK_SEARCH_API_KEY`（从 zhidong2
   `/etc/daily-brief.env` 直传，与 Kimi key 隔离）
-- **四场景全量走 dsh**：hint（讲解）/review（点评）/sprite（今日建议）/chat（语音对话），
+- **五场景全量走 dsh**：hint（讲解）/review（点评）/sprite（今日建议）/chat（语音对话）/weekly（周报），
   均有 kimi 降级兜底；会话锚点 familyId→sessionId（小精灵记得孩子）
+- **切换方式**：代码默认 provider 是 kimi，线上由服务器 `.env` 设 `AGENT_PROVIDER=dsh` 切全量——
+  .env 不入库，仓库里看不到这个开关，新环境部署时别漏配
 - **线上健康**：09-28 起零降级零报错（journalctl 实查），会话锚点 9 个
 
 ### 历史踩坑（勿重蹈）
@@ -63,7 +65,8 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 3. DSH_HOME 是"启动环境变量"，0.1.5 拒绝从 .env 读取——必须 systemd `Environment=` 注入
 4. 部署事故：前端 src 曾误覆盖后端——前后端必须分目录 scp
 5. 公开仓库脱敏（09-30 commit 785b301）：IP/主机别名/部署细节已清出 HEAD；
-   git 历史残留属用户容忍的低危；`docs/deployment.md` 已移出索引（本地保留）
+   git 历史残留属用户容忍的低危；`docs/deployment.md` 已 `git rm --cached` 移出索引（本地保留，
+   .gitignore 兜底防重新入库）
 
 ## 四、功能现状（全部已上线）
 
@@ -104,8 +107,9 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 - **中文交流，节奏快**："go/继续/ok"即干活，不要说一句动一下，持续执行到有结果再停
 - **每次改动后**：构建 → 部署 → 线上验证（journalctl 零降级）→ commit → push → 告知 commit hash
 - **铁则**：不用 node_repl/持久 REPL 工具（曾触发 tool-call-id 重复卡死会话）；验证用一次性命令
-- **公开仓库红线**：密钥/服务器 IP/主机别名/部署路径/用户数据不入库（.env、server/data/ 已 gitignore）；
-  提交前自查 `git status` + 敏感词扫描；部署文档 `docs/deployment.md` 本地保留不入库
+- **公开仓库红线**：密钥/用户数据绝不入库（.env、server/data/ 已 gitignore）；IP/主机别名/部署路径
+  不入业务代码与常规文档，**仅允许出现在 docs/HANDOFF.md（交接必需）与本地保留的 docs/deployment.md**；
+  提交前自查 `git status` + 敏感词扫描
 - **出题判分永远确定性本地**，LLM 只做讲解/鼓励/推荐；API key 不出服务端；监护人同意才上云
 - **报告类产出**写 docs/ 并推送；技术方案先给计划再动手
 - ssh 服务器别名：coolje00（本项目部署机）、zhidong2（key 来源）；scp/ssh/curl 已批准
@@ -124,4 +128,3 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 | `docs/roadmap-agent.md` | agent 化路线 + dsh 迁移清单 + 语音助手方向 |
 | `docs/dsh-adoption-report-*.md` | 两期 dsh 评估报告 |
 | `docs/ref/` | 教材照片、Pipecat 归档、生态评估、打印产物 |
-

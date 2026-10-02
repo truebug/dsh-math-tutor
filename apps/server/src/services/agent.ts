@@ -1,7 +1,7 @@
 // Agent 网关（三层契约之"决策/表达层"的唯一替换点）
-// 现在：respond() 默认走 llm.ts chat()（Kimi/OpenAI 兼容直调）
-// 将来：AGENT_PROVIDER=dsh 时改为驱动 dsh 运行时（SDK client → 会话 + 工具调用），
-//       review/hint/weekly 三个路由与本文件以外的代码零感知。
+// 现状：线上 .env 设 AGENT_PROVIDER=dsh，五场景全量走 dsh 运行时，失败自动降级 kimi 直调；
+//       未设该 env 时默认 kimi 直调（llm.ts chat()，Kimi/OpenAI 兼容）。
+//       review/hint/weekly/sprite/chat 五个路由与本文件以外的代码零感知。
 //       dsh 发生破坏性变更/临时换别的 agent 框架时，只改本文件 provider 实现。
 import { chat, type ChatMessage } from './llm.ts'
 import { dshRespond } from './dsh.ts'

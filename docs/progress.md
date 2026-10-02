@@ -2,6 +2,16 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-10-02
+
+- **交接文档 review 修正**：
+  - `docs/deployment.md` 实际执行 `git rm --cached` 移出索引（785b301 只加了 .gitignore，
+    文件一直被跟踪，脱敏未真正完成；本次补落地）
+  - HANDOFF.md 修正：四场景→五场景（weekly 也走网关）、dsh.ts 行数 85→98、
+    补充「线上靠 .env 的 AGENT_PROVIDER=dsh 切全量」的部署须知、
+    红线措辞明确「IP/别名仅允许出现在 HANDOFF.md 与本地 deployment.md」
+  - `agent.ts` 头注释同步现状（原注释仍写"将来才接 dsh"，已过期）
+
 ## 2026-09-30
 
 - **语音对话小精灵上线（第 0-2 步）**：
