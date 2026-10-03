@@ -61,7 +61,9 @@ session 持久化 /var/lib/dsh-tutor/sessions 已生效）；默认仍 kimi 直�
 
 ## 差距清单（现状 → 目标）
 
-1. **DSH 运行时零接入** → server 接入 `@deepseek-ai/dsh`，把 review/hint 从裸 fetch 改造为 dsh 插件（defineTool + ctx.tools.register），cordis.yml 启用
+1. ~~**DSH 运行时零接入**~~ ✅ 已完成（2026-09-27 起）：dsh 0.1.5-rc.3 全量接入，
+   五场景（hint/review/weekly/sprite/chat）经 agent 网关走 dsh，kimi 降级兜底；
+   剩余尾巴：skill catalog 真注册 + goal round driver 等 dsh 0.2.0 正式版
 2. **画像未注入 agent 上下文** → 每次 LLM 会话经 `agent.inject()` 携带该孩子的持久画像（掌握度/错因趋势/节奏偏好），实现"agent 记得这个孩子"
 3. **小精灵被动 → 主动** → 从"答错后点按钮"升级为：练习前画像驱动的今日建议、练习中实时节奏干预（连续秒错时提醒"慢一点"）、练习后主动复盘邀请
 4. **推荐规则写死 → 持续校准** → 推荐采纳率/错因命中率落库（vision.md 既定指标），每月人工+AI 联合 review 规则有效性

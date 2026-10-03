@@ -75,8 +75,9 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 
 ## 四、功能现状（全部已上线）
 
-- 寻宝地图四大陆：数学/语文/英语（二年级，各 16 关）+ 游乐场（11 关 5 玩法：
-  单词消消乐/古诗词接龙/数字贪吃蛇/打地鼠/翻牌记忆）
+- 寻宝地图四大陆：数学/语文/英语（二年级，各 16 关）+ 游乐场（13 关 7 玩法：
+  单词消消乐/古诗词接龙/数字贪吃蛇/打地鼠/翻牌记忆/逃离切尔诺贝利(escape,10-03)/
+  核电站主控实践(reactor,10-03，与 escape 组成叙事二部曲，纯前端确定性物理模型零 LLM)）
 - 闯关页视口适配、首屏 shader 背景、按钮微交互、返回首页按钮
 - 每日挑战（多科目轮换）、错题本+重练（热力图）、积分/排行榜（掩码昵称）/勋章墙/周目标
 - 家长看板：成长报告（可打印 A4）、14 天指标趋势图、画像错因分析
@@ -87,8 +88,9 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
   术语纠错映射（"正推卫"→"进退位"等）；语音埋点 chat-metrics.jsonl（voice/text 计数）
 
 ### 已知遗留（勿修，非本次范围）
-- 前端 tsc 有 15 个历史遗留报错（adventure.ts/App.tsx newBadges/AdventureMap max/ResultView subject），
-  已 stash 对照确认与近期改动无关，不影响构建运行
+- 前端 tsc 剩 5 个历史遗留报错（10-03 另一 agent 顺手修掉 10 个）：
+  App.tsx newBadges×2、AdventureMap/MapView max 重复指定、ResultView Subject 收窄。
+  不影响构建运行（vite build 通过），修复需动组件契约属独立小工程
 
 ## 五、未尽事宜（按优先级）
 
@@ -129,6 +131,9 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 | `apps/server/src/routes/*.ts` | 9 个业务路由（含 visit 访客、chat 语音） |
 | `apps/web/src/components/VoiceChat.tsx` | 语音对话组件（识别+TTS+术语降级） |
 | `apps/web/src/lib/visit.ts` | 访客 UUID 上报 |
+| `apps/web/src/components/ReactorView.tsx` + `lib/reactorPhysics.ts` | 核电站主控实践（物理纯函数+5任务+熔毁特效） |
+| `apps/web/src/components/EscapeView.tsx` + `demo/chernobyl-escape/index.html` | 逃离切尔诺贝利（demo/ 为唯一源，prebuild 自动同步到 public/escape/） |
+| `apps/web/scripts/reactor-smoke.mjs` | 反应堆 5 场景回归冒烟 |
 | `docs/progress.md` | 交付流水账（倒序，含线上状态） |
 | `docs/roadmap-agent.md` | agent 化路线 + dsh 迁移清单 + 语音助手方向 |
 | `docs/dsh-adoption-report-*.md` | 两期 dsh 评估报告 |
