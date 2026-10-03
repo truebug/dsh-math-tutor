@@ -179,6 +179,13 @@ body.touch .touchpad{display:flex}
       <button class="cbtn" data-lv="1">第2关 厂区</button>
       <button class="cbtn" data-lv="2">第3关 居民楼</button>
     </div>
+    <div class="keys" id="diffSel">
+      难度：
+      <button class="cbtn" data-d="0">简单</button>
+      <button class="cbtn" data-d="1">困难</button>
+      <button class="cbtn" data-d="2">地狱</button>
+    </div>
+    <div class="keys" id="bestLine" style="color:#ffd977"></div>
     <div class="keys">
       <b>←</b><b>→</b> 移动 &nbsp; <b>↑</b><b>↓</b> 爬梯 &nbsp; <b>空格</b> 跳跃 &nbsp; <b>↓</b> 蹲伏穿越废墟 &nbsp; <b>回车</b> 开始
     </div>
@@ -353,7 +360,8 @@ function tryGenL1(seed){
     }
     var u1={},u2={},u3={},u4={},u5={};
     [s1,s2,s3,s4,s5,v1,v2].forEach(function(s){ u1[s]=u2[s]=u3[s]=u4[s]=u5[s]=true; });
-    firesOn(5,u1,rand(1,2)); firesOn(10,u2,rand(1,2)); firesOn(15,u3,rand(1,2)); firesOn(20,u4,rand(1,2)); firesOn(24,u5,rand(1,2));
+    var dense = DIFFS[diffIdx||0].dense;
+    firesOn(5,u1,rand(1,2)+dense); firesOn(10,u2,rand(1,2)+dense); firesOn(15,u3,rand(1,2)+dense); firesOn(20,u4,rand(1,2)+dense); firesOn(24,u5,rand(1,2)+dense);
     // 废墟(蹲伏, 2-3格) 放在随机两层
     var rubRows = shuffleA([15,20], rnd).slice(0, rand(1,2));
     rubRows.forEach(function(row){
@@ -480,11 +488,21 @@ var VIEW_W = cv.width, VIEW_H = cv.height;
 /* ================= 状态 ================= */
 var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile, waters;
 var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, hasBucket, hasWrench, pumpFixed;
-var levelIdx = 0, level = null;
+var levelIdx = 0, level = null, diffIdx = 0, diff = null, totalMs = 0;
+var DIFFS = [
+  { name:'简单', timeMul:1,    hp:4, invuln:1.1, dense:0 },
+  { name:'困难', timeMul:.75,  hp:3, invuln:.7,  dense:1 },
+  { name:'地狱', timeMul:.6,   hp:2, invuln:.5,  dense:2 }
+];
+function bestKey(){ return 'chernobyl_best_d'+diffIdx; }
+function loadBest(){ try{ var v = localStorage.getItem(bestKey()); return v?parseInt(v,10):null; }catch(e){ return null; } }
+function saveBest(ms){ try{ localStorage.setItem(bestKey(), String(ms)); }catch(e){} }
+function fmtMs(ms){ var s = Math.round(ms/1000); var m = Math.floor(s/60); return (m>0?m+'分':'')+(s%60)+'秒'; }
 var logs = [];
 
 function reset(){
   level = LEVELS[levelIdx];
+  diff = DIFFS[diffIdx];
   grid = level.build();
   fires = []; steams = []; items = []; doors = []; waters = [];
   exitTile = null; player = null;
@@ -505,7 +523,7 @@ function reset(){
       else if(ch==='M'){ player = {x:x*TILE+4, y:y*TILE+2, w:18, h:24, vx:0, vy:0, onGround:false, onLadder:false, crouch:false, face:1}; grid[y][x]='.'; }
     }
   }
-  camX = 0; camY = 0; timer = level.time; shake = 0; invulnT = 0;
+  camX = 0; camY = 0; timer = level.time * diff.timeMul; shake = 0; invulnT = 0;
   ended = false; valveFixed = false; doorOpen = false;
   hasKey = false; gears = 0; hasBucket = false; hasWrench = false; pumpFixed = false;
   logs = [];
@@ -746,7 +764,7 @@ function nearTile(p,t){ return Math.abs((t.x+.5)*TILE - (p.x+p.w/2)) < TILE*1.6 
 var hp = 4, exitWarned = false, bucketSeen = false;
 var doorMsg = {key:false, wrench:false};
 function hurt(dmg, msg){
-  hp -= dmg; invulnT = 1.1; shake = Math.max(shake, 6);
+  hp -= dmg; invulnT = diff.invuln; shake = Math.max(shake, 6);
   log(msg, 'crit');
   if(hp<=0){ hp=0; die('你倒在了撤离途中。辐射与烈焰吞没了走廊。'); }
   syncUI();
@@ -764,6 +782,7 @@ function explode(){
 function die(msg){ ended = true; notifyParent(false); showEnd('撤离失败', msg); }
 function win(){
   ended = true;
+  runMs += Math.round((level.time*diff.timeMul - Math.max(0,timer)) * 1000);
   var left = Math.max(0, timer);
   var m = Math.floor(left/60), s = Math.floor(left%60);
   var timeStr = '剩余 '+(m>0?m+' 分 ':'')+s+' 秒。';
@@ -773,12 +792,19 @@ function win(){
     pendingNext = true;
   } else {
     notifyParent(true);
-    showEnd('你逃出来了!', '你登上撤离巴士, 回头望去, 地平线上的红光渐渐远去……\n'+timeStr+'\n1986 年 4 月, 你活了下来。');
+    wonAll = true;
+    var extra = '';
+    if(runFromStart){
+      var best = loadBest();
+      if(!best || runMs < best){ saveBest(runMs); extra = '\n🏆 新纪录! 全程用时 ' + fmtMs(runMs) + ' (' + diff.name + ')'; }
+      else extra = '\n全程用时 ' + fmtMs(runMs) + ' (' + diff.name + '), 最快纪录 ' + fmtMs(best);
+    }
+    showEnd('你逃出来了!', '你登上撤离巴士, 回头望去, 地平线上的红光渐渐远去……\n'+timeStr+extra+'\n1986 年 4 月, 你活了下来。');
     document.getElementById('retryBtn').firstChild.textContent = '再 玩 一 次';
     pendingNext = false;
   }
 }
-var pendingNext = false;
+var pendingNext = false, runFromStart = false, runMs = 0;
 function showEnd(title, text){
   document.getElementById('endTitle').textContent = title;
   document.getElementById('endText').innerText = text;
@@ -1031,7 +1057,8 @@ function syncUI(){
   timerEl.classList.toggle('safe', valveFixed);
   var hpRow = document.getElementById('hpRow');
   hpRow.innerHTML = '';
-  for(var i=0;i<4;i++){
+  var maxHp = diff ? diff.hp : 4;
+  for(var i=0;i<maxHp;i++){
     var seg = document.createElement('div');
     seg.className = 'hp-seg' + (i<hp ? (hp<=1?' low on':' on') : '');
     hpRow.appendChild(seg);
@@ -1086,6 +1113,9 @@ function stopAlarm(){ if(alarmOsc){ clearInterval(alarmOsc); alarmOsc = null; } 
 var started = false;
 function startGame(lv){
   if(typeof lv === 'number') levelIdx = lv;
+  runFromStart = (levelIdx === 0);
+  runMs = 0;
+  wonAll = false;
   if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
   hp = 4; exitWarned = false; bucketSeen = false; pendingNext = false;
   doorMsg = {key:false, wrench:false};
@@ -1101,7 +1131,22 @@ function startGame(lv){
   lastT = performance.now();
 }
 document.getElementById('startBtn').onclick = function(){ startGame(pickLv); };
-document.getElementById('retryBtn').onclick = function(){ startGame(pendingNext ? levelIdx+1 : levelIdx); };
+document.getElementById('retryBtn').onclick = function(){ startGame(wonAll ? 0 : (pendingNext ? levelIdx+1 : levelIdx)); };
+var wonAll = false;
+document.querySelectorAll('#diffSel .cbtn').forEach(function(b){
+  b.onclick = function(){
+    diffIdx = parseInt(b.getAttribute('data-d'), 10);
+    document.querySelectorAll('#diffSel .cbtn').forEach(function(x){ x.style.outline = ''; });
+    b.style.outline = '2px solid #ffd977';
+    showBest();
+  };
+});
+function showBest(){
+  var best = loadBest();
+  document.getElementById('bestLine').textContent = best ? '当前难度最快纪录: ' + fmtMs(best) : '当前难度还没有通关纪录';
+}
+document.querySelector('#diffSel .cbtn').style.outline = '2px solid #ffd977';
+showBest();
 var pickLv = 0;
 document.querySelectorAll('#levelSel .cbtn').forEach(function(b){
   b.onclick = function(){
