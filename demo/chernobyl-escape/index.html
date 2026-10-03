@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>逃离切尔诺贝利 · 1986.04.26</title>
+<style>
+:root{
+  --panel:#7a7d6a; --panel-hi:#8d9078; --panel-lo:#5c5f4e;
+  --plate:#e6e1cd; --plate-text:#3a3a30;
+  --lamp-green:#58d97a; --lamp-amber:#ffb43a; --lamp-red:#ff4a3c;
+  --crt-green:#8dff9a; --screw:#4a4d3e;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#070805;
+  font-family:"Courier New",ui-monospace,Menlo,monospace;
+  color:var(--plate-text);
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100vh;padding:14px 10px 24px;
+  background-image:radial-gradient(120% 70% at 50% -10%, #23261c 0%, #101208 55%, #070805 100%);
+}
+h1{
+  font-size:20px;letter-spacing:8px;color:#d8d3ba;font-weight:bold;
+  text-shadow:0 0 12px rgba(255,180,60,.35);margin-bottom:2px;
+}
+.subtitle{font-size:10px;letter-spacing:3px;color:#7a7d6a;margin-bottom:12px}
+.subtitle b{color:var(--lamp-red)}
+
+/* ===== 游戏画面 ===== */
+.stage{position:relative;width:960px;max-width:96vw}
+canvas#game{
+  display:block;width:100%;border-radius:8px 8px 0 0;
+  border:1px solid #1c1e15;border-bottom:none;
+  background:#0b0d08;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+}
+.overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;text-align:center;
+  background:rgba(5,6,4,.88);border-radius:8px 8px 0 0;z-index:5;padding:20px;
+}
+.overlay.hidden{display:none}
+.overlay h2{font-size:26px;letter-spacing:6px;color:#e6e1cd;text-shadow:0 0 16px rgba(255,180,60,.5)}
+.overlay p{font-size:12px;line-height:2;color:#b9b49c;max-width:560px}
+.overlay .keys{font-size:11px;color:#8d9078;line-height:1.9}
+.overlay .keys b{color:#d8d3ba;border:1px solid #4a4d3e;border-radius:3px;padding:0 5px;margin:0 2px}
+.big-btn{
+  font-family:inherit;font-size:15px;font-weight:bold;letter-spacing:4px;
+  background:repeating-linear-gradient(45deg,#e8c51e 0 10px,#1c1e15 10px 20px);
+  border:none;border-radius:6px;padding:6px;cursor:pointer;margin-top:6px;
+}
+.big-btn span{display:block;background:#2a2c22;color:#ffd977;border-radius:4px;padding:10px 34px}
+.big-btn:hover span{background:#343825}
+
+/* ===== 中控台 ===== */
+.console{
+  width:960px;max-width:96vw;
+  display:flex;gap:10px;
+  padding:14px 14px 22px;
+  background:linear-gradient(#565945 0%, #3f4233 12%, #2c2e23 100%);
+  border:1px solid #1c1e15;border-top:none;
+  border-radius:0 0 12px 12px;
+  box-shadow:0 30px 60px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.module{
+  background:linear-gradient(160deg,var(--panel-hi),var(--panel) 40%,var(--panel-lo));
+  border-radius:8px;border:1px solid #3a3d2e;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -10px 18px rgba(0,0,0,.28);
+  padding:10px 12px 12px;position:relative;
+}
+.plate{display:inline-block;background:var(--plate);
+  border:1px solid #b3ae97;border-radius:2px;
+  padding:1px 8px;font-size:10px;font-weight:bold;letter-spacing:2px;
+  box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.section-title{text-align:center;margin-bottom:8px}
+
+/* CRT 报警信息 */
+.crt-module{flex:1.2}
+.crt{
+  height:96px;border-radius:8px/10px;position:relative;overflow:hidden;
+  background:radial-gradient(120% 100% at 50% 40%, #0d2410 0%, #051205 70%, #020a02 100%);
+  box-shadow:inset 0 0 24px rgba(0,0,0,.9);
+  border:6px solid #1a1c14;
+}
+.crt .log{position:absolute;inset:8px;font-size:10px;line-height:1.7;
+  color:var(--crt-green);text-shadow:0 0 5px rgba(120,255,140,.7);
+  white-space:pre-wrap;overflow:hidden}
+.crt .log .warn{color:#ffd977;text-shadow:0 0 5px rgba(255,180,60,.8)}
+.crt .log .crit{color:#ff8a7a;text-shadow:0 0 6px rgba(255,74,60,.9)}
+.crt::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply}
+.crt.alarm{animation:crtAlarm 1s infinite}
+.crt.alarm.fast{animation-duration:.45s}
+@keyframes crtAlarm{0%,100%{box-shadow:inset 0 0 24px rgba(0,0,0,.9), 0 0 0 rgba(255,60,40,0)}50%{box-shadow:inset 0 0 24px rgba(0,0,0,.9), 0 0 22px rgba(255,60,40,.65)}}
+
+/* 倒计时 + 状态 */
+.timer-module{flex:.9;text-align:center}
+.timer{
+  font-size:34px;font-weight:bold;letter-spacing:3px;color:#ff5a4a;
+  text-shadow:0 0 14px rgba(255,60,40,.8);
+  background:#101208;border-radius:6px;padding:6px 10px;margin-bottom:8px;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.9);
+}
+.timer.safe{color:var(--lamp-green);text-shadow:0 0 14px rgba(88,217,122,.8)}
+.hp-row{display:flex;justify-content:center;gap:4px;margin-bottom:8px}
+.hp-seg{width:16px;height:10px;border-radius:2px;background:#3a3d2e;border:1px solid #20221a}
+.hp-seg.on{background:var(--lamp-green);box-shadow:0 0 6px var(--lamp-green)}
+.hp-seg.low{background:var(--lamp-red);box-shadow:0 0 6px var(--lamp-red)}
+.inv-row{display:flex;justify-content:center;gap:8px;font-size:10px}
+.inv-tag{background:#20231a;color:#7a7d6a;border:1px solid #101208;border-radius:3px;
+  padding:3px 8px;letter-spacing:1px}
+.inv-tag.got{color:#ffd977;border-color:#4a4d3e;box-shadow:0 0 8px rgba(255,180,60,.35)}
+
+/* 指示灯 + 按钮 */
+.ops-module{flex:1.1}
+.lamp-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.lamp-cell{display:flex;flex-direction:column;align-items:center;gap:3px}
+.lamp{width:18px;height:12px;border-radius:3px;background:#2c2f24;
+  border:1px solid #161810;box-shadow:inset 0 0 4px rgba(0,0,0,.6)}
+.lamp.on.green{background:var(--lamp-green);box-shadow:0 0 8px var(--lamp-green)}
+.lamp.on.amber{background:var(--lamp-amber);box-shadow:0 0 8px var(--lamp-amber)}
+.lamp.on.red{background:var(--lamp-red);box-shadow:0 0 10px var(--lamp-red)}
+.lamp.blink{animation:lampBlink .8s infinite}
+@keyframes lampBlink{0%,55%{opacity:1}56%,100%{opacity:.15}}
+.lamp-tag{font-size:8px;color:#3a3a30;letter-spacing:.5px;text-align:center}
+.btn-row{display:flex;gap:8px;justify-content:center}
+.cbtn{
+  font-family:inherit;font-size:10px;font-weight:bold;letter-spacing:2px;
+  background:linear-gradient(#d8d3ba,#8d8a72);color:#2a2c22;
+  border:1px solid #4a4d3e;border-radius:4px;padding:8px 12px;cursor:pointer;
+  box-shadow:0 3px 5px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.cbtn:active{transform:translateY(2px);box-shadow:0 1px 2px rgba(0,0,0,.5)}
+.cbtn:disabled{opacity:.4;cursor:not-allowed}
+.cbtn.danger{background:linear-gradient(#ff8a7a,#b03020);color:#fff}
+.keys-hint{
+  margin-top:9px;padding-top:7px;border-top:1px dashed #4a4d3e;
+  font-size:9px;color:#4a4d3e;letter-spacing:1px;text-align:center;line-height:1.8;
+}
+.keys-hint b{
+  display:inline-block;background:#e6e1cd;border:1px solid #b3ae97;border-radius:2px;
+  padding:0 4px;color:#2a2c22;margin:0 1px;
+}
+</style>
+</head>
+<body>
+<h1>逃离切尔诺贝利</h1>
+<div class="subtitle">4 号机组 · 1986-04-26 01:23 · <b>堆芯失控倒计时</b></div>
+
+<div class="stage">
+  <canvas id="game" width="960" height="560"></canvas>
+  <div class="overlay" id="startOverlay">
+    <h2>逃离切尔诺贝利</h2>
+    <p>你是 4 号机组的夜班技术员。安全试验失控，反应堆功率正在飙升。
+       中控台的报警已经响起——<b style="color:#ff8a7a">爆炸无法避免</b>。
+       拿到钥匙、找齐两枚备用齿轮修复排汽阀，在堆芯爆炸前逃到厂区安全区。
+       注意生命条：火焰、蒸汽会灼伤你，从高处坠落会摔伤，生命归零就倒下了。</p>
+    <div class="keys">
+      <b>←</b><b>→</b> 移动 &nbsp; <b>↑</b><b>↓</b> 爬梯 &nbsp; <b>空格</b> 跳跃 &nbsp; <b>↓</b> 蹲伏穿越废墟 &nbsp; <b>回车</b> 开始
+    </div>
+    <button class="big-btn" id="startBtn"><span>进 入 厂 房</span></button>
+  </div>
+  <div class="overlay hidden" id="endOverlay">
+    <h2 id="endTitle"></h2>
+    <p id="endText"></p>
+    <button class="big-btn" id="retryBtn"><span>再 试 一 次</span></button>
+  </div>
+</div>
+
+<div class="console">
+  <div class="module crt-module">
+    <div class="section-title"><span class="plate">中控报警终端</span></div>
+    <div class="crt alarm" id="crtBox"><div class="log" id="log"></div></div>
+  </div>
+  <div class="module timer-module">
+    <div class="section-title"><span class="plate">堆芯爆炸倒计时</span></div>
+    <div class="timer" id="timer">03:15</div>
+    <div class="hp-row" id="hpRow"></div>
+    <div class="inv-row">
+      <span class="inv-tag" id="invKey">钥匙 —</span>
+      <span class="inv-tag" id="invGear">齿轮 0/2</span>
+    </div>
+  </div>
+  <div class="module ops-module">
+    <div class="section-title"><span class="plate">操作台</span></div>
+    <div class="lamp-row">
+      <div class="lamp-cell"><div class="lamp on red blink" id="lampAlarm"></div><span class="lamp-tag">堆芯报警</span></div>
+      <div class="lamp-cell"><div class="lamp" id="lampKey"></div><span class="lamp-tag">大门钥匙</span></div>
+      <div class="lamp-cell"><div class="lamp" id="lampValve"></div><span class="lamp-tag">排汽阀</span></div>
+      <div class="lamp-cell"><div class="lamp" id="lampExit"></div><span class="lamp-tag">安全区</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="cbtn" id="gearBtn" disabled>插入齿轮修复排汽阀</button>
+      <button class="cbtn" id="muteBtn">报警消音</button>
+    </div>
+    <div class="keys-hint">
+      <b>←</b><b>→</b> 移动 <b>↑</b><b>↓</b> 爬梯 <b>空格</b> 跳跃 <b>↓</b> 蹲伏过废墟
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 关卡数据 =================
+   44 列 x 26 行, 每格 26px, 相机 XY 双向跟随
+   # 墙体  ^ 梯子  ~ 火焰  ! 蒸汽  S 废墟(蹲伏通过)
+   D 锁门  K 钥匙  G 齿轮  M 出生点  E 安全区出口  . 空 */
+var TILE = 26, COLS = 44, ROWS = 26;
+var WORLD_W = COLS*TILE, WORLD_H = ROWS*TILE;
+var BANDS = [
+  {y1:1,  y2:5,  name:'反应堆大厅 B3'},
+  {y1:7,  y2:10, name:'反应堆大厅 B2'},
+  {y1:12, y2:15, name:'汽轮机厂房 B1'},
+  {y1:17, y2:20, name:'联合泵房 1F'},
+  {y1:22, y2:24, name:'厂区通道 G'}
+];
+function buildMap(){
+  var g=[], x, y;
+  for(y=0;y<ROWS;y++){ var r=[]; for(x=0;x<COLS;x++) r.push('.'); g.push(r); }
+  for(x=0;x<COLS;x++){ g[0][x]='#'; g[ROWS-1][x]='#'; }
+  for(y=0;y<ROWS;y++){ g[y][0]='#'; g[y][COLS-1]='#'; }
+  [6,11,16,21].forEach(function(fy){ for(x=1;x<COLS-1;x++) g[fy][x]='#'; });
+  // 竖井: 梯子从上层楼面贯通到下层楼面, 楼层地板留洞口
+  function shaft(sx, yTop, floorY, yBot){
+    for(var yy=yTop;yy<=yBot;yy++) g[yy][sx] = (yy===floorY ? '.' : '^');
+  }
+  shaft(30,3,6,10);    // B3 ↔ B2
+  shaft(10,8,11,15);   // B2 ↔ B1
+  shaft(35,13,16,20);  // B1 ↔ 1F
+  shaft(6,18,21,24);   // 1F ↔ G
+  shaft(20,18,21,24);  // G ↔ 1F 返回通道
+  g[4][2]  = 'M';   // 出生: 反应堆大厅 B3 西侧
+  g[5][38] = 'K';   // 钥匙: B3 东侧(跳过火焰)
+  g[10][3] = 'G';   // 齿轮1: B2 西端
+  g[20][41]= 'G';   // 齿轮2: 1F 安全门后
+  g[19][38]= 'D'; g[20][38] = 'D';
+  g[5][20] = '~';
+  g[10][25]= '~'; g[10][26] = '~';
+  g[15][30]= '~';
+  g[20][28]= '~';
+  g[24][22]= '~';
+  g[15][15]='S'; g[15][16]='S'; g[15][17]='S';
+  for(var sy=22;sy<=24;sy++){ g[sy][15]='!'; g[sy][30]='!'; }
+  g[23][41]= 'E';   // 安全区: G 层东端
+  return g;
+}
+
+/* ================= 画布 ================= */
+var cv = document.getElementById('game');
+var ctx = cv.getContext('2d');
+var VIEW_W = cv.width, VIEW_H = cv.height;
+
+/* ================= 状态 ================= */
+var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile;
+var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears;
+var logs = [];
+var TIME_LIMIT = 195;
+
+function reset(){
+  grid = buildMap();
+  fires = []; steams = []; items = []; doors = [];
+  exitTile = null; player = null;
+  for(var y=0;y<ROWS;y++){
+    if(grid[y].length !== COLS) throw new Error('row '+y+' len '+grid[y].length);
+    for(var x=0;x<COLS;x++){
+      var ch = grid[y][x];
+      if(ch==='~') fires.push({x:x,y:y});
+      else if(ch==='!') steams.push({x:x,y:y,on:true});
+      else if(ch==='K') items.push({x:x,y:y,type:'key',got:false});
+      else if(ch==='G') items.push({x:x,y:y,type:'gear',got:false});
+      else if(ch==='D') doors.push({x:x,y:y});
+      else if(ch==='E') exitTile = {x:x,y:y};
+      else if(ch==='M'){ player = {x:x*TILE+4, y:y*TILE+2, w:18, h:24, vx:0, vy:0, onGround:false, onLadder:false, crouch:false, face:1}; grid[y][x]='.'; }
+    }
+  }
+  camX = 0; camY = 0; timer = TIME_LIMIT; shake = 0; invulnT = 0;
+  ended = false; valveFixed = false; doorOpen = false; hasKey = false; gears = 0;
+  logs = [];
+  log('01:23:40 中控: 安全试验功率骤降后回升异常', 'warn');
+  log('01:23:43 中控: 控制棒已插入, 但功率仍在上升!', 'crit');
+  log('01:23:44 中控: 全体人员立即撤离 4 号机组!!', 'crit');
+  syncUI();
+}
+
+/* ================= 输入 ================= */
+var keys = {};
+document.addEventListener('keydown', function(e){
+  keys[e.code] = true;
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].indexOf(e.code)>=0) e.preventDefault();
+  if(e.code==='Enter'){ if(!started) startGame(); else if(ended) startGame(); }
+});
+document.addEventListener('keyup', function(e){ keys[e.code] = false; });
+function left(){ return keys['ArrowLeft']||keys['KeyA']; }
+function right(){ return keys['ArrowRight']||keys['KeyD']; }
+function up(){ return keys['ArrowUp']||keys['KeyW']; }
+function down(){ return keys['ArrowDown']||keys['KeyS']; }
+
+/* ================= 物理 ================= */
+var GRAV = 1700, MOVE = 155, JUMP = 500, CLIMB = 110;
+function tileAt(px,py){
+  var tx = Math.floor(px/TILE), ty = Math.floor(py/TILE);
+  if(tx<0||tx>=COLS||ty<0||ty>=ROWS) return '#';
+  return grid[ty][tx];
+}
+function isSolidChar(ch){ return ch==='#' || ch==='D'; }
+function solidAt(px,py,crouch){
+  var ch = tileAt(px,py);
+  if(ch==='S') return !crouch;
+  return isSolidChar(ch);
+}
+function moveAndCollide(dt){
+  var p = player;
+  // 水平
+  p.x += p.vx*dt;
+  var dirX = p.vx>0?1:-1;
+  var edgeX = dirX>0 ? p.x+p.w : p.x;
+  for(var yy=p.y+2; yy<p.y+p.h-1; yy+=TILE/2){
+    if(solidAt(edgeX+dirX*1, yy, p.crouch)){
+      p.x = dirX>0 ? Math.floor(edgeX/TILE)*TILE - p.w - .01 : (Math.floor(edgeX/TILE)+1)*TILE + .01;
+      p.vx = 0; break;
+    }
+  }
+  // 垂直
+  p.y += p.vy*dt;
+  p.onGround = false;
+  var dirY = p.vy>0?1:-1;
+  var edgeY = dirY>0 ? p.y+p.h : p.y;
+  for(var xx=p.x+2; xx<p.x+p.w-1; xx+=TILE/2){
+    if(solidAt(xx, edgeY+dirY*1, p.crouch)){
+      if(dirY>0){ p.y = Math.floor(edgeY/TILE)*TILE - p.h - .01; p.onGround = true; }
+      else { p.y = (Math.floor(edgeY/TILE)+1)*TILE + .01; }
+      p.vy = 0; break;
+    }
+  }
+}
+function onLadderNow(){
+  var cx = player.x + player.w/2;
+  return tileAt(cx, player.y+4)==='^' || tileAt(cx, player.y+player.h-4)==='^' || tileAt(cx, player.y+player.h/2)==='^';
+}
+
+/* ================= 主循环 ================= */
+var lastT = 0;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(!started) return;
+  var dt = Math.min((t-lastT)/1000, .05); lastT = t;
+  if(!ended) update(dt);
+  render(t/1000);
+}
+function update(dt){
+  var p = player;
+  // 倒计时
+  timer -= dt;
+  if(timer <= 0){ explode(); return; }
+  if(invulnT>0) invulnT -= dt;
+  if(shake>0) shake = Math.max(0, shake - dt*30);
+  if(timer<=80 && Math.random()<dt*1.2) shake = Math.max(shake, 4);
+  if(timer<=55 && Math.random()<dt*2) shake = Math.max(shake, 7);
+
+  // 蹲伏
+  p.crouch = !!down() && !onLadderNow();
+  var targetH = p.crouch ? 14 : 24;
+  if(targetH !== p.h){
+    var grow = targetH - p.h;
+    if(grow<0){ p.h = targetH; p.y -= grow; }       // 蹲下
+    else if(!solidAt(p.x+p.w/2, p.y-4, false)){ p.h = targetH; p.y -= grow; } // 站起
+  }
+
+  // 水平
+  var sp = p.crouch ? MOVE*.55 : MOVE;
+  p.vx = left()? -sp : right()? sp : 0;
+  if(p.vx!==0) p.face = p.vx>0?1:-1;
+
+  // 梯子
+  var ladder = onLadderNow();
+  if(ladder && (up()||down())){
+    p.onLadder = true; p.vy = 0;
+    p.y += (up()? -CLIMB : CLIMB)*dt;
+    // 水平居中吸附
+    var lx = Math.floor((p.x+p.w/2)/TILE)*TILE + (TILE-p.w)/2;
+    p.x += (lx-p.x)*Math.min(1, dt*8);
+  } else if(p.onLadder && !ladder){
+    p.onLadder = false;
+  }
+  if(!p.onLadder){
+    p.vy += GRAV*dt;
+    if(keys['Space'] && p.onGround) p.vy = -JUMP;
+  } else if(keys['Space']){
+    p.onLadder = false; p.vy = -JUMP*.7;
+  }
+  var fallVy = p.vy;
+  moveAndCollide(dt);
+  // 坠落伤害
+  if(p.onGround && fallVy > 1050 && invulnT<=0){
+    hurt(2, '你: 重重摔了一跤! 生命 -2');
+    p.vy = -180;
+  } else if(p.onGround && fallVy > 780 && invulnT<=0){
+    hurt(1, '你: 摔倒了! 生命 -1');
+    p.vy = -150;
+  }
+  if(ended) return;
+
+  // 开门检测
+  if(!doorOpen && hasKey){
+    var nearDoor = doors.some(function(d){
+      return Math.abs((d.x+.5)*TILE - (p.x+p.w/2)) < TILE*1.6 && Math.abs((d.y+.5)*TILE - (p.y+p.h/2)) < TILE*2;
+    });
+    if(nearDoor){
+      doorOpen = true;
+      doors.forEach(function(d){ grid[d.y][d.x]='.'; });
+      log('你: 用钥匙打开了泵房安全门', 'warn');
+      syncUI();
+    }
+  }
+
+  // 拾取
+  items.forEach(function(it){
+    if(it.got) return;
+    if(Math.abs((it.x+.5)*TILE - (p.x+p.w/2)) < TILE*.7 && Math.abs((it.y+.5)*TILE - (p.y+p.h/2)) < TILE*.9){
+      it.got = true;
+      if(it.type==='key'){ hasKey = true; log('你: 拿到了安全门钥匙', 'warn'); }
+      else { gears++; log('你: 拾取备用齿轮 ('+gears+'/2)', 'warn'); if(gears>=2) log('中控: 齿轮齐了! 到操作台修复排汽阀', 'warn'); }
+      syncUI();
+    }
+  });
+
+  // 火焰 / 蒸汽伤害
+  if(invulnT<=0){
+    var hurtNow = fires.some(function(f){
+      return p.x < (f.x+1)*TILE && p.x+p.w > f.x*TILE && p.y < (f.y+1)*TILE && p.y+p.h > f.y*TILE;
+    }) || steams.some(function(s){
+      return s.on && p.x < (s.x+1)*TILE && p.x+p.w > s.x*TILE && p.y < (s.y+1)*TILE && p.y+p.h > s.y*TILE;
+    });
+    if(hurtNow){
+      hurt(1, '你: 灼伤了! 生命 -1');
+      p.vy = -220; p.vx = -p.face*140;
+    }
+  }
+
+  // 出口
+  if(exitTile && Math.abs((exitTile.x+.5)*TILE-(p.x+p.w/2))<TILE && Math.abs((exitTile.y+.5)*TILE-(p.y+p.h/2))<TILE){
+    if(valveFixed) win();
+    else if(!exitWarned){ exitWarned = true; log('你: 排汽阀未修复, 安全闸门被蒸汽封死!', 'crit'); }
+  }
+
+  // 相机 XY 双向跟随
+  camX += (clamp(p.x + p.w/2 - VIEW_W*.5, 0, WORLD_W - VIEW_W) - camX)*Math.min(1, dt*5);
+  camY += (clamp(p.y + p.h/2 - VIEW_H*.55, 0, WORLD_H - VIEW_H) - camY)*Math.min(1, dt*5);
+
+  // 时间线广播
+  timeline.forEach(function(ev){
+    if(!ev.done && timer <= ev.t){
+      ev.done = true; log(ev.msg, ev.cls);
+      if(ev.alarmFast) document.getElementById('crtBox').classList.add('fast');
+      syncUI();
+    }
+  });
+}
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+var hp = 4, exitWarned = false;
+function hurt(dmg, msg){
+  hp -= dmg; invulnT = 1.1; shake = Math.max(shake, 6);
+  log(msg, 'crit');
+  if(hp<=0){ hp=0; die('你倒在了撤离途中。辐射与烈焰吞没了走廊。'); }
+  syncUI();
+}
+var timeline = [
+  {t:180, msg:'中控: 一回路压力 16.8 MPa, 超设计限值!', cls:'warn'},
+  {t:155, msg:'中控: 安全阀动作, 蒸汽排放中', cls:'warn'},
+  {t:125, msg:'中控: 警告!! 堆芯温度失控', cls:'crit'},
+  {t:95,  msg:'中控: 堆芯熔毁开始, 厂房结构受损', cls:'crit', alarmFast:true},
+  {t:65,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
+  {t:35,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
+];
+
+/* ================= 结局 ================= */
+function explode(){
+  ended = true;
+  shake = 40;
+  render(0);
+  notifyParent(false);
+  setTimeout(function(){
+    showEnd('反应堆爆炸了', '01:23:46，4 号机组堆芯爆炸。你没能赶到安全区。\n—— 距离撤离还差一点点。再试一次。');
+  }, 600);
+}
+function die(msg){ ended = true; notifyParent(false); showEnd('撤离失败', msg); }
+function win(){
+  ended = true;
+  notifyParent(true);
+  var left = Math.max(0, timer);
+  var m = Math.floor(left/60), s = Math.floor(left%60);
+  showEnd('你逃出来了', '你冲出厂房大门, 身后传来闷雷般的巨响……\n爆炸前 '+(m>0?m+' 分 ':'')+s+' 秒, 你抵达了安全区。\n1986 年 4 月 26 日凌晨, 你活了下来。');
+}
+function showEnd(title, text){
+  document.getElementById('endTitle').textContent = title;
+  document.getElementById('endText').innerText = text;
+  document.getElementById('endOverlay').classList.remove('hidden');
+}
+function notifyParent(won){
+  try{ window.parent.postMessage({type:'chernobyl-escape', won:won, msLeft:Math.max(0,Math.round(timer*1000))}, '*'); }catch(e){}
+}
+
+/* ================= 渲染 ================= */
+function render(time){
+  ctx.save();
+  var sx = (Math.random()-.5)*shake, sy = (Math.random()-.5)*shake;
+  ctx.translate(sx - camX, sy - camY);
+  // 背景分层
+  var g = ctx.createLinearGradient(0,0,0,WORLD_H);
+  g.addColorStop(0,'#171a11'); g.addColorStop(.6,'#101208'); g.addColorStop(1,'#0b0d08');
+  ctx.fillStyle = g; ctx.fillRect(-20,-20,WORLD_W+40,Math.max(WORLD_H,VIEW_H)+40);
+  BANDS.forEach(function(l){
+    ctx.fillStyle = 'rgba(185,180,156,.10)';
+    ctx.fillRect(0, l.y1*TILE, WORLD_W, (l.y2-l.y1+1)*TILE);
+    ctx.fillStyle = 'rgba(185,180,156,.30)';
+    ctx.font = '10px Courier New';
+    ctx.fillText(l.name, 10, l.y1*TILE+12);
+  });
+  // 瓷砖
+  for(var y=0;y<ROWS;y++) for(var x=0;x<COLS;x++){
+    drawTile(x,y,grid[y][x],time);
+  }
+  drawItems(time); drawExit(time); drawPlayer(time);
+  ctx.restore();
+  ctx.save();
+  // 头部照明
+  var lg = ctx.createRadialGradient(VIEW_W/2, VIEW_H/2, 120, VIEW_W/2, VIEW_H/2, VIEW_H*.9);
+  lg.addColorStop(0,'rgba(0,0,0,0)'); lg.addColorStop(1,'rgba(0,0,0,.55)');
+  ctx.fillStyle = lg; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  // 报警红光
+  if(!ended && started){
+    var a = (Math.sin(time*6)+1)/2 * (timer<95?.22:.12);
+    ctx.fillStyle = 'rgba(255,40,20,'+a+')'; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  }
+  if(timer<=0){ ctx.fillStyle = 'rgba(255,240,220,.95)'; ctx.fillRect(0,0,VIEW_W,VIEW_H); }
+  // 常驻目标提示 + 当前位置
+  if(started && !ended){
+    ctx.fillStyle = 'rgba(10,12,8,.65)';
+    ctx.fillRect(10, 10, 300, 34);
+    ctx.strokeStyle = 'rgba(185,180,156,.25)'; ctx.lineWidth = 1;
+    ctx.strokeRect(10, 10, 300, 34);
+    ctx.fillStyle = '#b9b49c'; ctx.font = '10px Courier New';
+    ctx.fillText(curLevel(), 20, 24);
+    ctx.fillStyle = '#ffd977';
+    ctx.fillText('目标: ' + objective(), 20, 38);
+  }
+  ctx.restore();
+}
+function curLevel(){
+  var cy = (player.y + player.h/2)/TILE;
+  for(var i=0;i<BANDS.length;i++) if(cy>=BANDS[i].y1 && cy<=BANDS[i].y2) return BANDS[i].name;
+  return '——';
+}
+function objective(){
+  if(valveFixed) return '前往厂区通道东侧 → 安全区!';
+  if(gears>=2) return '回控制台 → 修复排汽阀 (按钮在下方)';
+  if(doorOpen) return '齿轮 '+gears+'/2 → 安全门后还有一枚';
+  if(hasKey) return '钥匙在手 → 去泵房东侧开安全门';
+  return '沿厂房向东 → 找到安全门钥匙';
+}
+function drawTile(x,y,ch,time){
+  var px = x*TILE, py = y*TILE;
+  if(ch==='#'){
+    ctx.fillStyle = '#2e3126'; ctx.fillRect(px,py,TILE,TILE);
+    ctx.fillStyle = '#3a3e30'; ctx.fillRect(px,py,TILE,3);
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(px,py+TILE-3,TILE,3);
+    ctx.fillStyle = '#4a4d3e';
+    ctx.fillRect(px+3,py+5,2,2); ctx.fillRect(px+TILE-5,py+5,2,2);
+  } else if(ch==='^'){
+    ctx.strokeStyle = '#6b6f5e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px+6,py); ctx.lineTo(px+6,py+TILE); ctx.moveTo(px+TILE-6,py); ctx.lineTo(px+TILE-6,py+TILE); ctx.stroke();
+    ctx.lineWidth = 2;
+    for(var r=4;r<TILE;r+=8){ ctx.beginPath(); ctx.moveTo(px+5,py+r); ctx.lineTo(px+TILE-5,py+r); ctx.stroke(); }
+  } else if(ch==='~'){
+    var f = Math.sin(time*11 + x*3 + y)*3;
+    ctx.fillStyle = 'rgba(255,90,30,.25)'; ctx.fillRect(px-2,py-4,TILE+4,TILE+4);
+    ctx.fillStyle = '#d63a28';
+    tri(px+2, py+TILE, px+TILE/2+f, py+2, px+TILE-2, py+TILE);
+    ctx.fillStyle = '#ffb43a';
+    tri(px+6, py+TILE, px+TILE/2-f*.7, py+9, px+TILE-6, py+TILE);
+    ctx.fillStyle = '#ffe9a8';
+    tri(px+10, py+TILE, px+TILE/2+f*.4, py+16, px+TILE-10, py+TILE);
+  } else if(ch==='!'){
+    var s = steams.find(function(q){return q.x===x&&q.y===y;});
+    if(s && s.on){
+      for(var i=0;i<3;i++){
+        var off = (time*40 + i*17 + x*7) % TILE;
+        ctx.fillStyle = 'rgba(220,225,215,'+(0.35 - off/TILE*.3)+')';
+        ctx.beginPath(); ctx.ellipse(px+TILE/2+Math.sin(time*5+i)*3, py+TILE-off, 7-i, 5, 0, 0, 7); ctx.fill();
+      }
+      ctx.fillStyle = '#8d9078'; ctx.fillRect(px+TILE/2-3, py+TILE-5, 6, 5);
+    } else {
+      ctx.fillStyle = '#4a4d3e'; ctx.fillRect(px+TILE/2-3, py+TILE-5, 6, 5);
+    }
+  } else if(ch==='S'){
+    ctx.fillStyle = '#3a3e30';
+    tri(px, py+TILE, px+8, py+TILE-12, px+15, py+TILE);
+    tri(px+10, py+TILE, px+18, py+TILE-16, px+TILE, py+TILE);
+    ctx.fillStyle = '#565945'; ctx.fillRect(px+4, py+TILE-6, 5, 3);
+  } else if(ch==='D'){
+    ctx.fillStyle = '#1c1e15'; ctx.fillRect(px,py,TILE,TILE);
+    for(var s2=0;s2<TILE;s2+=8){
+      ctx.fillStyle = (s2/8)%2 ? '#e8c51e' : '#1c1e15';
+      ctx.save(); ctx.translate(px+TILE/2, py+TILE/2); ctx.rotate(.78);
+      ctx.fillRect(s2-TILE, -TILE, 5, TILE*2); ctx.restore();
+    }
+    ctx.fillStyle = '#ffd977'; ctx.fillRect(px+TILE/2-2, py+TILE/2-2, 4, 4);
+  }
+}
+function tri(x1,y1,x2,y2,x3,y3){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath(); ctx.fill(); }
+function drawItems(time){
+  items.forEach(function(it){
+    if(it.got) return;
+    var cx = (it.x+.5)*TILE, cy = (it.y+.5)*TILE + Math.sin(time*3+it.x)*2;
+    if(it.type==='key'){
+      ctx.strokeStyle = '#ffd977'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(cx-4, cy, 4, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx+8, cy); ctx.moveTo(cx+5, cy); ctx.lineTo(cx+5, cy+4); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,217,119,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 7); ctx.fill();
+    } else {
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(time*1.5);
+      ctx.strokeStyle = '#9fb2bd'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, 0, 7, 0, 7); ctx.stroke();
+      for(var i=0;i<6;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(0,-7); ctx.lineTo(0,-11); ctx.stroke(); }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(159,178,189,.12)'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 7); ctx.fill();
+    }
+  });
+}
+function drawExit(time){
+  if(!exitTile) return;
+  var px = exitTile.x*TILE, py = exitTile.y*TILE;
+  ctx.strokeStyle = valveFixed ? '#58d97a' : '#565945'; ctx.lineWidth = 3;
+  ctx.strokeRect(px-2, py-TILE+2, TILE+4, TILE*2-2);
+  ctx.fillStyle = valveFixed ? '#58d97a' : '#565945';
+  ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText('安全区', px+TILE/2, py-TILE-4);
+  if(valveFixed && Math.sin(time*4)>0){ ctx.fillStyle='rgba(88,217,122,.18)'; ctx.fillRect(px-2,py-TILE+2,TILE+4,TILE*2-2); }
+  ctx.textAlign = 'left';
+}
+function drawPlayer(time){
+  var p = player;
+  if(invulnT>0 && Math.floor(time*14)%2) return;
+  var px = p.x, py = p.y, h = p.h;
+  ctx.fillStyle = 'rgba(255,240,180,.06)';
+  ctx.beginPath(); ctx.arc(px+p.w/2, py+h/2, 46, 0, 7); ctx.fill();
+  ctx.fillStyle = '#c9c4b0';
+  ctx.fillRect(px+3, py+8, p.w-6, h-8);                       // 工装
+  ctx.fillStyle = '#d8b48a';
+  ctx.fillRect(px+4, py+3, p.w-8, 6);                         // 脸
+  ctx.fillStyle = '#e8c51e';
+  ctx.fillRect(px+2, py, p.w-4, 4);                           // 安全帽
+  ctx.fillRect(px+1, py+3, p.w-2, 2);
+  ctx.fillStyle = '#2a2c22';
+  ctx.fillRect(px+(p.face>0?p.w-7:4), py+5, 2, 2);            // 眼
+  if(!p.crouch){
+    ctx.fillStyle = '#8d8a72';
+    var leg = p.vx!==0 && p.onGround ? Math.sin(time*14)*3 : 0;
+    ctx.fillRect(px+3, py+h-4+Math.max(0,leg), 4, 4-Math.max(0,leg));
+    ctx.fillRect(px+p.w-7, py+h-4+Math.max(0,-leg), 4, 4-Math.max(0,-leg));
+  }
+  if(p.onLadder){
+    ctx.fillStyle = '#c9c4b0';
+    ctx.fillRect(px+1, py+8+Math.sin(time*10)*4, 3, 8);
+    ctx.fillRect(px+p.w-4, py+8-Math.sin(time*10)*4, 3, 8);
+  }
+}
+
+/* ================= 控制台 UI ================= */
+function log(msg, cls){
+  logs.push({msg:msg, cls:cls||''});
+  while(logs.length>4) logs.shift();
+  document.getElementById('log').innerHTML = logs.map(function(l){
+    return '<div class="'+l.cls+'">&gt; '+l.msg+'</div>';
+  }).join('');
+}
+function syncUI(){
+  var t = Math.max(0, timer);
+  var m = Math.floor(t/60), s = Math.floor(t%60);
+  var timerEl = document.getElementById('timer');
+  timerEl.textContent = '0'+m+':' + String(s).padStart(2,'0');
+  timerEl.classList.toggle('safe', valveFixed);
+  var hpRow = document.getElementById('hpRow');
+  hpRow.innerHTML = '';
+  for(var i=0;i<4;i++){
+    var seg = document.createElement('div');
+    seg.className = 'hp-seg' + (i<hp ? (hp<=1?' low on':' on') : '');
+    hpRow.appendChild(seg);
+  }
+  document.getElementById('invKey').textContent = hasKey ? '钥匙 ✓' : '钥匙 —';
+  document.getElementById('invKey').classList.toggle('got', hasKey);
+  document.getElementById('invGear').textContent = '齿轮 '+gears+'/2';
+  document.getElementById('invGear').classList.toggle('got', gears>=2);
+  setLamp('lampKey', hasKey ? 'on amber' : '');
+  setLamp('lampValve', valveFixed ? 'on green' : (steams.some(function(s){return s.on;}) ? 'on red blink' : ''));
+  setLamp('lampExit', valveFixed ? 'on green blink' : '');
+  document.getElementById('gearBtn').disabled = !(gears>=2 && !valveFixed) || ended;
+}
+function setLamp(id, cls){ document.getElementById(id).className = 'lamp' + (cls?' '+cls:''); }
+
+document.getElementById('gearBtn').onclick = function(){
+  if(gears<2 || valveFixed || ended) return;
+  valveFixed = true;
+  steams.forEach(function(s){ s.on = false; grid[s.y][s.x]='.'; });
+  steams = [];
+  log('你: 更换排汽阀齿轮, 蒸汽停止喷涌!', 'warn');
+  log('中控: 安全闸门解锁, 快撤离!!', 'crit');
+  document.getElementById('crtBox').classList.remove('alarm','fast');
+  syncUI();
+};
+var audioCtx = null, alarmOsc = null;
+document.getElementById('muteBtn').onclick = function(){
+  muted = !muted;
+  this.textContent = muted ? '取消消音' : '报警消音';
+  if(muted) stopAlarm(); else startAlarm();
+};
+function startAlarm(){
+  if(muted || !audioCtx || alarmOsc) return;
+  alarmOsc = setInterval(function(){
+    if(muted || ended || !started) return;
+    var o = audioCtx.createOscillator(), gn = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = timer<95 ? 1180 : 880;
+    gn.gain.setValueAtTime(.04, audioCtx.currentTime);
+    gn.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime+.18);
+    o.connect(gn); gn.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime+.2);
+  }, timer<95 ? 500 : 900);
+}
+function stopAlarm(){ if(alarmOsc){ clearInterval(alarmOsc); alarmOsc = null; } }
+
+/* ================= 开始 ================= */
+var started = false;
+function startGame(){
+  if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  hp = 4; exitWarned = false;
+  timeline.forEach(function(ev){ ev.done = false; });
+  document.getElementById('crtBox').classList.add('alarm');
+  document.getElementById('crtBox').classList.remove('fast');
+  reset();
+  started = true; ended = false;
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('endOverlay').classList.add('hidden');
+  startAlarm();
+  lastT = performance.now();
+}
+document.getElementById('startBtn').onclick = startGame;
+document.getElementById('retryBtn').onclick = startGame;
+setInterval(function(){ if(started && !ended) syncUI(); }, 250);
+reset();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

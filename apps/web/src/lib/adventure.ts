@@ -15,7 +15,7 @@ export interface StageDef {
   ops: Op[]
   max: number   // 结果上限：加减法 100/1000，乘除法 81
   domain?: 'int' | 'dec'  // dec = 小数加减
-  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese' | 'poem' | 'chars'  // 非数字内容生成器（选择题，不走 generateQuestions）
+  kind?: 'letters' | 'vocab' | 'sentence' | 'antonym' | 'chinese' | 'poem' | 'chars' | 'match' | 'poemchain' | 'snake' | 'whack' | 'memory' | 'escape'  // 非数字内容生成器（选择题，不走 generateQuestions）；游乐场玩法
   subject?: 'math' | 'chinese' | 'english'
 }
 
@@ -97,6 +97,7 @@ export const ARCADE_STAGES: StageDef[] = [
   { id: 'arc-whack2', name: '地鼠·单词',   emoji: '🐹', desc: '8轮 · 3分钟 · 词义敲词', count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'whack', subject: 'english' },
   { id: 'arc-memory1', name: '翻牌·热身',  emoji: '🃏', desc: '6对 · 3分钟 · 身体+家庭', count: 6,  durationSec: 180, level: 1, ops: [], max: 0, kind: 'memory', subject: 'english' },
   { id: 'arc-memory2', name: '翻牌·挑战',  emoji: '🎴', desc: '8对 · 3分钟 · 动作+天气', count: 8,  durationSec: 180, level: 2, ops: [], max: 0, kind: 'memory', subject: 'english' },
+  { id: 'arc-escape1', name: '逃离切尔诺贝利', emoji: '☢️', desc: '动作 · 3分钟 · 键盘逃生', count: 1,  durationSec: 195, level: 3, ops: [], max: 0, kind: 'escape', subject: 'math' },
 ]
 
 export function arcadeStages(): StageDef[] {

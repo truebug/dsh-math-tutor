@@ -765,3 +765,9 @@ input[type="range"] { width: 100%; }
 .voice-heard { margin: 10px 0 0; font-size: 13px; color: #9ab; }
 .voice-reply { margin: 8px 0 0; font-size: 15px; line-height: 1.6; }
 .voice-note { margin: 10px 0 0; font-size: 11px; color: #6b7a90; }
+.escape-wrap { position: fixed; inset: 0; background: #070805; display: flex; flex-direction: column; z-index: 40; }
+.escape-head { display: flex; align-items: center; gap: 14px; padding: 10px 16px; color: #d8d3ba; font-family: 'Courier New', monospace; }
+.escape-title { font-weight: bold; letter-spacing: 2px; }
+.escape-tip { margin-left: auto; font-size: 12px; color: #8d9078; }
+.escape-frame { flex: 1; border: none; width: 100%; }
+.escape-toast { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); background: #2a2c22; color: #ffd977; border: 1px solid #4a4d3e; border-radius: 6px; padding: 6px 16px; font-size: 13px; z-index: 41; }

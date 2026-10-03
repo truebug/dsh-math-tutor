@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>核电站中央控制室 · 主控台</title>
+<style>
+:root{
+  --panel:#7a7d6a; --panel-hi:#8d9078; --panel-lo:#5c5f4e;
+  --plate:#e6e1cd; --plate-text:#3a3a30;
+  --lamp-green:#58d97a; --lamp-amber:#ffb43a; --lamp-red:#ff4a3c;
+  --crt-green:#8dff9a; --screw:#4a4d3e;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:#0a0c08;
+  font-family:"Courier New",ui-monospace,Menlo,monospace;
+  color:var(--plate-text);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.room{position:fixed;inset:0;
+  background:radial-gradient(120% 90% at 50% -10%, #2a2e22 0%, #14170f 55%, #070805 100%)}
+.wall{position:absolute;left:0;right:0;top:0;height:34%;
+  display:flex;justify-content:center;gap:14px;padding:26px 40px 0;
+  opacity:.55;filter:blur(.4px)}
+.wall .cab{width:130px;height:100%;
+  background:linear-gradient(#3a3e30,#24271d);
+  border:1px solid #101208;border-radius:4px 4px 0 0;
+  position:relative;box-shadow:inset 0 0 30px rgba(0,0,0,.6)}
+.wall .cab::before{content:"";position:absolute;inset:14px 12px auto;height:52%;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 15px,rgba(140,220,140,.14) 15px 17px),
+    repeating-linear-gradient(90deg,transparent 0 15px,rgba(140,220,140,.10) 15px 17px)}
+.wall .cab::after{content:"";position:absolute;left:12px;right:12px;bottom:14px;height:12px;
+  background:repeating-linear-gradient(90deg,var(--lamp-green) 0 6px,transparent 6px 14px);
+  opacity:.5;border-radius:2px}
+.beacon{position:absolute;top:18px;right:60px;width:34px;height:26px;
+  background:radial-gradient(circle at 50% 30%, #ff6a55, #a01708);
+  border-radius:8px 8px 4px 4px;animation:beaconGlow 6s infinite}
+.beacon::after{content:"";position:absolute;left:50%;top:50%;width:220px;height:8px;
+  transform-origin:0 50%;
+  background:linear-gradient(90deg,rgba(255,70,50,.45),transparent 80%);
+  animation:sweep 6s linear infinite;pointer-events:none}
+@keyframes sweep{0%,70%{transform:rotate(0deg);opacity:0}72%{opacity:1}100%{transform:rotate(720deg);opacity:0}}
+@keyframes beaconGlow{0%,70%{box-shadow:0 0 24px rgba(255,60,40,0)}72%,95%{box-shadow:0 0 34px rgba(255,60,40,.85)}100%{box-shadow:0 0 24px rgba(255,60,40,0)}}
+.console-wrap{position:relative;perspective:1400px;z-index:2}
+.console{display:flex;gap:10px;transform:rotateX(4deg);
+  padding:18px 18px 34px;
+  background:linear-gradient(#565945 0%, #3f4233 12%, #2c2e23 100%);
+  border-radius:14px;border:1px solid #1c1e15;
+  box-shadow:0 40px 80px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.08);
+  position:relative}
+.console::after{content:"";position:absolute;left:2%;right:2%;bottom:8px;height:10px;
+  background:linear-gradient(#191b12,#0c0d08);border-radius:0 0 8px 8px}
+.module{
+  background:linear-gradient(160deg,var(--panel-hi),var(--panel) 40%,var(--panel-lo));
+  border-radius:8px;border:1px solid #3a3d2e;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -14px 24px rgba(0,0,0,.28), 0 6px 14px rgba(0,0,0,.5);
+  padding:16px 16px 20px;position:relative}
+.module .screw{position:absolute;width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#9a9d88,var(--screw) 70%);
+  box-shadow:inset 0 0 2px #000}
+.module .screw::after{content:"";position:absolute;left:1px;right:1px;top:50%;height:1.4px;
+  background:#20221a;transform:rotate(38deg)}
+.screw.tl{top:6px;left:6px}.screw.tr{top:6px;right:6px}
+.screw.bl{bottom:6px;left:6px}.screw.br{bottom:6px;right:6px}
+.plate{display:inline-block;background:var(--plate);
+  border:1px solid #b3ae97;border-radius:2px;
+  padding:2px 10px;font-size:11px;font-weight:bold;letter-spacing:2px;
+  box-shadow:0 1px 2px rgba(0,0,0,.4), inset 0 0 6px rgba(0,0,0,.08)}
+.section-title{text-align:center;margin-bottom:10px}
+.crt-module{width:340px}
+.crt-bezel{background:linear-gradient(#2a2c22,#1a1c14);
+  border-radius:10px;padding:14px;border:1px solid #0c0d09;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.8)}
+.crt{position:relative;height:300px;border-radius:14px/18px;
+  background:radial-gradient(120% 100% at 50% 40%, #0d2410 0%, #051205 70%, #020a02 100%);
+  overflow:hidden;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.9), inset 0 0 8px rgba(90,255,120,.15)}
+.crt .log{position:absolute;inset:12px;font-size:11px;line-height:1.75;
+  color:var(--crt-green);text-shadow:0 0 6px rgba(120,255,140,.7);
+  white-space:pre;overflow:hidden}
+.crt .cursor{display:inline-block;width:7px;height:12px;background:var(--crt-green);
+  vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.crt::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply}
+.crt::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg,rgba(255,255,255,.10) 0%,transparent 30%);
+  animation:crtFlicker 4s infinite}
+@keyframes crtFlicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.85}94%{opacity:1}97%{opacity:.92}98%{opacity:1}}
+.crt-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:0 4px}
+.power-led{width:8px;height:8px;border-radius:50%;background:var(--lamp-green);
+  box-shadow:0 0 8px var(--lamp-green)}
+.crt-knobs{display:flex;gap:8px}
+.crt-knobs i{width:14px;height:14px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#8d9078,#3a3d2e 75%);display:block}
+.reactor-module{width:460px;display:flex;flex-direction:column;gap:12px}
+.core-row{display:flex;gap:14px}
+.core-mimic{flex:1;background:#20231a;border-radius:6px;padding:12px;
+  border:1px solid #101208;box-shadow:inset 0 0 24px rgba(0,0,0,.7)}
+.core-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
+.core-cell{aspect-ratio:1;border-radius:2px;background:#2c2f24;
+  border:1px solid #161810;position:relative;transition:background .6s, box-shadow .6s}
+.core-cell.on{background:radial-gradient(circle at 50% 40%, #ffd977, #d98a2b 70%);
+  box-shadow:0 0 8px rgba(255,180,60,.7)}
+.core-cell.rod{background:linear-gradient(#3f4b55,#222a30)}
+.core-cell.rod::after{content:"";position:absolute;left:45%;top:12%;bottom:12%;width:10%;
+  background:#9fb2bd;border-radius:1px;opacity:.8}
+.gauges{display:flex;flex-direction:column;justify-content:space-around;gap:8px}
+.gauge{display:flex;align-items:center;gap:8px}
+.dial{width:96px;height:96px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 50% 42%, #f4f0dd 0 62%, #d8d3ba 63% 70%, #33362a 71%);
+  position:relative;
+  box-shadow:0 3px 8px rgba(0,0,0,.5), inset 0 0 10px rgba(0,0,0,.15)}
+.dial .tick{position:absolute;left:50%;top:50%;width:1.5px;height:8px;
+  background:#3a3a30;transform-origin:0 0}
+.dial .tick.major{height:12px;width:2.2px}
+.dial .num{position:absolute;font-size:8.5px;font-weight:bold;color:#3a3a30;
+  transform:translate(-50%,-50%)}
+.dial .unit{position:absolute;left:50%;top:64%;transform:translateX(-50%);
+  font-size:8px;letter-spacing:1px;color:#6b6a58}
+.needle{position:absolute;left:calc(50% - 1px);bottom:50%;width:2.5px;height:40%;
+  background:linear-gradient(#c0392b,#7d1f14);
+  transform-origin:50% 100%;border-radius:2px;box-shadow:0 0 2px rgba(0,0,0,.4)}
+.dial .hub{position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 35% 30%,#9a9d88,#3a3d2e 75%)}
+.recorder{background:#2a2c22;border-radius:6px;padding:10px 12px 12px;
+  border:1px solid #101208;box-shadow:inset 0 2px 8px rgba(0,0,0,.7)}
+.recorder .window{background:#f2eeda;border-radius:3px;height:74px;overflow:hidden;position:relative;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.35)}
+.recorder canvas{display:block}
+.recorder .label{display:flex;justify-content:space-between;margin-top:6px;
+  font-size:9px;color:#b9b49c;letter-spacing:1px}
+.control-module{width:330px;display:flex;flex-direction:column;gap:12px}
+.lamp-matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px;
+  background:#20231a;border:1px solid #101208;border-radius:6px;padding:12px;
+  box-shadow:inset 0 0 18px rgba(0,0,0,.7)}
+.lamp-cell{display:flex;flex-direction:column;align-items:center;gap:5px}
+.lamp{width:22px;height:16px;border-radius:3px;background:#2c2f24;
+  border:1px solid #161810;box-shadow:inset 0 0 4px rgba(0,0,0,.6)}
+.lamp.on.green{background:var(--lamp-green);box-shadow:0 0 10px var(--lamp-green),inset 0 0 3px rgba(255,255,255,.5)}
+.lamp.on.amber{background:var(--lamp-amber);box-shadow:0 0 10px var(--lamp-amber),inset 0 0 3px rgba(255,255,255,.5)}
+.lamp.on.red{background:var(--lamp-red);box-shadow:0 0 12px var(--lamp-red),inset 0 0 3px rgba(255,255,255,.5)}
+.lamp.blink-slow{animation:lampBlink 2.4s infinite}
+.lamp.blink-fast{animation:lampBlink .7s infinite}
+@keyframes lampBlink{0%,55%{opacity:1}56%,100%{opacity:.15}}
+.lamp-tag{font-size:8px;color:#b9b49c;letter-spacing:.5px;text-align:center;line-height:1.2}
+.switches{display:flex;justify-content:space-around;padding:4px 6px;
+  background:#20231a;border:1px solid #101208;border-radius:6px;
+  box-shadow:inset 0 0 14px rgba(0,0,0,.6)}
+.sw{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.sw .slot{width:16px;height:34px;border-radius:8px;background:#101208;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.9);position:relative}
+.sw .handle{position:absolute;left:2px;width:12px;height:14px;border-radius:4px;
+  background:linear-gradient(#d8d3ba,#8d8a72);
+  box-shadow:0 2px 3px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.5);
+  top:2px;transition:top .15s}
+.sw.up .handle{top:2px}
+.sw.down .handle{top:18px}
+.sw .sw-tag{font-size:8px;color:#b9b49c}
+.scram-row{display:flex;align-items:center;justify-content:space-around;margin-top:auto;padding-top:6px}
+.scram{position:relative;width:118px;height:104px;border-radius:8px;
+  background:repeating-linear-gradient(45deg,#e8c51e 0 12px,#1c1e15 12px 24px);
+  padding:9px;box-shadow:0 4px 10px rgba(0,0,0,.5)}
+.scram .inner{width:100%;height:100%;background:#2a2c22;border-radius:5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.scram .mushroom{width:52px;height:34px;border-radius:50% 50% 8px 8px/70% 70% 8px 8px;
+  background:radial-gradient(circle at 50% 25%, #ff8a7a, #d63a28 55%, #8f1c10);
+  box-shadow:0 4px 8px rgba(0,0,0,.6), inset 0 -4px 6px rgba(0,0,0,.35);
+  cursor:pointer;transition:transform .08s}
+.scram .mushroom:active{transform:translateY(3px)}
+.scram .scram-tag{font-size:10px;font-weight:bold;color:#ff8a7a;letter-spacing:3px}
+.key-switch{display:flex;flex-direction:column;align-items:center;gap:6px}
+.key-hole{width:30px;height:30px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#9a9d88,#3a3d2e 75%);
+  position:relative;box-shadow:0 2px 4px rgba(0,0,0,.5)}
+.key-hole::after{content:"";position:absolute;left:50%;top:50%;width:3px;height:12px;
+  background:#101208;transform:translate(-50%,-60%) rotate(30deg);border-radius:2px}
+.floor{position:fixed;left:0;right:0;bottom:0;height:16%;
+  background:linear-gradient(rgba(120,130,90,.06),transparent);pointer-events:none}
+.vignette{position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%)}
+@media (max-width:1180px){
+  body{overflow:auto}
+  .console{transform:none;flex-wrap:wrap;justify-content:center}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<div class="room">
+  <div class="wall">
+    <div class="cab"></div><div class="cab"></div><div class="cab"></div>
+    <div class="cab"></div><div class="cab"></div><div class="cab"></div>
+  </div>
+  <div class="beacon"></div>
+</div>
+
+<div class="console-wrap">
+  <div class="console">
+    <section class="module crt-module">
+      <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
+      <div class="section-title"><span class="plate">运行日志终端 · OP-1</span></div>
+      <div class="crt-bezel">
+        <div class="crt"><div class="log" id="log"></div></div>
+        <div class="crt-foot">
+          <div class="crt-knobs"><i></i><i></i><i></i></div>
+          <div class="power-led"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="module reactor-module">
+      <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
+      <div class="section-title"><span class="plate">反应堆状态 · 1 号机组</span></div>
+      <div class="core-row">
+        <div class="core-mimic"><div class="core-grid" id="coreGrid"></div></div>
+        <div class="gauges" id="gauges"></div>
+      </div>
+      <div class="recorder">
+        <div class="window"><canvas id="chart" width="430" height="74"></canvas></div>
+        <div class="label"><span>堆芯功率记录 · 纸速 20mm/min</span><span id="clock">--:--:--</span></div>
+      </div>
+    </section>
+
+    <section class="module control-module">
+      <i class="screw tl"></i><i class="screw tr"></i><i class="screw bl"></i><i class="screw br"></i>
+      <div class="section-title"><span class="plate">系统状态指示</span></div>
+      <div class="lamp-matrix" id="lampMatrix"></div>
+      <div class="switches" id="switches"></div>
+      <div class="scram-row">
+        <div class="key-switch">
+          <div class="key-hole"></div>
+          <span class="sw-tag" style="color:#b9b49c;font-size:8px">控制解锁</span>
+        </div>
+        <div class="scram">
+          <div class="inner">
+            <div class="mushroom" id="scramBtn" title="紧急停堆"></div>
+            <div class="scram-tag">紧急停堆</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="floor"></div>
+<div class="vignette"></div>
+
+<script>
+var logEl = document.getElementById('log');
+var LINES = [
+  function(){return '['+ts()+'] 一回路压力 15.5 MPa ... 正常'},
+  function(){return '['+ts()+'] 冷却剂温度 286 °C ... 正常'},
+  function(){return '['+ts()+'] 堆芯功率 2980 MWt ... 稳定'},
+  function(){return '['+ts()+'] 控制棒组 D 位置 212 步'},
+  function(){return '['+ts()+'] 主泵 1A/1B 运行中 1485 rpm'},
+  function(){return '['+ts()+'] 安全壳完整性检查 ... 通过'},
+  function(){return '['+ts()+'] 蒸汽发生器水位 51.2%'},
+  function(){return '['+ts()+'] 硼浓度 1180 ppm'},
+  function(){return '['+ts()+'] 汽轮机转速 3000 rpm 同步'},
+  function(){return '['+ts()+'] 电网输出 985 MWe'},
+  function(){return '['+ts()+'] !! 二回路轻微波动 已自动补偿'},
+  function(){return '['+ts()+'] 辐射监测: 厂区本底正常'}
+];
+var buf = [];
+function ts(){
+  var d = new Date();
+  return [d.getHours(),d.getMinutes(),d.getSeconds()].map(function(n){return String(n).padStart(2,'0')}).join(':');
+}
+function pushLog(){
+  var fn = LINES[Math.floor(Math.random()*LINES.length)];
+  buf.push(fn());
+  while(buf.length > 14) buf.shift();
+  logEl.innerHTML = buf.join('\n') + '\n<span class="cursor"></span>';
+}
+for(var i=0;i<12;i++) pushLog();
+setInterval(pushLog, 1800);
+
+var coreGrid = document.getElementById('coreGrid');
+var cells = [];
+for(var i=0;i<54;i++){
+  var c = document.createElement('div');
+  c.className = 'core-cell';
+  var row = Math.floor(i/9), colIdx = i%9;
+  var edge = row===0||row===5||colIdx===0||colIdx===8;
+  if((row+colIdx)%3===0 && !edge) c.classList.add('rod');
+  else if(!edge && Math.random()<.75) c.classList.add('on');
+  coreGrid.appendChild(c); cells.push(c);
+}
+setInterval(function(){
+  var c = cells[Math.floor(Math.random()*cells.length)];
+  if(!c.classList.contains('rod')) c.classList.toggle('on');
+}, 900);
+
+var GAUGES = [
+  {name:'堆芯功率', unit:'MWt', min:0, max:4000, val:2980, jitter:14, ticks:[0,1000,2000,3000,4000]},
+  {name:'一回路压力', unit:'MPa', min:0, max:20, val:15.5, jitter:.06, ticks:[0,5,10,15,20]},
+  {name:'冷却剂温度', unit:'°C', min:0, max:400, val:286, jitter:1.2, ticks:[0,100,200,300,400]}
+];
+var gaugesEl = document.getElementById('gauges');
+var needles = [];
+GAUGES.forEach(function(g){
+  var wrap = document.createElement('div');
+  wrap.className = 'gauge';
+  var dial = document.createElement('div');
+  dial.className = 'dial';
+  var A0=-125, A1=125;
+  for(var i=0;i<=20;i++){
+    var a = A0 + (A1-A0)*i/20;
+    var t = document.createElement('i');
+    t.className = 'tick' + (i%5===0?' major':'');
+    t.style.transform = 'rotate('+a+'deg) translateY(-42px)';
+    dial.appendChild(t);
+  }
+  g.ticks.forEach(function(v){
+    var a = (A0 + (A1-A0)*(v-g.min)/(g.max-g.min)) * Math.PI/180;
+    var n = document.createElement('span');
+    n.className='num'; n.textContent = v;
+    n.style.left = 50 + Math.sin(a)*30 + '%';
+    n.style.top  = 50 - Math.cos(a)*30 + '%';
+    dial.appendChild(n);
+  });
+  var unit = document.createElement('span');
+  unit.className='unit'; unit.textContent=g.unit; dial.appendChild(unit);
+  var needle = document.createElement('div');
+  needle.className='needle'; dial.appendChild(needle);
+  var hub = document.createElement('div');
+  hub.className='hub'; dial.appendChild(hub);
+  wrap.appendChild(dial);
+  var plate = document.createElement('span');
+  plate.className='plate'; plate.textContent=g.name;
+  plate.style.fontSize='9px'; wrap.appendChild(plate);
+  gaugesEl.appendChild(wrap);
+  needles.push({g:g, needle:needle, A0:A0, A1:A1, cur:g.val});
+});
+function animGauges(){
+  needles.forEach(function(n){
+    var target = n.g.val + (Math.random()-.5)*2*n.g.jitter;
+    n.cur += (target-n.cur)*.08;
+    var a = n.A0 + (n.A1-n.A0)*(n.cur-n.g.min)/(n.g.max-n.g.min);
+    n.needle.style.transform = 'rotate('+a+'deg)';
+  });
+  requestAnimationFrame(animGauges);
+}
+animGauges();
+
+var cv = document.getElementById('chart');
+var ctx = cv.getContext('2d');
+var W=cv.width, H=cv.height;
+var traceY = H*0.45, prevY = traceY;
+ctx.fillStyle='#f2eeda'; ctx.fillRect(0,0,W,H);
+ctx.strokeStyle='rgba(90,140,90,.25)'; ctx.lineWidth=.6;
+for(var y=10;y<H;y+=13){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+function drawChart(){
+  ctx.drawImage(cv, -2, 0);
+  var col = W-2;
+  ctx.fillStyle = '#f2eeda'; ctx.fillRect(col, 0, 2, H);
+  ctx.strokeStyle = 'rgba(90,140,90,.25)'; ctx.lineWidth = .6;
+  ctx.beginPath();
+  for(var y=10;y<H;y+=13){ ctx.moveTo(col,y); ctx.lineTo(col+2,y); }
+  ctx.stroke();
+  traceY += (Math.random()-.5)*3.2;
+  traceY = Math.max(H*.2, Math.min(H*.8, traceY + (H*.45-traceY)*.02));
+  ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(col, prevY); ctx.lineTo(col+2, traceY); ctx.stroke();
+  prevY = traceY;
+}
+setInterval(drawChart, 120);
+
+var LAMPS = [
+  ['主泵 1A','green'],['主泵 1B','green'],['上充泵','green'],['安注系统','off'],
+  ['稳压器','green'],['蒸汽旁排','off'],['硼注箱','amber','blink-slow'],['安全壳隔离','off'],
+  ['应急柴油机','amber','blink-slow'],['厂用电','green'],['UPS 电源','green'],['通风系统','green'],
+  ['辐射监测','green'],['冷却水','green'],['棒控电源','green'],['注意','red','blink-fast']
+];
+var matrixEl = document.getElementById('lampMatrix');
+LAMPS.forEach(function(cfg){
+  var tag=cfg[0], color=cfg[1], blink=cfg[2];
+  var cell = document.createElement('div');
+  cell.className='lamp-cell';
+  var lamp = document.createElement('div');
+  lamp.className = 'lamp' + (color!=='off' ? ' on '+color : '') + (blink?' '+blink:'');
+  var label = document.createElement('span');
+  label.className='lamp-tag'; label.textContent = tag;
+  cell.appendChild(lamp); cell.appendChild(label);
+  matrixEl.appendChild(cell);
+});
+
+var SW = [['循环泵',1],['喷淋',0],['加热器',1],['照明',1],['备用',0],['试验',0]];
+var swEl = document.getElementById('switches');
+SW.forEach(function(cfg){
+  var s = document.createElement('div');
+  s.className = 'sw ' + (cfg[1]?'up':'down');
+  s.innerHTML = '<div class="slot"><div class="handle"></div></div><span class="sw-tag">'+cfg[0]+'</span>';
+  s.onclick = function(){ s.classList.toggle('up'); s.classList.toggle('down'); };
+  swEl.appendChild(s);
+});
+
+setInterval(function(){ document.getElementById('clock').textContent = ts(); }, 1000);
+document.getElementById('clock').textContent = ts();
+
+document.getElementById('scramBtn').onclick = function(){
+  buf.push('['+ts()+'] *** AZ-5 紧急停堆信号已触发 ***');
+  while(buf.length>14) buf.shift();
+  logEl.innerHTML = buf.join('\n') + '\n<span class="cursor"></span>';
+  cells.forEach(function(c){ if(!c.classList.contains('rod')) c.classList.remove('on'); });
+};
+</script>
+</body>
+</html>

@@ -4,6 +4,14 @@
 
 ## 2026-10-02
 
+- **游乐场新玩法「逃离切尔诺贝利」上线（10-03）**：
+  - 动作逃生小游戏（44×26 滚屏大地图、五层楼宇、XY 相机跟随、钥匙+双齿轮+
+    排汽阀目标链、火焰/蒸汽/坠落 HP 系统、3:15 爆炸倒计时、失控广播时间线）
+  - 接入方式：`apps/web/public/escape/index.html` 独立单文件 + `EscapeView.tsx`
+    iframe 壳（通关 postMessage 回报 → 合成 Question 走标准结算链路）
+  - 关卡注册 `arc-escape1`（adventure.ts，kind:'escape'），游乐场第 12 关
+  - 源码副本在 `demo/chernobyl-escape/index.html`（可独立打开调试）
+  - 前端已部署线上（escape/index.html 200）；纯前端变更，后端未动
 - **交接文档 review 修正**：
   - `docs/deployment.md` 实际执行 `git rm --cached` 移出索引（785b301 只加了 .gitignore，
     文件一直被跟踪，脱敏未真正完成；本次补落地）
