@@ -40,6 +40,11 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 ```
 验证：`curl -sk https://127.0.0.1:8787/api/health`（服务器内）→ `{"ok":true}`
 
+**部署纪律（防多 agent 部署竞态，2026-10-03 起）**：
+1. 部署前 `git status` 必须干净（含未提交改动的构建不可上线上）
+2. 只允许部署 git HEAD 的构建产物；部署后在 `docs/progress.md` 记一行（commit hash + 时间）
+3. 前端 build 会自动 `prebuild` 同步逃生游戏源文件（demo/ → public/），不要手工 cp
+
 ## 三、dsh 集成现状（本项目的核心特色）
 
 - **版本**：0.1.5-rc.3（09-27 从 0.1.1-rc.2 升级，进入小步跟踪模式：新 RC/正式版 → 冒烟 → 小步升级）
