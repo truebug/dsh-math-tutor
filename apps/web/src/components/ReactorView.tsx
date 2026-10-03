@@ -154,7 +154,7 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
           setMeltdown(true)
           meltdownAtRef.current = performance.now()
           playMeltdownSound()
-          setTimeout(() => setPaused('fail'), 3000)
+          setTimeout(() => setPaused('fail'), 3500)
           return
         }
         setAlarm(s.temp > SAFE_TEMP || s.pressure > SAFE_PRESSURE)
@@ -383,23 +383,31 @@ function playMeltdownSound() {
     rGain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.3)
     rumble.connect(rGain); rGain.connect(ctx.destination)
     rumble.start(t0); rumble.stop(t0 + 1.4)
-    // ② 爆炸（1s 时白噪声爆发 + 低通扫频 2s）
+    // ② 爆炸（1s 时白噪声爆发 + 低通扫频 2s）+ 次低频冲击波
     const len = ctx.sampleRate * 2
     const buf = ctx.createBuffer(1, len, ctx.sampleRate)
     const data = buf.getChannelData(0)
-    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2)
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.6)
     const boom = ctx.createBufferSource(); boom.buffer = buf
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'
-    lp.frequency.setValueAtTime(2400, t0 + 1); lp.frequency.exponentialRampToValueAtTime(120, t0 + 3)
-    const bGain = ctx.createGain(); bGain.gain.setValueAtTime(0.9, t0 + 1)
-    bGain.gain.exponentialRampToValueAtTime(0.001, t0 + 3.2)
+    lp.frequency.setValueAtTime(3200, t0 + 1); lp.frequency.exponentialRampToValueAtTime(90, t0 + 3.2)
+    const bGain = ctx.createGain(); bGain.gain.setValueAtTime(1.0, t0 + 1)
+    bGain.gain.exponentialRampToValueAtTime(0.001, t0 + 3.6)
     boom.connect(lp); lp.connect(bGain); bGain.connect(ctx.destination)
     boom.start(t0 + 1)
-    // ③ 警报（爆炸后 1.5s 起, 三声）
-    for (let k = 0; k < 3; k++) {
+    // ②b 次低频冲击（胸腔震感, 28Hz 正弦 0.5s）
+    const sub = ctx.createOscillator(), subGain = ctx.createGain()
+    sub.type = 'sine'; sub.frequency.value = 28
+    subGain.gain.setValueAtTime(0.0001, t0 + 1)
+    subGain.gain.exponentialRampToValueAtTime(0.85, t0 + 1.06)
+    subGain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.7)
+    sub.connect(subGain); subGain.connect(ctx.destination)
+    sub.start(t0 + 1); sub.stop(t0 + 1.8)
+    // ③ 警报（爆炸后 1.5s 起, 五声渐急）
+    for (let k = 0; k < 5; k++) {
       const siren = ctx.createOscillator(), sGain = ctx.createGain()
       siren.type = 'square'; siren.frequency.value = 660
-      const st = t0 + 1.6 + k * 0.5
+      const st = t0 + 1.6 + k * 0.38
       sGain.gain.setValueAtTime(0.06, st)
       sGain.gain.exponentialRampToValueAtTime(0.001, st + 0.3)
       siren.connect(sGain); sGain.connect(ctx.destination)
@@ -470,57 +478,90 @@ function draw(canvas: HTMLCanvasElement | null, s: ReactorState, rodPos: { banks
   }
   // 熔毁特效：三阶段序列（白热化 → 白闪+冲击波 → 浓烟火星+红光扫射）
   if (meltdown) {
-    // 阶段① 0-1s：堆芯白热化膨胀 + 警报红光渐强
+    // 阶段① 0-0.6s：厂房灯灭(黑场蓄力) → 堆芯孤光暴亮
+    if (mtSec < 0.7) {
+      const k = Math.min(1, mtSec / 0.6)
+      ctx.fillStyle = `rgba(0,0,0,${k * 0.82})`
+      ctx.fillRect(-40, -40, W + 80, H + 80)
+      const lone = ctx.createRadialGradient(cx, cy, 4, cx, cy, 50 + k * 110)
+      lone.addColorStop(0, `rgba(255,255,245,${0.4 + k * 0.6})`)
+      lone.addColorStop(0.5, `rgba(255,150,60,${0.25 * k})`)
+      lone.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = lone
+      ctx.beginPath(); ctx.arc(cx, cy, 50 + k * 110, 0, Math.PI * 2); ctx.fill()
+    }
+    // 阶段①b 0.6-1.2s：白热膨胀 + 警报红光渐强
     if (mtSec < 1.2) {
       const k = Math.min(1, mtSec)
-      const flash = ctx.createRadialGradient(cx, cy, 4, cx, cy, 60 + k * 150)
-      flash.addColorStop(0, `rgba(255,255,240,${0.35 + k * 0.6})`)
+      const flash = ctx.createRadialGradient(cx, cy, 4, cx, cy, 60 + k * 190)
+      flash.addColorStop(0, `rgba(255,255,240,${0.4 + k * 0.6})`)
       flash.addColorStop(1, 'rgba(255,120,40,0)')
       ctx.fillStyle = flash
-      ctx.beginPath(); ctx.arc(cx, cy, 60 + k * 150, 0, Math.PI * 2); ctx.fill()
-      ctx.fillStyle = `rgba(255,40,20,${k * 0.18 * (0.6 + 0.4 * Math.sin(Date.now() / 70))})`
+      ctx.beginPath(); ctx.arc(cx, cy, 60 + k * 190, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = `rgba(255,40,20,${k * 0.22 * (0.6 + 0.4 * Math.sin(Date.now() / 55))})`
       ctx.fillRect(-30, -30, W + 60, H + 60)
     }
-    // 阶段② 1-1.6s：爆炸白闪 + 冲击波环
+    // 阶段② 1-2.2s：双白闪 + 五环冲击波 + 放射状爆炸裂纹
     if (mtSec >= 1 && mtSec < 2.2) {
       const k = (mtSec - 1) / 1.2
-      ctx.fillStyle = `rgba(255,252,240,${Math.max(0, 0.95 - k * 1.4)})`
-      ctx.fillRect(-30, -30, W + 60, H + 60)
-      for (let ring = 0; ring < 3; ring++) {
-        const rr = k * (W * 0.75) - ring * 34
+      const main = Math.max(0, 1 - k * 1.6)
+      const echo = Math.max(0, 0.85 - Math.abs(mtSec - 1.28) * 5)
+      ctx.fillStyle = `rgba(255,252,240,${Math.min(1, main + echo)})`
+      ctx.fillRect(-40, -40, W + 80, H + 80)
+      for (let ring = 0; ring < 5; ring++) {
+        const rr = k * (W * 0.9) - ring * 26
         if (rr <= 0) continue
-        ctx.strokeStyle = `rgba(255,220,180,${Math.max(0, 0.7 - k - ring * 0.15)})`
-        ctx.lineWidth = 10 - ring * 3
-        ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke()
+        ctx.strokeStyle = `rgba(255,${210 - ring * 18},${150 - ring * 20},${Math.max(0, 0.85 - k - ring * 0.12)})`
+        ctx.lineWidth = 14 - ring * 2.5
+        ctx.beginPath()
+        ctx.ellipse(cx, cy, rr, rr * (0.94 + Math.sin(Date.now() / 60 + ring) * 0.03), 0, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      for (let ray = 0; ray < 14; ray++) {
+        const a = (ray / 14) * Math.PI * 2 + 0.22
+        const len = (60 + (ray * 53 % 120)) * (0.6 + k)
+        ctx.strokeStyle = `rgba(255,240,200,${Math.max(0, 0.8 - k * 1.1)})`
+        ctx.lineWidth = 3.5
+        ctx.beginPath()
+        ctx.moveTo(cx + Math.cos(a) * 50, cy + Math.sin(a) * 50)
+        ctx.lineTo(cx + Math.cos(a) * (50 + len), cy + Math.sin(a) * (50 + len))
+        ctx.stroke()
       }
     }
-    // 阶段③ 1.4s+：火星飞溅 + 浓烟上升 + 警报红光扫射
+    // 阶段③ 1.4s+：火星暴雨(带拖尾) + 浓烟成团 + 双色警报扫射
     if (mtSec >= 1.4) {
       const life = mtSec - 1.4
-      for (let i = 0; i < 26; i++) {
+      for (let i = 0; i < 60; i++) {
         const seed = i * 7919
-        const a = ((seed % 628) / 100) + Math.sin(seed) * 0.5
-        const spd = 60 + (seed % 140)
+        const a = ((seed % 628) / 100) + Math.sin(seed) * 0.7
+        const spd = 90 + (seed % 220)
         const px = cx + Math.cos(a) * spd * life
         const py = cy + Math.sin(a) * spd * life + 60 * life * life
-        if (px < -20 || px > W + 20 || py > H + 20) continue
-        ctx.fillStyle = `rgba(255,${140 + (seed % 100)},60,${Math.max(0, 0.9 - life * 0.5)})`
-        ctx.beginPath(); ctx.arc(px, py, 2.5 - Math.min(1.8, life * 0.6), 0, Math.PI * 2); ctx.fill()
+        if (px < -30 || px > W + 30 || py > H + 30) continue
+        const fade = Math.max(0, 1 - life * 0.45)
+        ctx.strokeStyle = `rgba(255,${120 + (seed % 120)},50,${fade})`
+        ctx.lineWidth = 3 - Math.min(2.2, life * 0.5)
+        ctx.beginPath()
+        ctx.moveTo(px, py)
+        ctx.lineTo(px - Math.cos(a) * spd * 0.06, py - Math.sin(a) * spd * 0.06 - 8)
+        ctx.stroke()
       }
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 16; i++) {
         const seed = i * 104729
-        const rise = ((life * 46 + seed % 90) % (H * 0.8))
-        const sx = cx + ((seed % 160) - 80) * (1 + life * 0.12)
-        const sr = 26 + rise * 0.22 + (seed % 20)
-        ctx.fillStyle = `rgba(40,36,34,${Math.max(0, 0.5 - rise / (H * 0.9))})`
+        const rise = ((life * 62 + seed % 120) % (H * 0.95))
+        const sx = cx + ((seed % 220) - 110) * (1 + life * 0.18)
+        const sr = 34 + rise * 0.3 + (seed % 26)
+        ctx.fillStyle = `rgba(${26 + (seed % 14)},24,22,${Math.max(0, 0.62 - rise / (H * 1.1))})`
         ctx.beginPath(); ctx.arc(sx, cy - rise, sr, 0, Math.PI * 2); ctx.fill()
       }
-      const sweepA = (Date.now() / 500) % (Math.PI * 2)
-      const sweep = ctx.createLinearGradient(cx, cy, cx + Math.cos(sweepA) * W, cy + Math.sin(sweepA) * W)
-      sweep.addColorStop(0, 'rgba(255,50,30,0.16)')
-      sweep.addColorStop(1, 'rgba(255,50,30,0)')
-      ctx.fillStyle = sweep
-      ctx.fillRect(-30, -30, W + 60, H + 60)
+      const sweepA = (Date.now() / 380) % (Math.PI * 2)
+      for (const [off, col] of [[0, '255,50,30'], [Math.PI, '255,140,40']] as const) {
+        const sweep = ctx.createLinearGradient(cx, cy, cx + Math.cos(sweepA + off) * W, cy + Math.sin(sweepA + off) * W)
+        sweep.addColorStop(0, `rgba(${col},0.22)`)
+        sweep.addColorStop(1, `rgba(${col},0)`)
+        ctx.fillStyle = sweep
+        ctx.fillRect(-40, -40, W + 80, H + 80)
+      }
     }
     // 常驻：红雾 + 裂缝 + 标题
     ctx.fillStyle = `rgba(255,80,40,${0.25 + 0.2 * Math.sin(Date.now() / 90)})`
