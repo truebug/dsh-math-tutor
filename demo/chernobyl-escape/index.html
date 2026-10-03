@@ -143,6 +143,22 @@ canvas#game{
   display:inline-block;background:#e6e1cd;border:1px solid #b3ae97;border-radius:2px;
   padding:0 4px;color:#2a2c22;margin:0 1px;
 }
+/* 触屏虚拟按键（仅触屏设备显示，覆盖在游戏画面底部） */
+.touchpad{position:absolute;left:0;right:0;bottom:10px;display:none;
+  justify-content:space-between;padding:0 14px;pointer-events:none;z-index:4}
+body.touch .touchpad{display:flex}
+.tp-cluster{display:flex;gap:10px;align-items:flex-end;pointer-events:auto}
+.tp-btn{
+  width:58px;height:58px;border-radius:50%;
+  background:rgba(230,225,205,.16);border:2px solid rgba(230,225,205,.45);
+  color:#e6e1cd;font-size:22px;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  text-shadow:0 0 6px rgba(0,0,0,.6);
+}
+.tp-btn.on{background:rgba(255,180,60,.4);border-color:#ffb43a}
+.tp-btn.jump{width:72px;height:72px;font-size:14px;letter-spacing:2px;
+  background:rgba(216,58,40,.3);border-color:rgba(255,138,122,.7)}
 </style>
 </head>
 <body>
@@ -166,6 +182,17 @@ canvas#game{
     <h2 id="endTitle"></h2>
     <p id="endText"></p>
     <button class="big-btn" id="retryBtn"><span>再 试 一 次</span></button>
+  </div>
+  <div class="touchpad">
+    <div class="tp-cluster">
+      <button class="tp-btn" data-key="ArrowLeft">◀</button>
+      <button class="tp-btn" data-key="ArrowRight">▶</button>
+    </div>
+    <div class="tp-cluster">
+      <button class="tp-btn" data-key="ArrowUp">▲</button>
+      <button class="tp-btn" data-key="ArrowDown">▼</button>
+      <button class="tp-btn jump" data-key="Space">跳</button>
+    </div>
   </div>
 </div>
 
@@ -291,6 +318,19 @@ document.addEventListener('keydown', function(e){
   if(e.code==='Enter'){ if(!started) startGame(); else if(ended) startGame(); }
 });
 document.addEventListener('keyup', function(e){ keys[e.code] = false; });
+/* 触屏虚拟按键 → 映射为方向键状态（支持多点同时按） */
+if('ontouchstart' in window || navigator.maxTouchPoints>0) document.body.classList.add('touch');
+document.querySelectorAll('.tp-btn').forEach(function(btn){
+  var code = btn.getAttribute('data-key');
+  function press(e){ e.preventDefault(); keys[code]=true; btn.classList.add('on'); }
+  function release(e){ e.preventDefault(); keys[code]=false; btn.classList.remove('on'); }
+  btn.addEventListener('touchstart', press, {passive:false});
+  btn.addEventListener('touchend', release, {passive:false});
+  btn.addEventListener('touchcancel', release, {passive:false});
+  btn.addEventListener('mousedown', press);
+  btn.addEventListener('mouseup', release);
+  btn.addEventListener('mouseleave', function(){ keys[code]=false; btn.classList.remove('on'); });
+});
 function left(){ return keys['ArrowLeft']||keys['KeyA']; }
 function right(){ return keys['ArrowRight']||keys['KeyD']; }
 function up(){ return keys['ArrowUp']||keys['KeyW']; }

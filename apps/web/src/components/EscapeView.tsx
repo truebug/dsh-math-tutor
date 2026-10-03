@@ -40,7 +40,7 @@ export default function EscapeView({ settings, onAbandon, onFinish }: Props) {
       <div className="escape-head">
         <button className="ghost" onClick={onAbandon}>← 退出</button>
         <span className="escape-title">{settings.emoji} {settings.name}</span>
-        <span className="escape-tip">键盘操作：←→ 移动 · ↑↓ 爬梯 · 空格跳跃 · ↓ 蹲伏</span>
+        <span className="escape-tip">键盘 ←→移动 · ↑↓爬梯 · 空格跳跃 · ↓蹲伏 ｜ 触屏用画面下方虚拟按键</span>
       </div>
       {toast && <div className="escape-toast">{toast}</div>}
       <iframe className="escape-frame" src={`${import.meta.env.BASE_URL}escape/index.html`} title="逃离切尔诺贝利" />
