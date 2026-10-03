@@ -417,9 +417,12 @@ function update(dt){
   if(ladder && (up()||down())){
     p.onLadder = true; p.vy = 0;
     p.y += (up()? -CLIMB : CLIMB)*dt;
-    // 水平居中吸附
-    var lx = Math.floor((p.x+p.w/2)/TILE)*TILE + (TILE-p.w)/2;
-    p.x += (lx-p.x)*Math.min(1, dt*8);
+    // 水平方向按住时允许移出梯井(上下层出口), 否则吸附回梯子中线
+    if(p.vx!==0){ p.x += p.vx*dt; }
+    else {
+      var lx = Math.floor((p.x+p.w/2)/TILE)*TILE + (TILE-p.w)/2;
+      p.x += (lx-p.x)*Math.min(1, dt*8);
+    }
   } else if(p.onLadder && !ladder){
     p.onLadder = false;
   }
