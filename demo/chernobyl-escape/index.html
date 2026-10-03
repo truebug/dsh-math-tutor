@@ -169,10 +169,16 @@ body.touch .touchpad{display:flex}
   <canvas id="game" width="960" height="560"></canvas>
   <div class="overlay" id="startOverlay">
     <h2>逃离切尔诺贝利</h2>
-    <p>你是 4 号机组的夜班技术员。安全试验失控，反应堆功率正在飙升。
-       中控台的报警已经响起——<b style="color:#ff8a7a">爆炸无法避免</b>。
-       拿到钥匙、找齐两枚备用齿轮修复排汽阀，在堆芯爆炸前逃到厂区安全区。
+    <p>三段逃生之旅：① 逃离失控的四号机组厂房（钥匙 + 齿轮修排汽阀）
+       ② 穿越烟尘弥漫的厂区（水桶灭火、扳手撬闸门、水源续水）
+       ③ 撤离普里皮亚季居民楼（综合考验，赶上撤离巴士）。
        注意生命条：火焰、蒸汽会灼伤你，从高处坠落会摔伤，生命归零就倒下了。</p>
+    <div class="keys" id="levelSel">
+      选择起点：
+      <button class="cbtn" data-lv="0">第1关 厂房</button>
+      <button class="cbtn" data-lv="1">第2关 厂区</button>
+      <button class="cbtn" data-lv="2">第3关 居民楼</button>
+    </div>
     <div class="keys">
       <b>←</b><b>→</b> 移动 &nbsp; <b>↑</b><b>↓</b> 爬梯 &nbsp; <b>空格</b> 跳跃 &nbsp; <b>↓</b> 蹲伏穿越废墟 &nbsp; <b>回车</b> 开始
     </div>
@@ -208,6 +214,8 @@ body.touch .touchpad{display:flex}
     <div class="inv-row">
       <span class="inv-tag" id="invKey">钥匙 —</span>
       <span class="inv-tag" id="invGear">齿轮 0/2</span>
+      <span class="inv-tag" id="invBucket">水桶 —</span>
+      <span class="inv-tag" id="invWrench">扳手 —</span>
     </div>
   </div>
   <div class="module ops-module">
@@ -235,32 +243,28 @@ body.touch .touchpad{display:flex}
    D 锁门  K 钥匙  G 齿轮  M 出生点  E 安全区出口  . 空 */
 var TILE = 26, COLS = 44, ROWS = 26;
 var WORLD_W = COLS*TILE, WORLD_H = ROWS*TILE;
-var BANDS = [
-  {y1:1,  y2:5,  name:'反应堆大厅 B3'},
-  {y1:7,  y2:10, name:'反应堆大厅 B2'},
-  {y1:12, y2:15, name:'汽轮机厂房 B1'},
-  {y1:17, y2:20, name:'联合泵房 1F'},
-  {y1:22, y2:24, name:'厂区通道 G'}
-];
-function buildMap(){
+function shell(){
   var g=[], x, y;
   for(y=0;y<ROWS;y++){ var r=[]; for(x=0;x<COLS;x++) r.push('.'); g.push(r); }
   for(x=0;x<COLS;x++){ g[0][x]='#'; g[ROWS-1][x]='#'; }
   for(y=0;y<ROWS;y++){ g[y][0]='#'; g[y][COLS-1]='#'; }
   [6,11,16,21].forEach(function(fy){ for(x=1;x<COLS-1;x++) g[fy][x]='#'; });
-  // 竖井: 梯子从上层楼面贯通到下层楼面, 楼层地板留洞口
-  function shaft(sx, yTop, floorY, yBot){
-    for(var yy=yTop;yy<=yBot;yy++) g[yy][sx] = (yy===floorY ? '.' : '^');
-  }
-  shaft(30,3,6,10);    // B3 ↔ B2
-  shaft(10,8,11,15);   // B2 ↔ B1
-  shaft(35,13,16,20);  // B1 ↔ 1F
-  shaft(6,18,21,24);   // 1F ↔ G
-  shaft(20,18,21,24);  // G ↔ 1F 返回通道
-  g[4][2]  = 'M';   // 出生: 反应堆大厅 B3 西侧
-  g[5][38] = 'K';   // 钥匙: B3 东侧(跳过火焰)
-  g[10][3] = 'G';   // 齿轮1: B2 西端
-  g[20][41]= 'G';   // 齿轮2: 1F 安全门后
+  return g;
+}
+// 竖井: 梯子从上层楼面贯通到下层楼面, 楼层地板留洞口
+function shaftG(g, sx, yTop, floorY, yBot){
+  for(var yy=yTop;yy<=yBot;yy++) g[yy][sx] = (yy===floorY ? '.' : '^');
+}
+
+/* ===== 第 1 关: 逃离四号机组厂房 ===== */
+function buildMap1(){
+  var g = shell();
+  shaftG(g,30,3,6,10); shaftG(g,10,8,11,15); shaftG(g,35,13,16,20);
+  shaftG(g,6,18,21,24); shaftG(g,20,18,21,24);
+  g[4][2]  = 'M';
+  g[5][38] = 'K';
+  g[10][3] = 'G';
+  g[20][41]= 'G';
   g[19][38]= 'D'; g[20][38] = 'D';
   g[5][20] = '~';
   g[10][25]= '~'; g[10][26] = '~';
@@ -269,9 +273,78 @@ function buildMap(){
   g[24][22]= '~';
   g[15][15]='S'; g[15][16]='S'; g[15][17]='S';
   for(var sy=22;sy<=24;sy++){ g[sy][15]='!'; g[sy][30]='!'; }
-  g[23][41]= 'E';   // 安全区: G 层东端
+  g[23][41]= 'E';
   return g;
 }
+/* ===== 第 2 关: 穿越厂区(水桶灭火/扳手闸门/水源续水) ===== */
+function buildMap2(){
+  var g = shell();
+  shaftG(g,30,3,6,10); shaftG(g,10,8,11,15); shaftG(g,35,13,16,20); shaftG(g,6,18,21,24);
+  g[4][2]  = 'M';
+  g[5][5]  = 'B';            // 水桶(满)
+  g[5][15] = '~';            // 火墙挡路 → 用桶扑灭
+  g[10][18]='S'; g[10][19]='S'; g[10][20]='S';
+  g[15][6] = 'T';            // 扳手
+  g[15][25]= '~'; g[15][26] = '~';  // 可跳过
+  g[20][8] = '≈';            // 水源(续水)
+  g[20][15]= '~';            // 再挡 → 续水后扑灭
+  g[19][30]= 'W'; g[20][30] = 'W';  // 扳手闸门
+  g[24][22]= '~';            // 可跳过
+  g[23][41]= 'E';
+  return g;
+}
+/* ===== 第 3 关: 撤离普里皮亚季居民楼 ===== */
+function buildMap3(){
+  var g = shell();
+  shaftG(g,30,3,6,10); shaftG(g,10,8,11,15); shaftG(g,35,13,16,20); shaftG(g,6,18,21,24);
+  g[4][2]  = 'M';
+  g[5][38] = 'K';            // 钥匙
+  g[10][3] = 'G';            // 齿轮1
+  g[15][20]= 'D'; g[14][20] = 'D';  // 钥匙门
+  g[15][41]= 'G';            // 齿轮2(门后)
+  g[15][30]= '~';            // 可跳过
+  for(var sy=17;sy<=20;sy++) g[sy][15]='!';  // 蒸汽封楼道 → 控制台修供电
+  g[20][25]='S'; g[20][26]='S';
+  g[24][28]= '~';            // 可跳过
+  g[23][41]= 'E';            // 撤离巴士
+  return g;
+}
+var LEVELS = [
+  { name:'第1关 · 逃离四号机组厂房', time:195, build:buildMap1,
+    btnLabel:'插入齿轮修复排汽阀', btnGears:2,
+    boom:'01:23:46，4 号机组堆芯爆炸。你没能赶到安全区。',
+    bands:[{y1:1,y2:5,name:'反应堆大厅 B3'},{y1:7,y2:10,name:'反应堆大厅 B2'},{y1:12,y2:15,name:'汽轮机厂房 B1'},{y1:17,y2:20,name:'联合泵房 1F'},{y1:22,y2:24,name:'厂区通道 G'}],
+    timeline:[
+      {t:180, msg:'中控: 一回路压力 16.8 MPa, 超设计限值!', cls:'warn'},
+      {t:155, msg:'中控: 安全阀动作, 蒸汽排放中', cls:'warn'},
+      {t:125, msg:'中控: 警告!! 堆芯温度失控', cls:'crit'},
+      {t:95,  msg:'中控: 堆芯熔毁开始, 厂房结构受损', cls:'crit', alarmFast:true},
+      {t:65,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
+      {t:35,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
+    ] },
+  { name:'第2关 · 穿越切尔诺贝利厂区', time:180, build:buildMap2,
+    btnLabel:null, btnGears:0,
+    boom:'最后的撤离车辆已经离开，你被落在了烟尘弥漫的厂区里。',
+    bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'}],
+    timeline:[
+      {t:160, msg:'厂区广播: 余火未灭, 注意绕行', cls:'warn'},
+      {t:130, msg:'你: 辐射剂量计读数在上升', cls:'warn'},
+      {t:95,  msg:'厂区广播: 风向改变, 烟尘向大门扩散', cls:'crit', alarmFast:true},
+      {t:60,  msg:'厂区广播: 最后撤离车辆 60 秒后离开!!', cls:'crit'},
+      {t:30,  msg:'厂区广播: 车辆即将离开!!!', cls:'crit'}
+    ] },
+  { name:'第3关 · 撤离普里皮亚季', time:180, build:buildMap3,
+    btnLabel:'修复楼道供电(需2齿轮)', btnGears:2,
+    boom:'撤离巴士发车了，你没能赶上。',
+    bands:[{y1:1,y2:5,name:'公寓 5F'},{y1:7,y2:10,name:'公寓 4F'},{y1:12,y2:15,name:'公寓 3F'},{y1:17,y2:20,name:'公寓 2F'},{y1:22,y2:24,name:'街道'}],
+    timeline:[
+      {t:160, msg:'楼内广播: 请居民立即撤离, 不要收拾行李', cls:'warn'},
+      {t:120, msg:'你: 楼道里的烟越来越大了', cls:'warn'},
+      {t:90,  msg:'楼内广播: 辐射尘开始沉降', cls:'crit', alarmFast:true},
+      {t:55,  msg:'楼内广播: 撤离巴士即将发车!!', cls:'crit'},
+      {t:30,  msg:'楼内广播: 最后一班!!!', cls:'crit'}
+    ] },
+];
 
 /* ================= 画布 ================= */
 var cv = document.getElementById('game');
@@ -279,34 +352,44 @@ var ctx = cv.getContext('2d');
 var VIEW_W = cv.width, VIEW_H = cv.height;
 
 /* ================= 状态 ================= */
-var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile;
-var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears;
+var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile, waters;
+var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, hasBucket, hasWrench;
+var levelIdx = 0, level = null;
 var logs = [];
-var TIME_LIMIT = 195;
 
 function reset(){
-  grid = buildMap();
-  fires = []; steams = []; items = []; doors = [];
+  level = LEVELS[levelIdx];
+  grid = level.build();
+  fires = []; steams = []; items = []; doors = []; waters = [];
   exitTile = null; player = null;
   for(var y=0;y<ROWS;y++){
     if(grid[y].length !== COLS) throw new Error('row '+y+' len '+grid[y].length);
     for(var x=0;x<COLS;x++){
       var ch = grid[y][x];
-      if(ch==='~') fires.push({x:x,y:y});
+      if(ch==='~') fires.push({x:x,y:y,blocking:levelIdx===1});
       else if(ch==='!') steams.push({x:x,y:y,on:true});
       else if(ch==='K') items.push({x:x,y:y,type:'key',got:false});
       else if(ch==='G') items.push({x:x,y:y,type:'gear',got:false});
+      else if(ch==='B') items.push({x:x,y:y,type:'bucket',got:false});
+      else if(ch==='T') items.push({x:x,y:y,type:'wrench',got:false});
       else if(ch==='D') doors.push({x:x,y:y});
+      else if(ch==='W') doors.push({x:x,y:y,wrench:true});
+      else if(ch==='≈') waters.push({x:x,y:y});
       else if(ch==='E') exitTile = {x:x,y:y};
       else if(ch==='M'){ player = {x:x*TILE+4, y:y*TILE+2, w:18, h:24, vx:0, vy:0, onGround:false, onLadder:false, crouch:false, face:1}; grid[y][x]='.'; }
     }
   }
-  camX = 0; camY = 0; timer = TIME_LIMIT; shake = 0; invulnT = 0;
-  ended = false; valveFixed = false; doorOpen = false; hasKey = false; gears = 0;
+  camX = 0; camY = 0; timer = level.time; shake = 0; invulnT = 0;
+  ended = false; valveFixed = false; doorOpen = false;
+  hasKey = false; gears = 0; hasBucket = false; hasWrench = false;
   logs = [];
-  log('01:23:40 中控: 安全试验功率骤降后回升异常', 'warn');
-  log('01:23:43 中控: 控制棒已插入, 但功率仍在上升!', 'crit');
-  log('01:23:44 中控: 全体人员立即撤离 4 号机组!!', 'crit');
+  if(levelIdx===0){
+    log('01:23:40 中控: 安全试验功率骤降后回升异常', 'warn');
+    log('01:23:43 中控: 控制棒已插入, 但功率仍在上升!', 'crit');
+    log('01:23:44 中控: 全体人员立即撤离 4 号机组!!', 'crit');
+  } else {
+    log(level.name + ' —— 开始!', 'warn');
+  }
   syncUI();
 }
 
@@ -444,17 +527,20 @@ function update(dt){
   }
   if(ended) return;
 
-  // 开门检测
-  if(!doorOpen && hasKey){
-    var nearDoor = doors.some(function(d){
-      return Math.abs((d.x+.5)*TILE - (p.x+p.w/2)) < TILE*1.6 && Math.abs((d.y+.5)*TILE - (p.y+p.h/2)) < TILE*2;
-    });
-    if(nearDoor){
+  // 开门检测(钥匙门 / 扳手闸门)
+  if(!doorOpen){
+    var keyDoorNear = doors.some(function(d){ return !d.wrench && nearTile(p,d); });
+    var wrenchDoorNear = doors.some(function(d){ return d.wrench && nearTile(p,d); });
+    if(keyDoorNear && hasKey){
       doorOpen = true;
       doors.forEach(function(d){ grid[d.y][d.x]='.'; });
-      log('你: 用钥匙打开了泵房安全门', 'warn');
-      syncUI();
-    }
+      log('你: 用钥匙打开了安全门', 'warn'); syncUI();
+    } else if(wrenchDoorNear && hasWrench){
+      doorOpen = true;
+      doors.forEach(function(d){ grid[d.y][d.x]='.'; });
+      log('你: 用扳手撬开了闸门', 'warn'); syncUI();
+    } else if(keyDoorNear && !doorMsg.key){ doorMsg.key = true; log('你: 门锁住了, 需要钥匙', 'crit'); }
+    else if(wrenchDoorNear && !doorMsg.wrench){ doorMsg.wrench = true; log('你: 闸门锈死了, 需要扳手', 'crit'); }
   }
 
   // 拾取
@@ -463,10 +549,28 @@ function update(dt){
     if(Math.abs((it.x+.5)*TILE - (p.x+p.w/2)) < TILE*.7 && Math.abs((it.y+.5)*TILE - (p.y+p.h/2)) < TILE*.9){
       it.got = true;
       if(it.type==='key'){ hasKey = true; log('你: 拿到了安全门钥匙', 'warn'); }
-      else { gears++; log('你: 拾取备用齿轮 ('+gears+'/2)', 'warn'); if(gears>=2) log('中控: 齿轮齐了! 到操作台修复排汽阀', 'warn'); }
+      else if(it.type==='gear'){ gears++; log('你: 拾取备用齿轮 ('+gears+'/'+level.btnGears+')', 'warn'); if(gears>=level.btnGears) log('中控: 齿轮齐了! 到操作台使用', 'warn'); }
+      else if(it.type==='bucket'){ hasBucket = true; bucketSeen = true; log('你: 拎起一桶水 —— 可以扑灭一处火焰', 'warn'); }
+      else if(it.type==='wrench'){ hasWrench = true; log('你: 拿到扳手 —— 可以撬开闸门', 'warn'); }
       syncUI();
     }
   });
+  // 水源续水(空桶 → 满桶)
+  if(!hasBucket && bucketSeen && waters.some(function(w){ return nearTile(p,w); })){
+    hasBucket = true; log('你: 在水源把桶装满了', 'warn'); syncUI();
+  }
+  // 水桶灭火(携水桶触火 → 扑灭该处)
+  if(hasBucket){
+    var bf = fires.find(function(f){
+      return f.blocking && p.x < (f.x+1)*TILE+8 && p.x+p.w > f.x*TILE-8 && p.y < (f.y+1)*TILE && p.y+p.h > f.y*TILE;
+    });
+    if(bf){
+      hasBucket = false; bf.dead = true; grid[bf.y][bf.x]='.';
+      fires = fires.filter(function(f){ return !f.dead; });
+      shake = Math.max(shake, 3);
+      log('你: 哗啦——火焰被水扑灭了! (桶空了)', 'warn'); syncUI();
+    }
+  }
 
   // 火焰 / 蒸汽伤害
   if(invulnT<=0){
@@ -483,8 +587,12 @@ function update(dt){
 
   // 出口
   if(exitTile && Math.abs((exitTile.x+.5)*TILE-(p.x+p.w/2))<TILE && Math.abs((exitTile.y+.5)*TILE-(p.y+p.h/2))<TILE){
-    if(valveFixed) win();
-    else if(!exitWarned){ exitWarned = true; log('你: 排汽阀未修复, 安全闸门被蒸汽封死!', 'crit'); }
+    var exitBlocked = level.btnLabel ? !valveFixed : fires.some(function(f){ return f.blocking; });
+    if(!exitBlocked) win();
+    else if(!exitWarned){
+      exitWarned = true;
+      log(level.btnLabel ? '你: 排汽阀未修复, 安全闸门被蒸汽封死!' : '你: 还有火焰挡住去路, 无法撤离!', 'crit');
+    }
   }
 
   // 相机 XY 双向跟随
@@ -492,7 +600,7 @@ function update(dt){
   camY += (clamp(p.y + p.h/2 - VIEW_H*.55, 0, WORLD_H - VIEW_H) - camY)*Math.min(1, dt*5);
 
   // 时间线广播
-  timeline.forEach(function(ev){
+  level.timeline.forEach(function(ev){
     if(!ev.done && timer <= ev.t){
       ev.done = true; log(ev.msg, ev.cls);
       if(ev.alarmFast) document.getElementById('crtBox').classList.add('fast');
@@ -501,23 +609,16 @@ function update(dt){
   });
 }
 function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+function nearTile(p,t){ return Math.abs((t.x+.5)*TILE - (p.x+p.w/2)) < TILE*1.6 && Math.abs((t.y+.5)*TILE - (p.y+p.h/2)) < TILE*2; }
 
-var hp = 4, exitWarned = false;
+var hp = 4, exitWarned = false, bucketSeen = false;
+var doorMsg = {key:false, wrench:false};
 function hurt(dmg, msg){
   hp -= dmg; invulnT = 1.1; shake = Math.max(shake, 6);
   log(msg, 'crit');
   if(hp<=0){ hp=0; die('你倒在了撤离途中。辐射与烈焰吞没了走廊。'); }
   syncUI();
 }
-var timeline = [
-  {t:180, msg:'中控: 一回路压力 16.8 MPa, 超设计限值!', cls:'warn'},
-  {t:155, msg:'中控: 安全阀动作, 蒸汽排放中', cls:'warn'},
-  {t:125, msg:'中控: 警告!! 堆芯温度失控', cls:'crit'},
-  {t:95,  msg:'中控: 堆芯熔毁开始, 厂房结构受损', cls:'crit', alarmFast:true},
-  {t:65,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
-  {t:35,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
-];
-
 /* ================= 结局 ================= */
 function explode(){
   ended = true;
@@ -525,17 +626,27 @@ function explode(){
   render(0);
   notifyParent(false);
   setTimeout(function(){
-    showEnd('反应堆爆炸了', '01:23:46，4 号机组堆芯爆炸。你没能赶到安全区。\n—— 距离撤离还差一点点。再试一次。');
+    showEnd(levelIdx===0?'反应堆爆炸了':'撤离失败', level.boom + '\n—— 再试一次。');
   }, 600);
 }
 function die(msg){ ended = true; notifyParent(false); showEnd('撤离失败', msg); }
 function win(){
   ended = true;
-  notifyParent(true);
   var left = Math.max(0, timer);
   var m = Math.floor(left/60), s = Math.floor(left%60);
-  showEnd('你逃出来了', '你冲出厂房大门, 身后传来闷雷般的巨响……\n爆炸前 '+(m>0?m+' 分 ':'')+s+' 秒, 你抵达了安全区。\n1986 年 4 月 26 日凌晨, 你活了下来。');
+  var timeStr = '剩余 '+(m>0?m+' 分 ':'')+s+' 秒。';
+  if(levelIdx < LEVELS.length-1){
+    showEnd(level.name + ' · 完成!', '你逃出了这片区域。'+timeStr+'\n下一段路程更危险……');
+    document.getElementById('retryBtn').firstChild.textContent = '进 入 下 一 关';
+    pendingNext = true;
+  } else {
+    notifyParent(true);
+    showEnd('你逃出来了!', '你登上撤离巴士, 回头望去, 地平线上的红光渐渐远去……\n'+timeStr+'\n1986 年 4 月, 你活了下来。');
+    document.getElementById('retryBtn').firstChild.textContent = '再 玩 一 次';
+    pendingNext = false;
+  }
 }
+var pendingNext = false;
 function showEnd(title, text){
   document.getElementById('endTitle').textContent = title;
   document.getElementById('endText').innerText = text;
@@ -554,7 +665,7 @@ function render(time){
   var g = ctx.createLinearGradient(0,0,0,WORLD_H);
   g.addColorStop(0,'#171a11'); g.addColorStop(.6,'#101208'); g.addColorStop(1,'#0b0d08');
   ctx.fillStyle = g; ctx.fillRect(-20,-20,WORLD_W+40,Math.max(WORLD_H,VIEW_H)+40);
-  BANDS.forEach(function(l){
+  level.bands.forEach(function(l){
     ctx.fillStyle = 'rgba(185,180,156,.10)';
     ctx.fillRect(0, l.y1*TILE, WORLD_W, (l.y2-l.y1+1)*TILE);
     ctx.fillStyle = 'rgba(185,180,156,.30)';
@@ -617,6 +728,14 @@ function drawTile(x,y,ch,time){
     ctx.lineWidth = 2;
     for(var r=4;r<TILE;r+=8){ ctx.beginPath(); ctx.moveTo(px+5,py+r); ctx.lineTo(px+TILE-5,py+r); ctx.stroke(); }
   } else if(ch==='~'){
+    var blk = fires.find(function(q){return q.x===x&&q.y===y&&q.blocking;});
+    if(blk){
+      ctx.fillStyle = 'rgba(255,60,30,.35)'; ctx.fillRect(px-3,py-TILE,TILE+6,TILE*2+4);
+      ctx.fillStyle = '#d63a28';
+      tri(px+2, py+TILE, px+TILE/2+Math.sin(time*13+x)*4, py-TILE+2, px+TILE-2, py+TILE);
+      ctx.fillStyle = '#ffb43a';
+      tri(px+6, py+TILE, px+TILE/2-Math.sin(time*13+x)*3, py-TILE/2, px+TILE-6, py+TILE);
+    } else {
     var f = Math.sin(time*11 + x*3 + y)*3;
     ctx.fillStyle = 'rgba(255,90,30,.25)'; ctx.fillRect(px-2,py-4,TILE+4,TILE+4);
     ctx.fillStyle = '#d63a28';
@@ -625,6 +744,12 @@ function drawTile(x,y,ch,time){
     tri(px+6, py+TILE, px+TILE/2-f*.7, py+9, px+TILE-6, py+TILE);
     ctx.fillStyle = '#ffe9a8';
     tri(px+10, py+TILE, px+TILE/2+f*.4, py+16, px+TILE-10, py+TILE);
+    }
+  } else if(ch==='≈'){
+    ctx.fillStyle = '#1d3a4a'; ctx.fillRect(px,py+10,TILE,TILE-10);
+    ctx.fillStyle = 'rgba(120,190,220,.7)';
+    for(var wv=0;wv<3;wv++){ var wx=px+((time*24+wv*11)%TILE); ctx.fillRect(wx, py+12+wv*4, 6, 1.6); }
+    ctx.fillStyle = '#9fb2bd'; ctx.font = '8px Courier New'; ctx.fillText('水', px+9, py+10);
   } else if(ch==='!'){
     var s = steams.find(function(q){return q.x===x&&q.y===y;});
     if(s && s.on){
@@ -642,6 +767,13 @@ function drawTile(x,y,ch,time){
     tri(px, py+TILE, px+8, py+TILE-12, px+15, py+TILE);
     tri(px+10, py+TILE, px+18, py+TILE-16, px+TILE, py+TILE);
     ctx.fillStyle = '#565945'; ctx.fillRect(px+4, py+TILE-6, 5, 3);
+  } else if(ch==='W'){
+    ctx.fillStyle = '#26221a'; ctx.fillRect(px,py,TILE,TILE);
+    ctx.strokeStyle = '#8a6d2f'; ctx.lineWidth = 2;
+    ctx.strokeRect(px+3,py+2,TILE-6,TILE-4);
+    ctx.beginPath(); ctx.moveTo(px+5,py+4); ctx.lineTo(px+TILE-5,py+TILE-4); ctx.stroke();
+    ctx.fillStyle = '#c9a45a'; ctx.font = 'bold 9px Courier New';
+    ctx.fillText('闸', px+9, py+TILE/2+3);
   } else if(ch==='D'){
     ctx.fillStyle = '#1c1e15'; ctx.fillRect(px,py,TILE,TILE);
     for(var s2=0;s2<TILE;s2+=8){
@@ -662,25 +794,38 @@ function drawItems(time){
       ctx.beginPath(); ctx.arc(cx-4, cy, 4, 0, 7); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx+8, cy); ctx.moveTo(cx+5, cy); ctx.lineTo(cx+5, cy+4); ctx.stroke();
       ctx.fillStyle = 'rgba(255,217,119,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 7); ctx.fill();
-    } else {
+    } else if(it.type==='gear'){
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(time*1.5);
       ctx.strokeStyle = '#9fb2bd'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(0, 0, 7, 0, 7); ctx.stroke();
       for(var i=0;i<6;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(0,-7); ctx.lineTo(0,-11); ctx.stroke(); }
       ctx.restore();
       ctx.fillStyle = 'rgba(159,178,189,.12)'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 7); ctx.fill();
+    } else if(it.type==='bucket'){
+      ctx.fillStyle = '#7a9bb5';
+      ctx.beginPath(); ctx.moveTo(cx-7,cy-5); ctx.lineTo(cx+7,cy-5); ctx.lineTo(cx+5,cy+7); ctx.lineTo(cx-5,cy+7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#a8d4ea'; ctx.fillRect(cx-6, cy-5, 12, 3);
+      ctx.strokeStyle = '#c9c4b0'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx, cy-5, 6, Math.PI, 0); ctx.stroke();
+      ctx.fillStyle = 'rgba(122,155,181,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 7); ctx.fill();
+    } else if(it.type==='wrench'){
+      ctx.strokeStyle = '#c9a45a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx-6, cy+6); ctx.lineTo(cx+4, cy-4); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx+6, cy-6, 4, .6, 5.2); ctx.stroke();
+      ctx.fillStyle = 'rgba(201,164,90,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 7); ctx.fill();
     }
   });
 }
 function drawExit(time){
   if(!exitTile) return;
   var px = exitTile.x*TILE, py = exitTile.y*TILE;
-  ctx.strokeStyle = valveFixed ? '#58d97a' : '#565945'; ctx.lineWidth = 3;
+  var open = level.btnLabel ? valveFixed : !fires.some(function(f){ return f.blocking; });
+  ctx.strokeStyle = open ? '#58d97a' : '#565945'; ctx.lineWidth = 3;
   ctx.strokeRect(px-2, py-TILE+2, TILE+4, TILE*2-2);
-  ctx.fillStyle = valveFixed ? '#58d97a' : '#565945';
+  ctx.fillStyle = open ? '#58d97a' : '#565945';
   ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText('安全区', px+TILE/2, py-TILE-4);
-  if(valveFixed && Math.sin(time*4)>0){ ctx.fillStyle='rgba(88,217,122,.18)'; ctx.fillRect(px-2,py-TILE+2,TILE+4,TILE*2-2); }
+  ctx.fillText(levelIdx===2 ? '撤离巴士' : '安全区', px+TILE/2, py-TILE-4);
+  if(open && Math.sin(time*4)>0){ ctx.fillStyle='rgba(88,217,122,.18)'; ctx.fillRect(px-2,py-TILE+2,TILE+4,TILE*2-2); }
   ctx.textAlign = 'left';
 }
 function drawPlayer(time){
@@ -732,24 +877,29 @@ function syncUI(){
     seg.className = 'hp-seg' + (i<hp ? (hp<=1?' low on':' on') : '');
     hpRow.appendChild(seg);
   }
-  document.getElementById('invKey').textContent = hasKey ? '钥匙 ✓' : '钥匙 —';
-  document.getElementById('invKey').classList.toggle('got', hasKey);
-  document.getElementById('invGear').textContent = '齿轮 '+gears+'/2';
-  document.getElementById('invGear').classList.toggle('got', gears>=2);
+  setTag('invKey', hasKey ? '钥匙 ✓' : '钥匙 —', hasKey);
+  setTag('invGear', '齿轮 '+gears+'/'+level.btnGears, level.btnGears>0 && gears>=level.btnGears);
+  setTag('invBucket', hasBucket ? '水桶 满' : (bucketSeen ? '水桶 空' : '水桶 —'), hasBucket);
+  setTag('invWrench', hasWrench ? '扳手 ✓' : '扳手 —', hasWrench);
   setLamp('lampKey', hasKey ? 'on amber' : '');
   setLamp('lampValve', valveFixed ? 'on green' : (steams.some(function(s){return s.on;}) ? 'on red blink' : ''));
-  setLamp('lampExit', valveFixed ? 'on green blink' : '');
-  document.getElementById('gearBtn').disabled = !(gears>=2 && !valveFixed) || ended;
+  var exitOpen = level.btnLabel ? valveFixed : !fires.some(function(f){ return f.blocking; });
+  setLamp('lampExit', exitOpen ? 'on green blink' : '');
+  var gb = document.getElementById('gearBtn');
+  gb.style.display = level.btnLabel ? '' : 'none';
+  if(level.btnLabel) gb.textContent = level.btnLabel;
+  gb.disabled = !(gears>=level.btnGears && !valveFixed) || ended;
 }
+function setTag(id, txt, got){ var el = document.getElementById(id); el.textContent = txt; el.classList.toggle('got', !!got); }
 function setLamp(id, cls){ document.getElementById(id).className = 'lamp' + (cls?' '+cls:''); }
 
 document.getElementById('gearBtn').onclick = function(){
-  if(gears<2 || valveFixed || ended) return;
+  if(!level.btnLabel || gears<level.btnGears || valveFixed || ended) return;
   valveFixed = true;
   steams.forEach(function(s){ s.on = false; grid[s.y][s.x]='.'; });
   steams = [];
-  log('你: 更换排汽阀齿轮, 蒸汽停止喷涌!', 'warn');
-  log('中控: 安全闸门解锁, 快撤离!!', 'crit');
+  log('你: '+(levelIdx===0 ? '更换排汽阀齿轮, 蒸汽停止喷涌!' : '楼道供电恢复, 蒸汽管道停止泄漏!'), 'warn');
+  log('中控: 撤离通道解锁, 快走!!', 'crit');
   document.getElementById('crtBox').classList.remove('alarm','fast');
   syncUI();
 };
@@ -775,12 +925,15 @@ function stopAlarm(){ if(alarmOsc){ clearInterval(alarmOsc); alarmOsc = null; } 
 
 /* ================= 开始 ================= */
 var started = false;
-function startGame(){
+function startGame(lv){
+  if(typeof lv === 'number') levelIdx = lv;
   if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
-  hp = 4; exitWarned = false;
-  timeline.forEach(function(ev){ ev.done = false; });
+  hp = 4; exitWarned = false; bucketSeen = false; pendingNext = false;
+  doorMsg = {key:false, wrench:false};
+  LEVELS.forEach(function(L){ L.timeline.forEach(function(ev){ ev.done = false; }); });
   document.getElementById('crtBox').classList.add('alarm');
   document.getElementById('crtBox').classList.remove('fast');
+  document.getElementById('retryBtn').firstChild.textContent = '再 试 一 次';
   reset();
   started = true; ended = false;
   document.getElementById('startOverlay').classList.add('hidden');
@@ -788,8 +941,17 @@ function startGame(){
   startAlarm();
   lastT = performance.now();
 }
-document.getElementById('startBtn').onclick = startGame;
-document.getElementById('retryBtn').onclick = startGame;
+document.getElementById('startBtn').onclick = function(){ startGame(pickLv); };
+document.getElementById('retryBtn').onclick = function(){ startGame(pendingNext ? levelIdx+1 : levelIdx); };
+var pickLv = 0;
+document.querySelectorAll('#levelSel .cbtn').forEach(function(b){
+  b.onclick = function(){
+    pickLv = parseInt(b.getAttribute('data-lv'), 10);
+    document.querySelectorAll('#levelSel .cbtn').forEach(function(x){ x.style.outline = ''; });
+    b.style.outline = '2px solid #ffd977';
+    startGame(pickLv);
+  };
+});
 setInterval(function(){ if(started && !ended) syncUI(); }, 250);
 reset();
 requestAnimationFrame(loop);
