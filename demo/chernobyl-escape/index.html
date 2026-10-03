@@ -143,6 +143,23 @@ canvas#game{
   display:inline-block;background:#e6e1cd;border:1px solid #b3ae97;border-radius:2px;
   padding:0 4px;color:#2a2c22;margin:0 1px;
 }
+/* NPC 对话框 */
+.dlg{
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  width:520px;max-width:92%;background:#2a2c22;border:2px solid #8d9078;border-radius:8px;
+  padding:12px 16px;z-index:6;box-shadow:0 10px 30px rgba(0,0,0,.7);
+}
+.dlg.hidden{display:none}
+.dlg .dlg-name{font-size:12px;font-weight:bold;color:#ffd977;letter-spacing:2px;margin-bottom:6px}
+.dlg .dlg-text{font-size:12px;color:#d8d3ba;line-height:1.8;margin-bottom:10px}
+.dlg .dlg-opts{display:flex;gap:10px}
+.dlg .dlg-opt{
+  flex:1;font-family:inherit;font-size:11px;letter-spacing:1px;text-align:left;
+  background:linear-gradient(#d8d3ba,#8d8a72);color:#2a2c22;border:1px solid #4a4d3e;
+  border-radius:5px;padding:8px 10px;cursor:pointer;line-height:1.5;
+}
+.dlg .dlg-opt:hover{filter:brightness(1.1)}
+.dlg .dlg-opt b{color:#7d1f14}
 /* 触屏虚拟按键（仅触屏设备显示，覆盖在游戏画面底部） */
 .touchpad{position:absolute;left:0;right:0;bottom:10px;display:none;
   justify-content:space-between;padding:0 14px;pointer-events:none;z-index:4}
@@ -210,6 +227,11 @@ body.touch .touchpad{display:flex}
       <button class="tp-btn" data-key="ArrowDown">▼</button>
       <button class="tp-btn jump" data-key="Space">跳</button>
     </div>
+  </div>
+  <div class="dlg hidden" id="dlg">
+    <div class="dlg-name" id="dlgName"></div>
+    <div class="dlg-text" id="dlgText"></div>
+    <div class="dlg-opts" id="dlgOpts"></div>
   </div>
 </div>
 
@@ -390,6 +412,11 @@ function tryGenL1(seed){
     }
     if(!kCol) continue;
     g[5][kCol] = 'K';
+    // NPC: 老工程师(B1) + 神秘工头(1F)
+    var n1 = shuffleA([14,15,16,17,18], rnd).filter(function(c){ return g[15][c]==='.'&&g[14][c]==='.'&&g[16][c]==='#'; })[0];
+    if(n1) g[15][n1] = '1';
+    var n4 = shuffleA([6,8,10,12], rnd).filter(function(c){ return g[20][c]==='.'&&g[19][c]==='.'&&g[21][c]==='#'; })[0];
+    if(n4) g[20][n4] = '4';
     g[10][rand(2,5)] = 'G';
     g[20][rand(doorCol+1, Math.min(42, doorCol+3))] = 'G';
     g[23][41]= 'E';
@@ -443,6 +470,128 @@ function verifyL1(g){
   return true;
 }
 
+/* ===== L2/L3 种子化随机生成 + 可达性验证 ===== */
+function genLevel23(idx, seed){
+  if(seed==null) seed = (Math.random()*0x7fffffff)|0;
+  for(var att=0; att<50; att++){
+    var g = tryGen23(idx, seed + att*7919);
+    if(g && verifyLevel(idx, g)){ genLevel23['lastSeed'+idx] = seed + att*7919; return g; }
+  }
+  return idx===1 ? buildMap2() : buildMap3();
+}
+function tryGen23(idx, seed){
+  var rnd = mulberry32(seed);
+  function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+  function rand(a,b){ return a + Math.floor(rnd()*(b-a+1)); }
+  for(var t=0;t<40;t++){
+    var g = shell();
+    var s1=pick([24,27,30,33]), s2=pick([7,10,13]), s3=pick([30,33,35,38]), s4=pick([4,6,8]), s5=pick([18,20,22]);
+    if(idx===2) s5 = s3; // L3 不需要 G↔1F 返回梯
+    shaftG(g,s1,3,6,10); shaftG(g,s2,8,11,15); shaftG(g,s3,13,16,20);
+    shaftG(g,s4,18,21,24);
+    if(idx===1) shaftG(g,s5,18,21,24);
+    var shafts = [s1,s2,s3,s4,s5];
+    function clearAt(x,y){ return g[y] && g[y][x]==='.' && g[y+1] && g[y+1][x]==='#' && g[y-1][x]==='.'; }
+    function placeOn(chars, row, cands, minGap){
+      var sh = shuffleA(cands, rnd);
+      for(var i=0;i<sh.length;i++){
+        var c = sh[i], ok = true;
+        if(!clearAt(c,row)) continue;
+        for(var j=1;j<=(minGap||1);j++) if(g[row][c-j]!=='.'||g[row][c+j]!=='.') { ok=false; break; }
+        if(!ok) continue;
+        g[row][c] = chars; return c;
+      }
+      return 0;
+    }
+    g[4][2] = 'M';
+    var i2;
+    if(idx===1){
+      // L2: 水桶/扳手/消防泵/双挡路火/扳手闸门
+      if(!placeOn('B',5,[3,4,5,6,7])) continue;
+      if(!placeOn('*',5,[12,14,16,18,20],2)) continue;
+      if(!placeOn('T',15,[4,5,6,7,8,9])) continue;
+      if(!placeOn('*',20,[13,15,17,19,21],2)) continue;
+      if(!placeOn('≈',20,[24,26,28,30])) continue;
+      var wc = pick([28,30,32]);
+      g[22][wc]='W'; g[23][wc]='W'; g[24][wc]='W';
+      if(!placeOn('2',10,[24,25,26,27,28])) continue;
+      if(!placeOn('4',15,[30,31,32,33,34])) continue;
+      i2 = rand(0,1); if(i2) { if(!placeOn('~',24,[20,21,22])) continue; }
+      if(!placeOn('~',15,[24,25,26])) continue;
+    } else {
+      // L3: 钥匙/双齿轮/G层钥匙门+蒸汽
+      if(!placeOn('K',5,[31,32,33,34,35,36,37,38,39,40])) continue;
+      if(!placeOn('G',10,[2,3,4,5])) continue;
+      if(!placeOn('G',15,[38,39,40,41,42])) continue;
+      var dc = pick([7,8,9]), vc = rand(13,18);
+      g[22][dc]='D'; g[23][dc]='D'; g[24][dc]='D';
+      for(var sy=22;sy<=24;sy++) g[sy][vc]='!';
+      if(!placeOn('3',10,[15,16,17,18,19,20])) continue;
+      if(!placeOn('~',15,[28,29,30,31])) continue;
+      if(!placeOn('~',24,[26,28,30,32,34])) continue;
+    }
+    g[23][41] = 'E';
+    return g;
+  }
+  return null;
+}
+/* 通用可达性验证: 复用 verifyL1 的 BFS, 按关检查关键路径 */
+function verifyLevel(idx, g){
+  var pts = {M:null,K:null,B:null,T:null,W:null,Gs:[],Ds:[],STs:[],Fs:[],E:null,N:[]};
+  for(var y=0;y<ROWS;y++) for(var x=0;x<COLS;x++){
+    var c=g[y][x];
+    if(c==='M')pts.M={x:x,y:y}; else if(c==='K')pts.K={x:x,y:y};
+    else if(c==='B')pts.B={x:x,y:y}; else if(c==='T')pts.T={x:x,y:y};
+    else if(c==='≈')pts.W={x:x,y:y}; else if(c==='G')pts.Gs.push({x:x,y:y});
+    else if(c==='D')pts.Ds.push({x:x,y:y}); else if(c==='!')pts.STs.push({x:x,y:y});
+    else if(c==='*')pts.Fs.push({x:x,y:y}); else if(c==='E')pts.E={x:x,y:y};
+    else if('1234'.indexOf(c)>=0) pts.N.push({x:x,y:y});
+  }
+  function isSolidW(ch){ return ch==='#'||ch==='D'||ch==='W'; }
+  function isSolidD(ch){ return ch==='#'||ch==='D'; }
+  function isSteam(p){ return pts.STs.some(function(s){return s.x===p.x&&s.y===p.y;}); }
+  function reach(solidFn, dPass){
+    function isSolid(ch){ return ch==='#'||(ch==='W'&&solidFn===isSolidW)||(ch==='D'&&!dPass); }
+    function floorBelow(p){ var f=p.y+1; while(f<ROWS && !isSolid(g[f][p.x]) && g[f][p.x]!=='S') f++; return f-1; }
+    var seen={}, q=[pts.M]; seen[pts.M.x+','+pts.M.y]=1;
+    function add(p){ if(p.x<1||p.x>=COLS-1||p.y<1||p.y>=ROWS-1) return; var k=p.x+','+p.y; if(seen[k])return;
+      var ch=g[p.y][p.x]; if(isSolid(ch)) return; seen[k]=1; q.push(p); }
+    while(q.length){
+      var p=q.shift(), fy=floorBelow(p), i, pp, ok;
+      add({x:p.x,y:fy});
+      if(p.y===fy){
+        add({x:p.x-1,y:fy}); add({x:p.x+1,y:fy});
+        for(var dx=-2;dx<=2;dx++){ if(!dx) continue;
+          if(Math.abs(dx)===2){ var mx=p.x+dx/2; if(isSolid(g[p.y][mx])||(g[p.y-1]&&isSolid(g[p.y-1][mx]))) continue; }
+          for(i=0;i<=2;i++){ pp={x:p.x+dx,y:floorBelow({x:p.x+dx,y:p.y-i})};
+            ok=pp.y>=p.y-i&&pp.y<=p.y+1; if(ok)add(pp); } }
+      }
+      for(var dy=-1;dy<=1;dy+=2){ for(i=1;i<=3;i++){ var ly=p.y+dy*i; if(ly<0||ly>=ROWS)break;
+        if(g[ly][p.x]==='^') add({x:p.x,y:ly}); else if(dy<0) break; } }
+    }
+    return seen;
+  }
+  function near(seen,p,r){ for(var dx=-(r||1);dx<=(r||1);dx++) for(var dy=-(r||1);dy<=(r||1);dy++){ if(seen[(p.x+dx)+','+(p.y+dy)]) return true; } return false; }
+  function nearClear(seen,p){ for(var dx=-2;dx<=2;dx++) for(var dy=-2;dy<=2;dy++){ var q={x:p.x+dx,y:p.y+dy}; if(seen[q.x+','+q.y] && !isSteam(q)) return true; } return false; }
+  var npcOK = pts.N.every(function(n){ return true; }); // NPC 非必需, 不强制
+  if(idx===1){
+    var a = reach(isSolidW,false);           // 闸门关闭
+    if(!near(a,pts.B)||!near(a,pts.T)||!near(a,pts.W)) return false;
+    if(!pts.Fs.every(function(f){ return near(a,f); })) return false;
+    if(near(a,pts.E)) return false;          // 无扳手不可开
+    var b = reach(isSolidD,false);           // 闸门撬开后
+    if(!near(b,pts.E)) return false;
+    return true;
+  }
+  var c0 = reach(isSolidD,false);            // 门关闭
+  if(!near(c0,pts.K)||!near(c0,pts.Gs[0])) return false;
+  if(nearClear(c0,pts.E)) return false;      // 无钥匙不可开
+  var c1 = reach(isSolidD,true);             // 开门后(蒸汽仍可行走通过, 但出口格需在蒸汽修复后可站立——近似: 出口附近可达)
+  if(!near(c1,pts.Gs[1])) return false;
+  if(!nearClear(c1,pts.E)) return false;
+  return true;
+}
+
 var LEVELS = [
   { name:'第1关 · 逃离四号机组厂房', time:300, alarmFastAt:130, build:function(){ return genLevel1(); },
     btnLabel:'插入齿轮修复排汽阀', btnGears:2,
@@ -456,7 +605,7 @@ var LEVELS = [
       {t:80,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
       {t:40,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
     ] },
-  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:buildMap2, blockFires:[[5,15],[20,15]], pump:true,
+  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:function(){ return genLevel23(1); }, pump:true,
     btnLabel:null, btnGears:0,
     boom:'最后的撤离车辆已经离开，你被落在了烟尘弥漫的厂区里。',
     bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'}],
@@ -467,7 +616,7 @@ var LEVELS = [
       {t:60,  msg:'厂区广播: 最后撤离车辆 60 秒后离开!!', cls:'crit'},
       {t:30,  msg:'厂区广播: 车辆即将离开!!!', cls:'crit'}
     ] },
-  { name:'第3关 · 撤离普里皮亚季', time:270, alarmFastAt:100, build:buildMap3,
+  { name:'第3关 · 撤离普里皮亚季', time:270, alarmFastAt:100, build:function(){ return genLevel23(2); },
     btnLabel:'修复楼道供电(需2齿轮)', btnGears:2,
     boom:'撤离巴士发车了，你没能赶上。',
     bands:[{y1:1,y2:5,name:'公寓 5F'},{y1:7,y2:10,name:'公寓 4F'},{y1:12,y2:15,name:'公寓 3F'},{y1:17,y2:20,name:'公寓 2F'},{y1:22,y2:24,name:'街道'}],
@@ -486,7 +635,22 @@ var ctx = cv.getContext('2d');
 var VIEW_W = cv.width, VIEW_H = cv.height;
 
 /* ================= 状态 ================= */
-var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile, waters;
+var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile, waters, npcs;
+var dlgNpc = null;
+var NPCS = {
+  '1': {name:'老工程师', color:'#c9a45a', text:'孩子, 剂量计在响……听我说, 西边的走廊塌了, 贴着东边跑能快不少!',
+    opts:[{t:'「谢谢爷爷, 我记下了!」', fx:'hintGood', r:'他指的路果然好走。(本关时间 +15 秒)'},
+          {t:'「没空听, 我得赶紧跑!」', fx:'none', r:'你摆摆手继续跑。他在后面喊: 小心火!'}]},
+  '2': {name:'消防员', color:'#d63a28', text:'小家伙! 水管压力不够……见到消防泵记得先用扳手修好再接水, 别白跑一趟!',
+    opts:[{t:'「明白, 先修泵再接水!」', fx:'hintGood', r:'好样的!(本关时间 +15 秒)'},
+          {t:'「知道啦知道啦」', fx:'none', r:'消防员摇摇头: 别急, 看好脚下。'}]},
+  '3': {name:'抱猫的老奶奶', color:'#b58ac9', text:'孩子, 帮奶奶找找猫……算了, 逃命要紧。这个你拿着, 路上小心。',
+    opts:[{t:'「谢谢奶奶!」', fx:'heal', r:'她塞给你一块碘片和面包: 生命 +1'},
+          {t:'「奶奶你也快走!」', fx:'none', r:'她点点头, 慢慢往楼下挪。'}]},
+  '4': {name:'神秘的工头', color:'#6a7a8a', text:'喂, 小孩! 想活命吗? 我知道一条绝对安全的密道……只要 20 秒带路费。',
+    opts:[{t:'相信他, 跟他走', fx:'liar', r:'他随手一指就溜了……那边根本没有路! 白白浪费 20 秒!'},
+          {t:'「我不信你。」', fx:'none', r:'工头冷笑一声走开了。自己的判断最可靠。'}]}
+};
 var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, hasBucket, hasWrench, pumpFixed;
 var levelIdx = 0, level = null, diffIdx = 0, diff = null, totalMs = 0;
 var DIFFS = [
@@ -504,7 +668,7 @@ function reset(){
   level = LEVELS[levelIdx];
   diff = DIFFS[diffIdx];
   grid = level.build();
-  fires = []; steams = []; items = []; doors = []; waters = [];
+  fires = []; steams = []; items = []; doors = []; waters = []; npcs = [];
   exitTile = null; player = null;
   for(var y=0;y<ROWS;y++){
     if(grid[y].length !== COLS) throw new Error('row '+y+' len '+grid[y].length);
@@ -520,6 +684,8 @@ function reset(){
       else if(ch==='W') doors.push({x:x,y:y,wrench:true});
       else if(ch==='≈') waters.push({x:x,y:y});
       else if(ch==='E') exitTile = {x:x,y:y};
+      else if(ch==='*') fires.push({x:x,y:y,blocking:true});
+      else if('1234'.indexOf(ch)>=0){ npcs.push({x:x,y:y,type:ch,talked:false}); grid[y][x]='.'; }
       else if(ch==='M'){ player = {x:x*TILE+4, y:y*TILE+2, w:18, h:24, vx:0, vy:0, onGround:false, onLadder:false, crouch:false, face:1}; grid[y][x]='.'; }
     }
   }
@@ -832,9 +998,9 @@ function render(time){
   });
   // 瓷砖
   for(var y=0;y<ROWS;y++) for(var x=0;x<COLS;x++){
-    drawTile(x,y,grid[y][x],time);
+    drawTile(x,y,grid[y][x]==='*'?'~':grid[y][x],time);
   }
-  drawItems(time); drawExit(time); drawPlayer(time);
+  drawItems(time); drawNpcs(time); drawExit(time); drawPlayer(time);
   ctx.restore();
   ctx.save();
   // 头部照明
