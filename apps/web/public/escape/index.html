@@ -170,7 +170,7 @@ body.touch .touchpad{display:flex}
   <div class="overlay" id="startOverlay">
     <h2>逃离切尔诺贝利</h2>
     <p>三段逃生之旅：① 逃离失控的四号机组厂房（钥匙 + 齿轮修排汽阀）
-       ② 穿越烟尘弥漫的厂区（水桶灭火、扳手撬闸门、水源续水）
+       ② 穿越烟尘弥漫的厂区（水桶灭火、扳手修消防泵+撬闸门、水源续水）
        ③ 撤离普里皮亚季居民楼（综合考验，赶上撤离巴士）。
        注意生命条：火焰、蒸汽会灼伤你，从高处坠落会摔伤，生命归零就倒下了。</p>
     <div class="keys" id="levelSel">
@@ -441,7 +441,7 @@ var LEVELS = [
       {t:80,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
       {t:40,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
     ] },
-  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:buildMap2, blockFires:[[5,15],[20,15]],
+  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:buildMap2, blockFires:[[5,15],[20,15]], pump:true,
     btnLabel:null, btnGears:0,
     boom:'最后的撤离车辆已经离开，你被落在了烟尘弥漫的厂区里。',
     bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'}],
@@ -472,7 +472,7 @@ var VIEW_W = cv.width, VIEW_H = cv.height;
 
 /* ================= 状态 ================= */
 var grid, player, camX, camY, timer, fires, steams, items, doors, exitTile, waters;
-var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, hasBucket, hasWrench;
+var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, hasBucket, hasWrench, pumpFixed;
 var levelIdx = 0, level = null;
 var logs = [];
 
@@ -500,7 +500,7 @@ function reset(){
   }
   camX = 0; camY = 0; timer = level.time; shake = 0; invulnT = 0;
   ended = false; valveFixed = false; doorOpen = false;
-  hasKey = false; gears = 0; hasBucket = false; hasWrench = false;
+  hasKey = false; gears = 0; hasBucket = false; hasWrench = false; pumpFixed = false;
   logs = [];
   if(levelIdx===0){
     log('01:23:40 中控: 安全试验功率骤降后回升异常', 'warn');
@@ -674,9 +674,15 @@ function update(dt){
       syncUI();
     }
   });
-  // 水源续水(空桶 → 满桶)
-  if(!hasBucket && bucketSeen && waters.some(function(w){ return nearTile(p,w); })){
-    hasBucket = true; log('你: 在水源把桶装满了', 'warn'); syncUI();
+  // 消防泵: 持扳手靠近水源 → 修好, 之后才能续水
+  var nearWater = waters.some(function(w){ return nearTile(p,w); });
+  if(level.pump && !pumpFixed && nearWater && hasWrench){
+    pumpFixed = true; log('你: 用扳手修好了消防泵, 水源恢复供水!', 'warn'); syncUI();
+  }
+  // 水源续水(空桶 → 满桶, 需泵已修)
+  if(!hasBucket && bucketSeen && nearWater){
+    if(!level.pump || pumpFixed){ hasBucket = true; log('你: 在水源把桶装满了', 'warn'); syncUI(); }
+    else if(!doorMsg.pump){ doorMsg.pump = true; log('你: 消防泵坏了, 不出水——需要扳手修理', 'crit'); }
   }
   // 水桶灭火(携水桶触火 → 扑灭该处)
   if(hasBucket){
@@ -827,6 +833,23 @@ function curLevel(){
   return '——';
 }
 function objective(){
+  if(levelIdx===1){
+    if(!fires.some(function(f){return f.blocking;})) return '火焰已清 → 去厂区大门出关!';
+    if(!hasBucket && !bucketSeen) return '先去西侧拿水桶 → 扑灭挡路火焰';
+    if(hasBucket && fires.some(function(f){return f.blocking && f.y===5;})) return '拎着水桶 → 扑灭厂房废墟的火';
+    if(!hasWrench) return '桶空了 → 去冷却塔下拿扳手';
+    if(!pumpFixed) return '带扳手到消防站水源 → 修好消防泵';
+    if(!hasBucket) return '在水源把桶装满 → 去扑灭消防站的火';
+    if(!doorOpen) return '带扳手 → 撬开大门闸门';
+    return '火焰已清 → 去厂区大门出关!';
+  }
+  if(levelIdx===2){
+    if(valveFixed) return '供电已恢复 → 去街道东侧赶上撤离巴士!';
+    if(gears>=2) return '回控制台 → 修复楼道供电(按钮在下方)';
+    if(doorOpen) return '集齐 2 枚齿轮 → 修复楼道供电';
+    if(hasKey) return '钥匙在手 → 下到街道开楼道门';
+    return '沿公寓向东 → 找到楼道钥匙';
+  }
   if(valveFixed) return '前往厂区通道东侧 → 安全区!';
   if(gears>=2) return '回控制台 → 修复排汽阀 (按钮在下方)';
   if(doorOpen) return '齿轮 '+gears+'/2 → 安全门后还有一枚';
