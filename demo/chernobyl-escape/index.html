@@ -288,7 +288,7 @@ function buildMap2(){
   g[15][25]= '~'; g[15][26] = '~';  // 可跳过
   g[20][8] = '≈';            // 水源(续水)
   g[20][15]= '~';            // 再挡 → 续水后扑灭
-  g[19][30]= 'W'; g[20][30] = 'W';  // 扳手闸门
+  g[22][30]= 'W'; g[23][30] = 'W'; g[24][30] = 'W';  // 扳手闸门(G层挡出口路)
   g[24][22]= '~';            // 可跳过
   g[23][41]= 'E';
   return g;
@@ -300,11 +300,11 @@ function buildMap3(){
   g[4][2]  = 'M';
   g[5][38] = 'K';            // 钥匙
   g[10][3] = 'G';            // 齿轮1
-  g[15][20]= 'D'; g[14][20] = 'D';  // 钥匙门
-  g[15][41]= 'G';            // 齿轮2(门后)
+  g[22][8] = 'D'; g[23][8] = 'D'; g[24][8] = 'D';    // 钥匙门(G层全高, 下楼后第一重闸)
+  g[15][41]= 'G';            // 齿轮2(B1 东侧)
   g[15][30]= '~';            // 可跳过
-  for(var sy=17;sy<=20;sy++) g[sy][15]='!';  // 蒸汽封楼道 → 控制台修供电
-  g[20][25]='S'; g[20][26]='S';
+  for(var sy=22;sy<=24;sy++) g[sy][15]='!';  // 蒸汽封G层楼道 → 控制台修供电
+  g[20][27]='S'; g[20][28]='S';
   g[24][28]= '~';            // 可跳过
   g[23][41]= 'E';            // 撤离巴士
   return g;
@@ -391,7 +391,7 @@ function verifyL1(g){
     var c=g[y][x];
     if(c==='M')M={x:x,y:y}; else if(c==='K')K={x:x,y:y};
     else if(c==='G')G2.push({x:x,y:y,fy:floorBelow({x:x,y:y},false)}); else if(c==='D')DR.push({x:x,y:y});
-    else if(c==='!')ST.push({x:x,y:y}); else if(c==='E')E={x:x,y:y};
+    else if(c==='!')ST.push({x:x,y:y}); else if(c==='E')E={x:x,y:y,fy:floorBelow({x:x,y:y},true)};
   }
   function isSolid(ch){ return ch==='#'||ch==='D'; }
   function isSteam(p){ return ST.some(function(s){return s.x===p.x&&s.y===p.y;}); }
@@ -406,6 +406,8 @@ function verifyL1(g){
       if(p.y===fy){
         add({x:p.x-1,y:fy}); add({x:p.x+1,y:fy});
         for(var dx=-2;dx<=2;dx++){ if(dx===0) continue;
+          if(Math.abs(dx)===2){ var mx=p.x+dx/2;
+            if(isSolid(g[p.y][mx])||(g[p.y-1]&&isSolid(g[p.y-1][mx]))) continue; }
           for(i=0;i<=2;i++){ pp={x:p.x+dx,y:floorBelow({x:p.x+dx,y:p.y-i},ignoreS)};
             ok=pp.y>=p.y-i&&pp.y<=p.y+1; if(ok)add(pp); } }
       }
@@ -422,7 +424,7 @@ function verifyL1(g){
   var s2=reach(false,true);                                       // 开门后
   if(!near(s2,{x:G2[1].x,y:G2[1].fy})) return false;
   var s3=reach(true,true);                                        // 蒸汽修复后(可站立)
-  if(!nearSteamClear(s3,E)) return false;
+  if(!nearSteamClear(s3,{x:E.x,y:E.fy})) return false;
   return true;
 }
 
@@ -439,7 +441,7 @@ var LEVELS = [
       {t:80,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
       {t:40,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
     ] },
-  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:buildMap2,
+  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:buildMap2, blockFires:[[5,15],[20,15]],
     btnLabel:null, btnGears:0,
     boom:'最后的撤离车辆已经离开，你被落在了烟尘弥漫的厂区里。',
     bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'}],
@@ -483,7 +485,7 @@ function reset(){
     if(grid[y].length !== COLS) throw new Error('row '+y+' len '+grid[y].length);
     for(var x=0;x<COLS;x++){
       var ch = grid[y][x];
-      if(ch==='~') fires.push({x:x,y:y,blocking:levelIdx===1});
+      if(ch==='~') fires.push({x:x,y:y,blocking:!!(level.blockFires && level.blockFires.some(function(b){return b[0]===y&&b[1]===x;}))});
       else if(ch==='!') steams.push({x:x,y:y,on:true});
       else if(ch==='K') items.push({x:x,y:y,type:'key',got:false});
       else if(ch==='G') items.push({x:x,y:y,type:'gear',got:false});
@@ -543,7 +545,7 @@ function tileAt(px,py){
   if(tx<0||tx>=COLS||ty<0||ty>=ROWS) return '#';
   return grid[ty][tx];
 }
-function isSolidChar(ch){ return ch==='#' || ch==='D'; }
+function isSolidChar(ch){ return ch==='#' || ch==='D' || ch==='W'; }
 function solidAt(px,py,crouch){
   var ch = tileAt(px,py);
   if(ch==='S') return !crouch;
