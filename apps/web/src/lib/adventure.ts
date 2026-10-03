@@ -155,9 +155,10 @@ export function consumeUnlock(): string | null {
   return id
 }
 
-// 关卡解锁：第一关默认解锁，其余需要前一关至少 1 星
+// 关卡解锁：第一关默认解锁，其余需要前一关至少 1 星；动作关（escape）随时可玩
 export function isUnlocked(index: number, a: AdventureState, stages: StageDef[] = STAGES): boolean {
   if (index === 0) return true
+  if (stages[index].kind === 'escape') return true
   return (a.stars[stages[index - 1].id] ?? 0) >= 1
 }
 
