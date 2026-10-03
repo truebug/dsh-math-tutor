@@ -655,8 +655,8 @@ var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, 
 var levelIdx = 0, level = null, diffIdx = 0, diff = null, totalMs = 0;
 var DIFFS = [
   { name:'简单', timeMul:1,    hp:4, invuln:1.1, dense:0 },
-  { name:'困难', timeMul:.75,  hp:3, invuln:.7,  dense:1 },
-  { name:'地狱', timeMul:.6,   hp:2, invuln:.5,  dense:2 }
+  { name:'困难', timeMul:.68,  hp:3, invuln:.7,  dense:1 },
+  { name:'地狱', timeMul:.55,  hp:2, invuln:.5,  dense:2 }
 ];
 function bestKey(){ return 'chernobyl_best_d'+diffIdx; }
 function loadBest(){ try{ var v = localStorage.getItem(bestKey()); return v?parseInt(v,10):null; }catch(e){ return null; } }
@@ -778,9 +778,52 @@ function loop(t){
   requestAnimationFrame(loop);
   if(!started) return;
   var dt = Math.min((t-lastT)/1000, .05); lastT = t;
-  if(!ended) update(dt);
+  if(!ended && !dlgNpc) update(dt);
   render(t/1000);
 }
+/* ===== NPC 对话 ===== */
+function openDlg(npc){
+  dlgNpc = npc;
+  var cfg = NPCS[npc.type];
+  document.getElementById('dlgName').textContent = cfg.name + ' (对话中, 倒计时已暂停)';
+  document.getElementById('dlgText').textContent = '「' + cfg.text + '」';
+  var opts = document.getElementById('dlgOpts');
+  opts.innerHTML = '';
+  cfg.opts.forEach(function(o, i){
+    var b = document.createElement('button');
+    b.className = 'dlg-opt';
+    b.innerHTML = '<b>' + (i+1) + '.</b> ' + o.t;
+    b.onclick = function(){ pickOpt(npc, o); };
+    opts.appendChild(b);
+  });
+  document.getElementById('dlg').classList.remove('hidden');
+}
+function pickOpt(npc, o){
+  npc.talked = true;
+  if(o.fx==='hintGood'){ timer = Math.min(timer + 15, level.time*diff.timeMul); }
+  else if(o.fx==='heal'){ hp = Math.min(hp+1, diff.hp); }
+  else if(o.fx==='liar'){ timer = Math.max(5, timer - 20); shake = Math.max(shake, 5); }
+  document.getElementById('dlgText').textContent = o.r;
+  document.getElementById('dlgOpts').innerHTML = '';
+  var b = document.createElement('button');
+  b.className = 'dlg-opt';
+  b.innerHTML = '<b>→</b> 继续跑!';
+  b.onclick = closeDlg;
+  document.getElementById('dlgOpts').appendChild(b);
+  syncUI();
+}
+function closeDlg(){
+  dlgNpc = null;
+  document.getElementById('dlg').classList.add('hidden');
+  lastT = performance.now();
+}
+document.addEventListener('keydown', function(e){
+  if(!dlgNpc) return;
+  var opts = document.querySelectorAll('#dlgOpts .dlg-opt');
+  if(e.code==='Digit1' && opts[0]) opts[0].click();
+  if(e.code==='Digit2' && opts[1]) opts[1].click();
+  if(e.code==='Enter' && opts[0]) opts[opts.length-1].click();
+});
 function update(dt){
   var p = player;
   // 倒计时
@@ -914,6 +957,10 @@ function update(dt){
   // 相机 XY 双向跟随
   camX += (clamp(p.x + p.w/2 - VIEW_W*.5, 0, WORLD_W - VIEW_W) - camX)*Math.min(1, dt*5);
   camY += (clamp(p.y + p.h/2 - VIEW_H*.55, 0, WORLD_H - VIEW_H) - camY)*Math.min(1, dt*5);
+
+  // NPC 触发(走近自动对话)
+  var np = npcs.find(function(n){ return !n.talked && nearTile(p,n); });
+  if(np){ openDlg(np); return; }
 
   // 时间线广播
   level.timeline.forEach(function(ev){
@@ -1161,6 +1208,22 @@ function drawItems(time){
       ctx.beginPath(); ctx.moveTo(cx-6, cy+6); ctx.lineTo(cx+4, cy-4); ctx.stroke();
       ctx.beginPath(); ctx.arc(cx+6, cy-6, 4, .6, 5.2); ctx.stroke();
       ctx.fillStyle = 'rgba(201,164,90,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 7); ctx.fill();
+    }
+  });
+}
+function drawNpcs(time){
+  npcs.forEach(function(n){
+    var cfg = NPCS[n.type];
+    var cx = (n.x+.5)*TILE, cy = (n.y+1)*TILE;
+    ctx.fillStyle = 'rgba(255,240,180,.05)';
+    ctx.beginPath(); ctx.arc(cx, cy-12, 30, 0, 7); ctx.fill();
+    ctx.fillStyle = n.talked ? '#565945' : cfg.color;
+    ctx.fillRect(cx-6, cy-16, 12, 16);
+    ctx.fillStyle = '#d8b48a'; ctx.fillRect(cx-5, cy-21, 10, 6);
+    ctx.fillStyle = cfg.color; ctx.fillRect(cx-6, cy-24, 12, 3);
+    if(!n.talked && Math.sin(time*4)>0){
+      ctx.fillStyle = '#ffd977'; ctx.font = 'bold 12px Courier New'; ctx.textAlign='center';
+      ctx.fillText('?', cx, cy-28); ctx.textAlign='left';
     }
   });
 }
