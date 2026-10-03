@@ -293,8 +293,8 @@ function buildMap2(){
   g[10][18]='S'; g[10][19]='S'; g[10][20]='S';
   g[15][6] = 'T';            // 扳手
   g[15][25]= '~'; g[15][26] = '~';  // 可跳过
-  g[20][8] = '≈';            // 水源(续水)
   g[20][15]= '~';            // 再挡 → 续水后扑灭
+  g[20][24]= '≈';            // 消防泵/水源(在火焰东侧, 免穿火取水)
   g[22][30]= 'W'; g[23][30] = 'W'; g[24][30] = 'W';  // 扳手闸门(G层挡出口路)
   g[24][22]= '~';            // 可跳过
   g[23][41]= 'E';
@@ -898,7 +898,14 @@ function drawTile(x,y,ch,time){
     ctx.fillStyle = '#1d3a4a'; ctx.fillRect(px,py+10,TILE,TILE-10);
     ctx.fillStyle = 'rgba(120,190,220,.7)';
     for(var wv=0;wv<3;wv++){ var wx=px+((time*24+wv*11)%TILE); ctx.fillRect(wx, py+12+wv*4, 6, 1.6); }
-    ctx.fillStyle = '#9fb2bd'; ctx.font = '8px Courier New'; ctx.fillText('水', px+9, py+10);
+    // 消防泵标识 + 状态灯(未修红闪/已修常绿)
+    ctx.fillStyle = '#c9a45a'; ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'center';
+    ctx.fillText('消防泵', px+TILE/2, py-4);
+    ctx.textAlign = 'left';
+    var ok2 = !level.pump || pumpFixed;
+    var lampOn = ok2 || Math.sin(time*6)>0;
+    ctx.fillStyle = lampOn ? (ok2 ? '#58d97a' : '#ff4a3c') : '#3a3d2e';
+    ctx.beginPath(); ctx.arc(px+TILE/2, py+6, 3, 0, 7); ctx.fill();
   } else if(ch==='!'){
     var s = steams.find(function(q){return q.x===x&&q.y===y;});
     if(s && s.on){
