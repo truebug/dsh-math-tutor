@@ -22,6 +22,7 @@ import { gradeSession, type Question } from '@dsh-math-tutor/math-generator/core
 import { accumulateSession, adaptiveCarryRatio } from './lib/profile'
 import { battleScore } from './api/battle'
 import { recordStars, starsFor } from './lib/adventure'
+import { ARCADE_KINDS } from './lib/arcade'
 import { earnedIds, diffBadges, type Badge } from './lib/badges'
 import { submitScore, type ScoreResult } from './lib/score'
 import { bumpMetric } from './lib/profile'
@@ -166,7 +167,7 @@ export default function App() {
       {view === 'race' && settings.kind === 'memory' && <MemoryView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'race' && settings.kind === 'escape' && <EscapeView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'race' && settings.kind === 'reactor' && <ReactorView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
-      {view === 'race' && !['match', 'poemchain', 'snake', 'whack', 'memory', 'escape'].includes(settings.kind ?? '') && <RaceView key={raceKey} settings={settings} nickname={me.nickname} grade={me.grade} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && !(ARCADE_KINDS as readonly string[]).includes(settings.kind ?? '') && <RaceView key={raceKey} settings={settings} nickname={me.nickname} grade={me.grade} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'result' && record && (
         <ResultView
           record={record}

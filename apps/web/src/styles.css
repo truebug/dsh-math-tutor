@@ -800,3 +800,25 @@ input[type="range"] { width: 100%; }
 .reactor-presets { grid-column: span 2; display: flex; gap: 8px; }
 .reactor-presets button { flex: 1; padding: 8px; border: none; border-radius: 10px; background: #2a3a52; color: #cde; font-size: 13px; cursor: pointer; }
 .reactor-presets button:hover { background: #3a4c66; }
+
+/* 反应堆：任务过渡面板 + 通关/熔毁过场 */
+.reactor-canvas-wrap { position: relative; }
+.reactor-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(13,20,32,.88); backdrop-filter: blur(3px); text-align: center; padding: 20px; }
+.reactor-overlay-emoji { font-size: 52px; animation: reactor-pop .45s ease-out; }
+@keyframes reactor-pop { 0% { transform: scale(.3); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.reactor-overlay b { font-size: 18px; }
+.reactor-overlay p { margin: 0; font-size: 13px; color: #9ab; }
+.reactor-overlay button { margin-top: 8px; padding: 10px 26px; font-size: 16px; border: none; border-radius: 12px; background: #4a90e2; color: #fff; cursor: pointer; }
+.reactor-overlay.bad button { background: #e2574a; }
+.reactor-ending { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #131a26; }
+.reactor-ending.win { background: radial-gradient(ellipse at center, #16324a 0%, #131a26 70%); }
+.reactor-ending.lose { background: radial-gradient(ellipse at center, #3a1410 0%, #131a26 70%); animation: reactor-ending-flash .8s ease-out; }
+@keyframes reactor-ending-flash { 0% { filter: brightness(3); } 100% { filter: brightness(1); } }
+.reactor-ending-inner { text-align: center; max-width: 480px; padding: 24px; }
+.reactor-ending-emoji { font-size: 84px; animation: reactor-pop .6s ease-out; }
+.reactor-ending h1 { font-size: 30px; margin: 12px 0 6px; color: #fff; }
+.reactor-ending-sub { color: #9ab; font-size: 15px; line-height: 1.7; margin: 0 0 18px; }
+.reactor-ending-score { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 22px; }
+.reactor-ending-score .chip { background: #1e2a3d; border-radius: 20px; padding: 6px 12px; font-size: 13px; color: #9ab; }
+.reactor-ending-score .chip.ok { background: #1d3d2e; color: #4ae2a0; }
+.reactor-ending-btn { padding: 14px 40px; font-size: 18px; border: none; border-radius: 14px; background: #4a90e2; color: #fff; cursor: pointer; }

@@ -4,6 +4,10 @@ import { mulberry32, generateQuestions, type Question } from '@dsh-math-tutor/ma
 import { vocabThemes } from './english'
 import { POEMS } from './chinese'
 
+// 游乐场独立玩法 kind 清单：App.tsx 的默认速算分支用它排除——
+// 新增玩法时务必在此登记，否则新关卡会和速算界面同时渲染（reactor 曾踩此坑）
+export const ARCADE_KINDS = ['match', 'poemchain', 'snake', 'whack', 'memory', 'escape', 'reactor'] as const
+
 function shuffle<T>(arr: T[], rng: () => number): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i -= 1) {

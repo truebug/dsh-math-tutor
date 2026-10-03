@@ -105,6 +105,9 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
   const [done, setDone] = useState(false)
   const [score, setScore] = useState(0)
   const [alarm, setAlarm] = useState(false)
+  const pendingRef = useRef<Parameters<Props['onFinish']>[0] | null>(null)
+  // paused：任务完成/失败后的冻结态（物理暂停，堆芯画面保持最后一帧；孩子点按钮再继续）
+  const [paused, setPaused] = useState<null | 'done' | 'fail'>(null)
   const startRef = useRef(Date.now())
   const taskStartRef = useRef(Date.now())
   const disturbRef = useRef(0)
@@ -116,50 +119,63 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
     if (done) return
     let raf = 0
     let last = performance.now()
-  const tick = (now: number) => {
+    const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000)
       last = now
-      // 任务⑤随机扰动（控制棒轻微抖动）
-      if (taskIdx === 4 && Math.random() < 0.02) disturbRef.current = (Math.random() - 0.5) * 8
-      const effRods = Math.max(0, Math.min(100, rods + disturbRef.current))
-      const s = stepReactor(stateRef.current, effRods, flow, boron, dt)
-      stateRef.current = s
-      const el = (Date.now() - taskStartRef.current) / 1000
-      setElapsed(el)
-      // 熔毁判定
-      if (s.temp > MELTDOWN_TEMP || s.pressure > SAFE_PRESSURE * 1.6) {
-        setMeltdown(true)
-        setTimeout(() => finish('fail'), 2600)
-        return
-      }
-      setAlarm(s.temp > SAFE_TEMP || s.pressure > SAFE_PRESSURE)
-      // 任务判定
-      if (!meltdown) {
+      // 冻结态：物理不演化，只渲染最后一帧（含熔毁动画的持续渲染）
+      if (!paused) {
+        // 任务⑤随机扰动（控制棒轻微抖动）
+        if (taskIdx === 4 && Math.random() < 0.02) disturbRef.current = (Math.random() - 0.5) * 8
+        const effRods = Math.max(0, Math.min(100, rods + disturbRef.current))
+        const s = stepReactor(stateRef.current, effRods, flow, boron, dt)
+        stateRef.current = s
+        const el = (Date.now() - taskStartRef.current) / 1000
+        setElapsed(el)
+        // 熔毁判定
+        if (s.temp > MELTDOWN_TEMP || s.pressure > SAFE_PRESSURE * 1.6) {
+          setMeltdown(true)
+          setPaused('fail')
+          return
+        }
+        setAlarm(s.temp > SAFE_TEMP || s.pressure > SAFE_PRESSURE)
+        // 任务判定（进入区间即算摸到，保持按累计真实秒数）
         const r = task.check(s, el)
         if (r === 'done' && taskState === 'doing') {
           setTaskState('done')
           setScore((v) => v + 1)
-          setTimeout(() => {
-            if (taskIdx + 1 < TASKS.length) {
-              const next = TASKS[taskIdx + 1]
-              // 任务衔接：有 startPower 的任务重置堆态（避免从 20% 慢慢爬到 75% 的无聊等待）
-              if (next.startPower !== undefined) {
-                stateRef.current = { power: next.startPower, temp: 60 + next.startPower * 2.8, pressure: 20 + next.startPower * 0.7, neutron: next.startPower }
-              }
-              setTaskIdx((i) => i + 1); setTaskState('doing'); taskStartRef.current = Date.now()
-            } else finish('submit')
-          }, 1400)
+          setPaused('done')   // 冻结，等孩子点「下一个任务」
         } else if (r === 'fail' && taskState === 'doing') {
           setTaskState('fail')
-          setTimeout(() => finish('fail'), 1200)
+          setPaused('fail')   // 冻结，等孩子点「重试本任务」
         }
       }
-      draw(canvasRef.current, s, rods, meltdown, alarm)
+      draw(canvasRef.current, stateRef.current, rods, meltdown, alarm)
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [rods, flow, boron, taskIdx, taskState, meltdown, alarm, done])
+  }, [rods, flow, boron, taskIdx, taskState, meltdown, alarm, done, paused])
+
+  // 孩子点击「下一个任务」：解冻并切换（有 startPower 的任务重置堆态）
+  const nextTask = () => {
+    if (taskIdx + 1 < TASKS.length) {
+      const next = TASKS[taskIdx + 1]
+      if (next.startPower !== undefined) {
+        stateRef.current = { power: next.startPower, temp: 60 + next.startPower * 2.8, pressure: 20 + next.startPower * 0.7, neutron: next.startPower }
+      }
+      setTaskIdx((i) => i + 1); setTaskState('doing'); taskStartRef.current = Date.now(); setPaused(null)
+    } else {
+      setPaused(null); finish('submit')   // 全部完成 → 通关过场 → 结算
+    }
+  }
+  // 孩子点击「重试本任务」：回到本任务起点
+  const retryTask = () => {
+    const cur = TASKS[taskIdx]
+    if (cur.startPower !== undefined) {
+      stateRef.current = { power: cur.startPower, temp: 60 + cur.startPower * 2.8, pressure: 20 + cur.startPower * 0.7, neutron: cur.startPower }
+    }
+    setMeltdown(false); setTaskState('doing'); taskStartRef.current = Date.now(); setPaused(null)
+  }
 
   const finish = useCallback((by: 'submit' | 'fail') => {
     if (done) return
@@ -169,16 +185,45 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
       index: i, a: 0, b: 0, op: 'add', text: t.name, answer: 0,
       carry: false, options: ['完成', '未完成'], answerText: i < completed ? '完成' : '未完成',
     }))
-    onFinish({
+    pendingRef.current = {
       answers: TASKS.map((_, i) => i < completed ? '完成' : '未完成'),
       perQuestionMs: TASKS.map(() => 30000),
       usedMs: Date.now() - startRef.current,
       finishedBy: by === 'submit' ? 'submit' : 'timeout',
       questions,
-    })
-  }, [done, score, onFinish])
+    }
+  }, [done, score])
+
+  // 过场「查看成绩」按钮：真正提交结算
+  const onFinishWrap = () => { if (pendingRef.current) onFinish(pendingRef.current) }
 
   const s = stateRef.current
+
+  // ===== 过场：通关 / 熔毁（全屏仪式感，孩子点击后才进入结算页）=====
+  if (done) {
+    const passed = score === TASKS.length
+    return (
+      <div className={`reactor-ending ${passed ? 'win' : 'lose'}`}>
+        <div className="reactor-ending-inner">
+          <div className="reactor-ending-emoji">{passed ? '🏆' : meltdown ? '☢️' : '💥'}</div>
+          <h1>{passed ? '反应堆全程受控！' : meltdown ? '堆芯熔毁了' : '任务中止'}</h1>
+          <p className="reactor-ending-sub">
+            {passed
+              ? '你完成了全部 5 个主控任务，是一名合格的反应堆操作员！'
+              : meltdown
+                ? '温度和压力冲破了安全壳——记住：控制棒就是反应堆的刹车，下次早点踩！'
+                : `完成了 ${score}/${TASKS.length} 个任务，再练练就稳了！`}
+          </p>
+          <div className="reactor-ending-score">
+            {TASKS.map((tk, i) => (
+              <span key={tk.name} className={i < score ? 'chip ok' : 'chip'}>{i < score ? '✅' : '⬜'} {tk.name}</span>
+            ))}
+          </div>
+          <button className="reactor-ending-btn" onClick={() => onFinishWrap()}>查看成绩 →</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="reactor-page">
@@ -199,6 +244,22 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
       <div className="reactor-grid">
         <div className="reactor-canvas-wrap">
           <canvas ref={canvasRef} width={420} height={420} className={alarm && !meltdown ? 'reactor-alarm' : ''} />
+          {paused === 'done' && (
+            <div className="reactor-overlay ok">
+              <div className="reactor-overlay-emoji">✅</div>
+              <b>{task?.name} 完成！</b>
+              <p>{taskIdx + 1 < TASKS.length ? '反应堆已稳定，准备下一个任务。' : '全部任务完成！'}</p>
+              <button onClick={nextTask}>{taskIdx + 1 < TASKS.length ? '▶ 下一个任务' : '🏁 完成任务'}</button>
+            </div>
+          )}
+          {paused === 'fail' && (
+            <div className="reactor-overlay bad">
+              <div className="reactor-overlay-emoji">{meltdown ? '☢️' : '💥'}</div>
+              <b>{meltdown ? '堆芯熔毁！' : '任务失败'}</b>
+              <p>{meltdown ? '安全壳破裂——控制棒是反应堆的刹车，功率太高要果断插入！' : '别灰心，再试一次这个任务。'}</p>
+              <button onClick={retryTask}>↻ 重试本任务</button>
+            </div>
+          )}
         </div>
         <div className="reactor-controls">
           <Gauge label="功率" value={s.power} unit="%" max={130} warn={100} color="#4a90e2" />
