@@ -797,3 +797,6 @@ input[type="range"] { width: 100%; }
 .reactor-ctl input[type=range] { width: 100%; accent-color: #4a90e2; }
 .reactor-ctl-hint { font-size: 11px; color: #e2a04a; }
 .reactor-tip { text-align: center; color: #9ab; font-size: 13px; margin-top: 14px; }
+.reactor-presets { grid-column: span 2; display: flex; gap: 8px; }
+.reactor-presets button { flex: 1; padding: 8px; border: none; border-radius: 10px; background: #2a3a52; color: #cde; font-size: 13px; cursor: pointer; }
+.reactor-presets button:hover { background: #3a4c66; }

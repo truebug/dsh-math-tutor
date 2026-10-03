@@ -41,24 +41,37 @@ interface Task {
   name: string
   desc: string
   check: (s: ReactorState, elapsed: number) => 'doing' | 'done' | 'fail'
+  startPower?: number     // 任务开始时反应堆状态重置到此功率（衔接过渡）
   failMsg: string
+}
+// hold 判定用真实秒数累积（dt 驱动），不按帧数——避免高刷新率设备任务过易
+function holdTask(target: { lo: number; hi: number }, holdSec: number, timeoutSec: number, overLimit = 105) {
+  let held = 0
+  let lastT: number | null = null
+  return (s: ReactorState, el: number) => {
+    if (s.power > overLimit) return 'fail'
+    if (lastT !== null) {
+      const dt = Math.max(0, el - lastT)
+      if (s.power >= target.lo && s.power <= target.hi) held += dt
+      else held = 0
+    }
+    lastT = el
+    return held >= holdSec ? 'done' : (el > timeoutSec ? 'fail' : 'doing')
+  }
 }
 const TASKS: Task[] = [
   {
     name: '① 启动反应堆', desc: '把功率从 0 拉到 30% 并保持 3 秒', failMsg: '',
-    check: (() => { let hold = 0; return (s, el) => {
-      if (s.power > 105) return 'fail'
-      if (s.power >= 28 && s.power <= 40) { hold += 1; return hold >= 18 ? 'done' : 'doing' }
-      hold = 0
-      return el > 90 ? 'fail' : 'doing'
-    } })(),
+    check: holdTask({ lo: 28, hi: 40 }, 3, 90),
   },
   {
     name: '② 提升功率', desc: '限时 60 秒把功率从 30% 升到 80%', failMsg: '',
+    startPower: 32,
     check: (s, el) => s.power >= 78 && s.power <= 100 ? 'done' : (s.power > 105 || el > 60 ? 'fail' : 'doing'),
   },
   {
     name: '③ 边界测试', desc: '摸到 95% 功率但绝不能超过 100%', failMsg: '',
+    startPower: 80,
     check: (() => { let touched = false; let hold = 0; return (s) => {
       if (s.power > 100) return 'fail'
       if (s.power >= 93) touched = true
@@ -68,15 +81,13 @@ const TASKS: Task[] = [
   },
   {
     name: '④ 应急降功率', desc: '冷却泵跳闸警报！15 秒内把功率降到 20% 以下', failMsg: '',
+    startPower: 95,
     check: (s, el) => s.power < 20 ? 'done' : (el > 15 ? 'fail' : 'doing'),
   },
   {
     name: '⑤ 自由值守', desc: '随机扰动下把功率维持在 70-80% 坚持 30 秒', failMsg: '',
-    check: (() => { let good = 0; return (s) => {
-      if (s.power > 105) return 'fail'
-      if (s.power >= 70 && s.power <= 80) { good += 1; if (good >= 30 * 6) return 'done' } else good = Math.max(0, good - 3)
-      return 'doing'
-    } })(),
+    startPower: 75,
+    check: holdTask({ lo: 70, hi: 80 }, 30, 120),
   },
 ]
 
@@ -105,7 +116,7 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
     if (done) return
     let raf = 0
     let last = performance.now()
-    const tick = (now: number) => {
+  const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000)
       last = now
       // 任务⑤随机扰动（控制棒轻微抖动）
@@ -130,6 +141,11 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
           setScore((v) => v + 1)
           setTimeout(() => {
             if (taskIdx + 1 < TASKS.length) {
+              const next = TASKS[taskIdx + 1]
+              // 任务衔接：有 startPower 的任务重置堆态（避免从 20% 慢慢爬到 75% 的无聊等待）
+              if (next.startPower !== undefined) {
+                stateRef.current = { power: next.startPower, temp: 60 + next.startPower * 2.8, pressure: 20 + next.startPower * 0.7, neutron: next.startPower }
+              }
               setTaskIdx((i) => i + 1); setTaskState('doing'); taskStartRef.current = Date.now()
             } else finish('submit')
           }, 1400)
@@ -191,6 +207,11 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
           <Gauge label="中子密度" value={s.neutron} unit="" max={130} warn={110} color="#4ae2a0" />
 
           <Control label="控制棒插入" value={rods} onChange={setRods} hint={rods > 80 ? '棒深=停堆' : rods < 30 ? '棒浅=高功率 ⚠️' : ''} />
+          <div className="reactor-presets">
+            <button onClick={() => setRods(100)}>⛔ 停堆</button>
+            <button onClick={() => setRods(55)}>半棒</button>
+            <button onClick={() => setRods(20)}>⚡ 高功率</button>
+          </div>
           <Control label="冷却水流量" value={flow} onChange={setFlow} hint={flow < 25 ? '冷却不足 ⚠️' : ''} />
           <Control label="硼浓度（慢效抑制）" value={boron} onChange={setBoron} hint={boron > 60 ? '反应性被压制' : ''} />
         </div>
