@@ -182,6 +182,10 @@ body.touch .touchpad{display:flex}
     <div class="keys">
       <b>←</b><b>→</b> 移动 &nbsp; <b>↑</b><b>↓</b> 爬梯 &nbsp; <b>空格</b> 跳跃 &nbsp; <b>↓</b> 蹲伏穿越废墟 &nbsp; <b>回车</b> 开始
     </div>
+    <div class="keys" style="color:#b9b49c">
+      道具全部<b>自动使用</b>：捡到钥匙/扳手后，走近门或设备就会自动开锁、修理、撬闸；
+      拎着水桶碰到火焰自动扑灭；空桶走近水源自动续水
+    </div>
     <button class="big-btn" id="startBtn"><span>进 入 厂 房</span></button>
   </div>
   <div class="overlay hidden" id="endOverlay">
@@ -232,6 +236,9 @@ body.touch .touchpad{display:flex}
     </div>
     <div class="keys-hint">
       <b>←</b><b>→</b> 移动 <b>↑</b><b>↓</b> 爬梯 <b>空格</b> 跳跃 <b>↓</b> 蹲伏过废墟
+    </div>
+    <div class="keys-hint" style="border-top:none;padding-top:0">
+      道具自动使用：走近门/设备即触发
     </div>
   </div>
 </div>
@@ -996,6 +1003,9 @@ function drawPlayer(time){
     ctx.fillRect(px+1, py+8+Math.sin(time*10)*4, 3, 8);
     ctx.fillRect(px+p.w-4, py+8-Math.sin(time*10)*4, 3, 8);
   }
+  // 手持道具图标(扳手/水桶悬浮在头顶)
+  if(hasWrench){ ctx.font = '11px Courier New'; ctx.fillText('🔧', px+p.w/2-6, py-4); }
+  else if(hasBucket){ ctx.font = '11px Courier New'; ctx.fillText('🪣', px+p.w/2-6, py-4); }
 }
 
 /* ================= 控制台 UI ================= */
