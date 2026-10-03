@@ -309,38 +309,155 @@ function buildMap3(){
   g[23][41]= 'E';            // 撤离巴士
   return g;
 }
+/* ===== 第 1 关: 种子化随机生成 + BFS 可达性验证 ===== */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function shuffleA(arr, rnd){ var a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(rnd()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function genLevel1(seed){
+  if(seed==null) seed = (Math.random()*0x7fffffff)|0;
+  for(var att=0; att<50; att++){
+    var g = tryGenL1(seed + att*7919);
+    if(g && verifyL1(g)){ genLevel1.lastSeed = seed + att*7919; return g; }
+  }
+  return buildMap1(); // 极端情况降级固定图
+}
+function tryGenL1(seed){
+  var rnd = mulberry32(seed);
+  function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+  function rand(a,b){ return a + Math.floor(rnd()*(b-a+1)); }
+  for(var t=0;t<40;t++){
+    var g = shell();
+    // 竖井位置: 各层随机(避开东西边缘)
+    var s1=pick([24,27,30,33]), s2=pick([7,10,13]), s3=pick([30,33,35,38]), s4=pick([4,6,8]), s5=pick([18,20,22]);
+    shaftG(g,s1,3,6,10); shaftG(g,s2,8,11,15); shaftG(g,s3,13,16,20);
+    shaftG(g,s4,18,21,24); shaftG(g,s5,18,21,24);
+    // 蒸汽封路(全高3格, 不可跳过)
+    var v1=rand(10,20), v2=rand(26,36);
+    for(var sy=22;sy<=24;sy++){ g[sy][v1]='!'; g[sy][v2]='!'; }
+    // 可跳过小火(每层最多2处, 间隔≥2)
+    function firesOn(row, used, n){
+      var cnt=0;
+      for(var i=0;i<6 && cnt<n;i++){
+        var c=rand(3,40);
+        if(used[c]) continue;
+        if(g[row][c]!=='.' || g[row-1][c]!=='.') continue;
+        if(g[row][c-1]==='~' || g[row][c+1]==='~' || g[row][c-2]==='~' || g[row][c+2]==='~') continue;
+        g[row][c]='~'; used[c]=true; cnt++;
+      }
+    }
+    var u1={},u2={},u3={},u4={},u5={};
+    [s1,s2,s3,s4,s5,v1,v2].forEach(function(s){ u1[s]=u2[s]=u3[s]=u4[s]=u5[s]=true; });
+    firesOn(5,u1,rand(1,2)); firesOn(10,u2,rand(1,2)); firesOn(15,u3,rand(1,2)); firesOn(20,u4,rand(1,2)); firesOn(24,u5,rand(1,2));
+    // 废墟(蹲伏, 2-3格) 放在随机两层
+    var rubRows = shuffleA([15,20], rnd).slice(0, rand(1,2));
+    rubRows.forEach(function(row){
+      var c = rand(8,34), len = rand(2,3), ok=true;
+      for(var i=-1;i<=len;i++) if(g[row][c+i]!=='.' || g[row-1][c+i]!=='.' || [s1,s2,s3,s4,s5].indexOf(c+i)>=0) ok=false;
+      if(ok) for(var j=0;j<len;j++) g[row][c+j]='S';
+    });
+    // 门: 1F 随机列(避开竖井/蒸汽/门后留2格)
+    var doorCol = 0;
+    var dcands = shuffleA([24,26,28,30,32,34,36,38,40], rnd);
+    for(var di=0; di<dcands.length; di++){
+      var dc = dcands[di];
+      if([s3,s4,s5].indexOf(dc)>=0) continue;
+      if(g[19][dc]!=='.'||g[20][dc]!=='.'||g[19][dc+1]!=='.'||g[20][dc+1]!=='.'||g[19][dc+2]!=='.'||g[20][dc+2]!=='.') continue;
+      doorCol = dc; break;
+    }
+    if(!doorCol) continue;
+    g[19][doorCol]='D'; g[20][doorCol]='D';
+    // 出生/钥匙/齿轮/出口
+    g[4][2]  = 'M';
+    var kCol = 0;
+    var kCands = shuffleA([31,32,33,34,35,36,37,38,39,40], rnd);
+    for(var ki=0; ki<kCands.length; ki++){
+      var kc = kCands[ki];
+      if(g[5][kc]==='.' && g[4][kc]==='.' && g[6][kc]==='#'){ kCol = kc; break; }
+    }
+    if(!kCol) continue;
+    g[5][kCol] = 'K';
+    g[10][rand(2,5)] = 'G';
+    g[20][rand(doorCol+1, Math.min(42, doorCol+3))] = 'G';
+    g[23][41]= 'E';
+    // 门后齿轮不与火重叠则接受
+    if(g[19][doorCol+1]==='~'||g[19][doorCol+2]==='~') continue;
+    return g;
+  }
+  return null;
+}
+/* BFS 可达性: 模拟 走/跳(≤2格)/梯/蹲 移动, 验证完整通关路径 */
+function verifyL1(g){
+  var M=null,K=null,G2=[],DR=[],ST=[],E=null;
+  for(var y=0;y<ROWS;y++) for(var x=0;x<COLS;x++){
+    var c=g[y][x];
+    if(c==='M')M={x:x,y:y}; else if(c==='K')K={x:x,y:y};
+    else if(c==='G')G2.push({x:x,y:y,fy:floorBelow({x:x,y:y},false)}); else if(c==='D')DR.push({x:x,y:y});
+    else if(c==='!')ST.push({x:x,y:y}); else if(c==='E')E={x:x,y:y};
+  }
+  function isSolid(ch){ return ch==='#'||ch==='D'; }
+  function isSteam(p){ return ST.some(function(s){return s.x===p.x&&s.y===p.y;}); }
+  function floorBelow(p,ig){ var f=p.y+1; while(f<ROWS && !isSolid(g[f][p.x]) && !(g[f][p.x]==='S'&&!ig)) f++; return f-1; }
+  function reach(ignoreS, ignoreD){
+    var seen={}, q=[M]; seen[M.x+','+M.y]=1;
+    function add(p){ if(p.x<1||p.x>=COLS-1||p.y<1||p.y>=ROWS-1) return; var k=p.x+','+p.y; if(seen[k])return;
+      var ch=g[p.y][p.x]; if(ch==='#'||(ch==='D'&&!ignoreD)) return; seen[k]=1; q.push(p); }
+    while(q.length){
+      var p=q.shift(), fy=floorBelow(p,ignoreS), i, pp, ok;
+      add({x:p.x,y:fy});
+      if(p.y===fy){
+        add({x:p.x-1,y:fy}); add({x:p.x+1,y:fy});
+        for(var dx=-2;dx<=2;dx++){ if(dx===0) continue;
+          for(i=0;i<=2;i++){ pp={x:p.x+dx,y:floorBelow({x:p.x+dx,y:p.y-i},ignoreS)};
+            ok=pp.y>=p.y-i&&pp.y<=p.y+1; if(ok)add(pp); } }
+      }
+      for(var dy=-1;dy<=1;dy+=2){ for(i=1;i<=3;i++){ var ly=p.y+dy*i; if(ly<0||ly>=ROWS)break;
+        if(g[ly][p.x]==='^') add({x:p.x,y:ly}); else if(dy<0) break; } }
+    }
+    return seen;
+  }
+  function near(seen,p){ for(var dx=-1;dx<=1;dx++) for(var dy=-1;dy<=1;dy++){ if(seen[(p.x+dx)+','+(p.y+dy)]) return true; } return false; }
+  function nearSteamClear(seen,p){ for(var dx=-2;dx<=2;dx++) for(var dy=-2;dy<=2;dy++){ var q={x:p.x+dx,y:p.y+dy}; if(seen[q.x+','+q.y] && !isSteam(q)) return true; } return false; }
+  var s1=reach(false,false);
+  if(!near(s1,K)||!near(s1,{x:G2[0].x,y:G2[0].fy})) return false;  // 钥匙 + 齿轮1(按站立格)
+  if(!near(s1,DR[0])) return false;
+  var s2=reach(false,true);                                       // 开门后
+  if(!near(s2,{x:G2[1].x,y:G2[1].fy})) return false;
+  var s3=reach(true,true);                                        // 蒸汽修复后(可站立)
+  if(!nearSteamClear(s3,E)) return false;
+  return true;
+}
+
 var LEVELS = [
-  { name:'第1关 · 逃离四号机组厂房', time:195, build:buildMap1,
+  { name:'第1关 · 逃离四号机组厂房', time:300, alarmFastAt:130, build:function(){ return genLevel1(); },
     btnLabel:'插入齿轮修复排汽阀', btnGears:2,
     boom:'01:23:46，4 号机组堆芯爆炸。你没能赶到安全区。',
     bands:[{y1:1,y2:5,name:'反应堆大厅 B3'},{y1:7,y2:10,name:'反应堆大厅 B2'},{y1:12,y2:15,name:'汽轮机厂房 B1'},{y1:17,y2:20,name:'联合泵房 1F'},{y1:22,y2:24,name:'厂区通道 G'}],
     timeline:[
-      {t:180, msg:'中控: 一回路压力 16.8 MPa, 超设计限值!', cls:'warn'},
-      {t:155, msg:'中控: 安全阀动作, 蒸汽排放中', cls:'warn'},
-      {t:125, msg:'中控: 警告!! 堆芯温度失控', cls:'crit'},
-      {t:95,  msg:'中控: 堆芯熔毁开始, 厂房结构受损', cls:'crit', alarmFast:true},
-      {t:65,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
-      {t:35,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
+      {t:270, msg:'中控: 一回路压力 16.8 MPa, 超设计限值!', cls:'warn'},
+      {t:230, msg:'中控: 安全阀动作, 蒸汽排放中', cls:'warn'},
+      {t:180, msg:'中控: 警告!! 堆芯温度失控', cls:'crit'},
+      {t:130, msg:'中控: 堆芯熔毁开始, 厂房结构受损', cls:'crit', alarmFast:true},
+      {t:80,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
+      {t:40,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
     ] },
-  { name:'第2关 · 穿越切尔诺贝利厂区', time:180, build:buildMap2,
+  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:buildMap2,
     btnLabel:null, btnGears:0,
     boom:'最后的撤离车辆已经离开，你被落在了烟尘弥漫的厂区里。',
     bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'}],
     timeline:[
-      {t:160, msg:'厂区广播: 余火未灭, 注意绕行', cls:'warn'},
-      {t:130, msg:'你: 辐射剂量计读数在上升', cls:'warn'},
-      {t:95,  msg:'厂区广播: 风向改变, 烟尘向大门扩散', cls:'crit', alarmFast:true},
+      {t:240, msg:'厂区广播: 余火未灭, 注意绕行', cls:'warn'},
+      {t:200, msg:'你: 辐射剂量计读数在上升', cls:'warn'},
+      {t:100, msg:'厂区广播: 风向改变, 烟尘向大门扩散', cls:'crit', alarmFast:true},
       {t:60,  msg:'厂区广播: 最后撤离车辆 60 秒后离开!!', cls:'crit'},
       {t:30,  msg:'厂区广播: 车辆即将离开!!!', cls:'crit'}
     ] },
-  { name:'第3关 · 撤离普里皮亚季', time:180, build:buildMap3,
+  { name:'第3关 · 撤离普里皮亚季', time:270, alarmFastAt:100, build:buildMap3,
     btnLabel:'修复楼道供电(需2齿轮)', btnGears:2,
     boom:'撤离巴士发车了，你没能赶上。',
     bands:[{y1:1,y2:5,name:'公寓 5F'},{y1:7,y2:10,name:'公寓 4F'},{y1:12,y2:15,name:'公寓 3F'},{y1:17,y2:20,name:'公寓 2F'},{y1:22,y2:24,name:'街道'}],
     timeline:[
-      {t:160, msg:'楼内广播: 请居民立即撤离, 不要收拾行李', cls:'warn'},
-      {t:120, msg:'你: 楼道里的烟越来越大了', cls:'warn'},
-      {t:90,  msg:'楼内广播: 辐射尘开始沉降', cls:'crit', alarmFast:true},
+      {t:230, msg:'楼内广播: 请居民立即撤离, 不要收拾行李', cls:'warn'},
+      {t:180, msg:'你: 楼道里的烟越来越大了', cls:'warn'},
+      {t:100, msg:'楼内广播: 辐射尘开始沉降', cls:'crit', alarmFast:true},
       {t:55,  msg:'楼内广播: 撤离巴士即将发车!!', cls:'crit'},
       {t:30,  msg:'楼内广播: 最后一班!!!', cls:'crit'}
     ] },
@@ -914,12 +1031,12 @@ function startAlarm(){
   alarmOsc = setInterval(function(){
     if(muted || ended || !started) return;
     var o = audioCtx.createOscillator(), gn = audioCtx.createGain();
-    o.type = 'square'; o.frequency.value = timer<95 ? 1180 : 880;
+    o.type = 'square'; o.frequency.value = timer<(level?level.alarmFastAt:95) ? 1180 : 880;
     gn.gain.setValueAtTime(.04, audioCtx.currentTime);
     gn.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime+.18);
     o.connect(gn); gn.connect(audioCtx.destination);
     o.start(); o.stop(audioCtx.currentTime+.2);
-  }, timer<95 ? 500 : 900);
+  }, timer<(level?level.alarmFastAt:95) ? 500 : 900);
 }
 function stopAlarm(){ if(alarmOsc){ clearInterval(alarmOsc); alarmOsc = null; } }
 
