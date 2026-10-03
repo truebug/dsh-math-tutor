@@ -822,3 +822,19 @@ input[type="range"] { width: 100%; }
 .reactor-ending-score .chip { background: #1e2a3d; border-radius: 20px; padding: 6px 12px; font-size: 13px; color: #9ab; }
 .reactor-ending-score .chip.ok { background: #1d3d2e; color: #4ae2a0; }
 .reactor-ending-btn { padding: 14px 40px; font-size: 18px; border: none; border-radius: 14px; background: #4a90e2; color: #fff; cursor: pointer; }
+
+/* ===== 控制棒分组面板 & AZ-5 ===== */
+.reactor-bank-panel { grid-column: span 2; background: #141c2a; border: 1px solid #2a3a52; border-radius: 12px; padding: 10px 12px; }
+.reactor-bank-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #9ab; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+.reactor-bank-btns { display: flex; gap: 6px; }
+.reactor-bank-btns button { padding: 4px 10px; border: none; border-radius: 8px; background: #2a3a52; color: #cde; font-size: 12px; cursor: pointer; }
+.reactor-bank-btns button:hover { background: #3a4c66; }
+.reactor-bank-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+.reactor-bank { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.reactor-bank input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 18px; height: 72px; accent-color: #4a90e2; }
+.reactor-bank b { font-size: 11px; color: #8a99b5; }
+.reactor-bank-foot { margin-top: 6px; font-size: 11px; color: #667; }
+.reactor-az5 { grid-column: span 2; padding: 12px; border: 3px solid #e2574a; border-radius: 12px; background: repeating-linear-gradient(45deg, #3a1a14, #3a1a14 10px, #2a1210 10px, #2a1210 20px); color: #ff9a85; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+.reactor-az5:hover { background: repeating-linear-gradient(45deg, #4a2018, #4a2018 10px, #33150f 10px, #33150f 20px); }
+.reactor-az5.active { background: #e2574a; color: #fff; animation: az5flash 0.5s infinite alternate; }
+@keyframes az5flash { from { filter: brightness(1); } to { filter: brightness(1.35); } }

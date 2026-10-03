@@ -20,15 +20,33 @@ const SAFE_TEMP = 320      // 安全温度上限（℃）
 const SAFE_PRESSURE = 160  // 安全压力上限（bar）
 const MELTDOWN_TEMP = 480  // 熔毁温度
 
+// ===== 控制棒分组（参照 RBMK：211 根棒分手动/自动/紧急保护，机械限速 0.4m/s ≈ 18-21 秒插满）=====
+// 全部以「插入深度 0-100」表示。96 = 12组 × 8根（手动棒），另有 24 根自动调节棒 + 24 根 AZ-5 紧急保护棒
+const GROUPS = 12
+const RODS_PER_GROUP = 8
+const MANUAL_RODS = GROUPS * RODS_PER_GROUP      // 96 根手动棒
+const AUTO_RODS = 24                             // 自动调节棒（含功率调节棒组）
+const SCRAM_RODS = 24                            // 紧急保护棒
+const ROD_RATE = 6        // 手动棒机械限速 %/s（类比 0.4m/s：按 AZ-5 都要 ~17s）
+const AUTO_RATE = 10      // 自动棒跟踪限速 %/s
+const SCRAM_RATE = 100    // 事故前 AZ-5 同样不快（100%/s）
+const AUTO_KP = 1.1       // 自动棒比例增益
+
+// 分组反应性：等效插入深度 = 各棒插入深度的根数加权平均（棒越多插得越深 → 反应性越低）
+function rodEffect(groups: number[], auto: number, scram: number): number {
+  const manualSum = groups.reduce((a, g) => a + g * RODS_PER_GROUP, 0)
+  return (manualSum + auto * AUTO_RODS + scram * SCRAM_RODS) / (MANUAL_RODS + AUTO_RODS + SCRAM_RODS)
+}
+
 // 任务切换/重试时的堆态重置：从满冷却平衡态推导，避免开局就触发报警灯
 function equilibriumState(power: number): ReactorState {
   const temp = Math.max(30, (power * 3.2 - 40) / 0.9)
   return { power, temp, pressure: Math.max(1, 1 + Math.pow(Math.max(0, temp - 90) / 100, 1.7) * 55), neutron: power }
 }
 
-function stepReactor(s: ReactorState, rods: number, flow: number, boron: number, dt: number): ReactorState {
+function stepReactor(s: ReactorState, effRods: number, flow: number, boron: number, dt: number): ReactorState {
   // 反应性：控制棒越深越低，硼抑制；功率目标跟踪中子密度
-  const reactivity = Math.max(0, (100 - rods) / 100 - boron / 250)
+  const reactivity = Math.max(0, (100 - effRods) / 100 - boron / 250)
   const targetNeutron = reactivity * 130
   const neutron = s.neutron + (targetNeutron - s.neutron) * 0.25 * dt * 60 / 60
   // 功率滞后于中子（惯性）
@@ -88,14 +106,14 @@ const TASKS: Task[] = [
     } })(),
   },
   {
-    name: '④ 应急降功率', desc: '冷却泵跳闸警报！15 秒内把功率降到 20% 以下', failMsg: '',
+    name: '④ 应急降功率', desc: '冷却泵跳闸警报！15 秒内把功率降到 20% 以下（按 AZ-5 一键急停，或手动深插棒）', failMsg: '',
     startPower: 95,
-    check: (s, el) => s.power < 20 ? 'done' : (el > 15 ? 'fail' : 'doing'),
+    check: (s, el) => s.power < 20 ? 'done' : (s.temp > MELTDOWN_TEMP * 0.94 || el > 15 ? 'fail' : 'doing'),
   },
   {
-    name: '⑤ 自由值守', desc: '随机扰动下把功率维持在 70-80% 坚持 30 秒', failMsg: '',
+    name: '⑤ 自动棒值守', desc: '自动调节棒已接管——设定目标功率，扰动下维持 70-80% 坚持 30 秒（可随时切回手动微调）', failMsg: '',
     startPower: 75,
-    check: holdTask({ lo: 70, hi: 80 }, 30, 120),
+    check: (() => { const h = holdTask({ lo: 70, hi: 80 }, 30, 120); return (s, el) => (s.power > 95 || s.temp > SAFE_TEMP) ? 'fail' : h(s, el) })(),
   },
 ]
 
@@ -103,8 +121,20 @@ const TASKS: Task[] = [
 export default function ReactorView({ settings: _settings, onAbandon, onFinish }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<ReactorState>({ power: 0, temp: 30, pressure: 1, neutron: 0 })
-  const [rods, setRods] = useState(100)        // 控制棒初始全插入（停堆）
+  // 控制棒分组状态：12 组手动棒目标值（初始全插入=停堆）；物理位置存 ref，按伺服限速跟踪目标
+  const [banks, setBanks] = useState<number[]>(() => Array(GROUPS).fill(100))
+  const [scramTarget, setScramTarget] = useState(0)
+  const [autoMode, setAutoMode] = useState(false)
+  const [autoTarget, setAutoTarget] = useState(75)
+  const banksRef = useRef(banks); banksRef.current = banks
+  const bankPosRef = useRef<number[]>(Array(GROUPS).fill(100))
+  const autoPosRef = useRef(100)
+  const scramPosRef = useRef(0)
+  const scramTargetRef = useRef(scramTarget); scramTargetRef.current = scramTarget
+  const autoModeRef = useRef(autoMode); autoModeRef.current = autoMode
+  const autoTargetRef = useRef(autoTarget); autoTargetRef.current = autoTarget
   const [flow, setFlow] = useState(40)
+  const flowRef = useRef(flow); flowRef.current = flow
   const [boron, setBoron] = useState(0)
   const [taskIdx, setTaskIdx] = useState(0)
   const [taskState, setTaskState] = useState<'doing' | 'done' | 'fail'>('doing')
@@ -132,10 +162,31 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
       last = now
       // 冻结态：物理不演化，只渲染最后一帧（含熔毁动画的持续渲染）
       if (!paused) {
-        // 任务⑤随机扰动（控制棒轻微抖动）
+        // 任务④：冷却泵跳闸——流量被强制拖到 15%
+        if (taskIdx === 3 && flowRef.current > 15) {
+          flowRef.current = Math.max(15, flowRef.current - 20 * dt)
+          setFlow(flowRef.current)
+        }
+        // 自动调节棒接管时：比例控制跟踪目标功率（参照 RBMK 的 LAC/LAP 自动棒）
+        if (autoModeRef.current) {
+          const err = autoTargetRef.current - stateRef.current.power
+          const desired = Math.max(0, Math.min(100, autoPosRef.current - err * AUTO_KP * dt))
+          const d = Math.max(-AUTO_RATE * dt, Math.min(AUTO_RATE * dt, desired - autoPosRef.current))
+          autoPosRef.current = Math.max(0, Math.min(100, autoPosRef.current + d))
+        }
+        // 棒的机械移动（真实伺服限速：RBMK 名义 0.4m/s，插满需 18-21 秒）
+        const step = ROD_RATE * dt
+        bankPosRef.current = banksRef.current.map((target, i) => {
+          const cur = bankPosRef.current[i]
+          const d = Math.max(-step, Math.min(step, target - cur))
+          return Math.max(0, Math.min(100, cur + d))
+        })
+        const sd = Math.max(-SCRAM_RATE * dt, Math.min(SCRAM_RATE * dt, scramTargetRef.current - scramPosRef.current))
+        scramPosRef.current = Math.max(0, Math.min(100, scramPosRef.current + sd))
+        // 任务⑤随机扰动（等效于控制棒轻微抖动）
         if (taskIdx === 4 && Math.random() < 0.02) disturbRef.current = (Math.random() - 0.5) * 8
-        const effRods = Math.max(0, Math.min(100, rods + disturbRef.current))
-        const s = stepReactor(stateRef.current, effRods, flow, boron, dt)
+        const effRods = Math.max(0, Math.min(100, rodEffect(bankPosRef.current, autoPosRef.current, scramPosRef.current) + disturbRef.current))
+        const s = stepReactor(stateRef.current, effRods, flowRef.current, boron, dt)
         stateRef.current = s
         const el = (Date.now() - taskStartRef.current) / 1000
         setElapsed(el)
@@ -157,12 +208,12 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
           setPaused('fail')   // 冻结，等孩子点「重试本任务」
         }
       }
-      draw(canvasRef.current, stateRef.current, rods, meltdown, alarm)
+      draw(canvasRef.current, stateRef.current, { banks: bankPosRef.current, auto: autoPosRef.current, scram: scramPosRef.current }, meltdown, alarm)
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [rods, flow, boron, taskIdx, taskState, meltdown, alarm, done, paused])
+  }, [boron, flow, taskIdx, taskState, meltdown, alarm, done, paused])
 
   // 孩子点击「下一个任务」：解冻并切换（有 startPower 的任务重置堆态）
   const nextTask = () => {
@@ -171,6 +222,9 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
       if (next.startPower !== undefined) {
         stateRef.current = equilibriumState(next.startPower)
       }
+      setScramTarget(0); scramTargetRef.current = 0; scramPosRef.current = 0
+      setFlow(40); flowRef.current = 40
+      setAutoMode(taskIdx + 1 === 4)
       setTaskIdx((i) => i + 1); setTaskState('doing'); taskStartRef.current = Date.now(); setPaused(null)
     } else {
       setPaused(null); finish('submit')   // 全部完成 → 通关过场 → 结算
@@ -182,6 +236,9 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
     if (cur.startPower !== undefined) {
       stateRef.current = equilibriumState(cur.startPower)
     }
+    setScramTarget(0); scramTargetRef.current = 0; scramPosRef.current = 0
+    setFlow(40); flowRef.current = 40
+    setAutoMode(taskIdx === 4)
     setMeltdown(false); setTaskState('doing'); taskStartRef.current = Date.now(); setPaused(null)
   }
 
@@ -275,13 +332,37 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
           <Gauge label="一回路压力" value={s.pressure} unit="bar" max={260} warn={SAFE_PRESSURE} color={s.pressure > SAFE_PRESSURE ? '#e2574a' : '#9c6ade'} />
           <Gauge label="中子密度" value={s.neutron} unit="" max={130} warn={110} color="#4ae2a0" />
 
-          <Control label="控制棒插入" value={rods} onChange={setRods} hint={rods > 80 ? '棒深=停堆' : rods < 30 ? '棒浅=高功率 ⚠️' : ''} />
-          <div className="reactor-presets">
-            <button onClick={() => setRods(100)}>⛔ 停堆</button>
-            <button onClick={() => setRods(55)}>半棒</button>
-            <button onClick={() => setRods(20)}>⚡ 高功率</button>
+          <div className="reactor-bank-panel">
+            <div className="reactor-bank-head">
+              <span>手动控制棒 · 12组×8根（插入深度%）</span>
+              <span className="reactor-bank-btns">
+                <button onClick={() => setBanks(Array(GROUPS).fill(100))}>⛔ 全插</button>
+                <button onClick={() => setBanks(Array(GROUPS).fill(50))}>半棒</button>
+                <button onClick={() => setBanks(Array(GROUPS).fill(15))}>⚡ 浅棒</button>
+              </span>
+            </div>
+            <div className="reactor-bank-grid">
+              {banks.map((v, i) => (
+                <div key={i} className="reactor-bank">
+                  <input type="range" min={0} max={100} value={v} aria-label={`第${i + 1}组控制棒`}
+                    onChange={(e) => setBanks((bs) => bs.map((b, j) => j === i ? Number(e.target.value) : b))} />
+                  <b>{v}</b>
+                </div>
+              ))}
+            </div>
+            <div className="reactor-bank-foot">棒有机械惯性：全提到全插约需 17 秒（参照 RBMK 0.4m/s 伺服限速）</div>
           </div>
-          <Control label="冷却水流量" value={flow} onChange={setFlow} hint={flow < 25 ? '冷却不足 ⚠️' : ''} />
+          <button className={`reactor-az5${scramTarget === 100 ? ' active' : ''}`} onClick={() => setScramTarget(100)}>
+            🛑 AZ-5 紧急停堆（24根保护棒全速插入）
+          </button>
+          {autoMode && (
+            <div className="reactor-ctl">
+              <div className="reactor-ctl-head"><span>自动调节棒 · 目标功率</span><b>{autoTarget}%</b></div>
+              <input type="range" min={50} max={95} value={autoTarget} onChange={(e) => setAutoTarget(Number(e.target.value))} />
+              <span className="reactor-ctl-hint">自动棒实时跟踪目标功率（24根）</span>
+            </div>
+          )}
+          <Control label="冷却水流量" value={flow} onChange={(v) => { setFlow(v); flowRef.current = v }} hint={taskIdx === 3 ? '冷却泵跳闸！流量不受控 ⚠️' : flow < 25 ? '冷却不足 ⚠️' : ''} />
           <Control label="硼浓度（慢效抑制）" value={boron} onChange={setBoron} hint={boron > 60 ? '反应性被压制' : ''} />
         </div>
       </div>
@@ -321,7 +402,7 @@ function Control({ label, value, onChange, hint }: { label: string; value: numbe
 }
 
 // ===== Canvas 堆芯渲染 =====
-function draw(canvas: HTMLCanvasElement | null, s: ReactorState, rods: number, meltdown: boolean, alarm: boolean) {
+function draw(canvas: HTMLCanvasElement | null, s: ReactorState, rodPos: { banks: number[]; auto: number; scram: number }, meltdown: boolean, alarm: boolean) {
   if (!canvas) return
   const ctx = canvas.getContext('2d')
   if (!ctx) return
@@ -344,11 +425,21 @@ function draw(canvas: HTMLCanvasElement | null, s: ReactorState, rods: number, m
   grad.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = grad
   ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI * 2); ctx.fill()
-  // 控制棒（从顶部插入，深度随 rods）
-  const rodH = (rods / 100) * 130
-  ctx.fillStyle = '#8a99b5'
-  for (let i = -2; i <= 2; i++) {
-    ctx.fillRect(cx + i * 26 - 5, cy - 150, 10, 20 + rodH)
+  // 控制棒（从顶部插入）：12 组手动棒各 2 根代表 + 自动棒（绿）+ AZ-5 保护棒（红）
+  for (let g = 0; g < GROUPS; g++) {
+    const x = cx - 143 + g * 26
+    const h = 20 + (rodPos.banks[g] / 100) * 130
+    ctx.fillStyle = '#8a99b5'
+    ctx.fillRect(x - 5, cy - 150, 4, h)
+    ctx.fillRect(x + 1, cy - 150, 4, h)
+  }
+  ctx.fillStyle = '#4ae2a0'
+  ctx.fillRect(cx - 13, cy - 150, 5, 20 + (rodPos.auto / 100) * 130)
+  ctx.fillRect(cx + 8, cy - 150, 5, 20 + (rodPos.auto / 100) * 130)
+  if (rodPos.scram > 0) {
+    ctx.fillStyle = '#e2574a'
+    ctx.fillRect(cx - 33, cy - 150, 5, 20 + (rodPos.scram / 100) * 130)
+    ctx.fillRect(cx + 28, cy - 150, 5, 20 + (rodPos.scram / 100) * 130)
   }
   // 燃料棒排
   ctx.fillStyle = `rgba(${glowR},${glowG},${glowB},0.85)`
