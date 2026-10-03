@@ -89,7 +89,7 @@ export default function App() {
     answers: Array<number | string | null>
     perQuestionMs: number[]
     usedMs: number
-    finishedBy: 'submit' | 'timeout'
+    finishedBy: 'submit' | 'timeout' | 'fail'
     questions: Question[]
   }) => {
     const graded = gradeSession(r.questions, r.answers, r.perQuestionMs)

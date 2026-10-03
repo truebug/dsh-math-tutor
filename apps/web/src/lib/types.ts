@@ -37,7 +37,7 @@ export interface SessionRecord {
   accuracy: number
   perQuestionMs: number[]
   wrong: WrongItem[]
-  finishedBy: 'submit' | 'timeout'
+  finishedBy: 'submit' | 'timeout' | 'fail'
 }
 
 export type View = 'map' | 'setup' | 'race' | 'result' | 'mistakes' | 'dashboard'

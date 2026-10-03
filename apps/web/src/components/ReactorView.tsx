@@ -8,7 +8,7 @@ import type { RaceSettings } from '../lib/types'
 interface Props {
   settings: RaceSettings
   onAbandon: () => void
-  onFinish: (r: { answers: Array<number | string | null>; perQuestionMs: number[]; usedMs: number; finishedBy: 'submit' | 'timeout'; questions: Question[] }) => void
+  onFinish: (r: { answers: Array<number | string | null>; perQuestionMs: number[]; usedMs: number; finishedBy: 'submit' | 'timeout' | 'fail'; questions: Question[] }) => void
 }
 
 // ===== 简化物理模型（确定性，无量纲）=====
@@ -19,6 +19,12 @@ interface ReactorState { power: number; temp: number; pressure: number; neutron:
 const SAFE_TEMP = 320      // 安全温度上限（℃）
 const SAFE_PRESSURE = 160  // 安全压力上限（bar）
 const MELTDOWN_TEMP = 480  // 熔毁温度
+
+// 任务切换/重试时的堆态重置：从满冷却平衡态推导，避免开局就触发报警灯
+function equilibriumState(power: number): ReactorState {
+  const temp = Math.max(30, (power * 3.2 - 40) / 0.9)
+  return { power, temp, pressure: Math.max(1, 1 + Math.pow(Math.max(0, temp - 90) / 100, 1.7) * 55), neutron: power }
+}
 
 function stepReactor(s: ReactorState, rods: number, flow: number, boron: number, dt: number): ReactorState {
   // 反应性：控制棒越深越低，硼抑制；功率目标跟踪中子密度
@@ -72,10 +78,12 @@ const TASKS: Task[] = [
   {
     name: '③ 边界测试', desc: '摸到 95% 功率但绝不能超过 100%', failMsg: '',
     startPower: 80,
-    check: (() => { let touched = false; let hold = 0; return (s) => {
+    check: (() => { let touched = false; let held = 0; let lastT: number | null = null; return (s, el) => {
       if (s.power > 100) return 'fail'
       if (s.power >= 93) touched = true
-      if (touched && s.power >= 80 && s.power <= 98) { hold += 1; return hold >= 12 ? 'done' : 'doing' }
+      if (lastT !== null && touched && s.power >= 80 && s.power <= 98) held += Math.max(0, el - lastT)
+      lastT = el
+      if (held >= 2) return 'done'
       return 'doing'
     } })(),
   },
@@ -161,7 +169,7 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
     if (taskIdx + 1 < TASKS.length) {
       const next = TASKS[taskIdx + 1]
       if (next.startPower !== undefined) {
-        stateRef.current = { power: next.startPower, temp: 60 + next.startPower * 2.8, pressure: 20 + next.startPower * 0.7, neutron: next.startPower }
+        stateRef.current = equilibriumState(next.startPower)
       }
       setTaskIdx((i) => i + 1); setTaskState('doing'); taskStartRef.current = Date.now(); setPaused(null)
     } else {
@@ -172,7 +180,7 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
   const retryTask = () => {
     const cur = TASKS[taskIdx]
     if (cur.startPower !== undefined) {
-      stateRef.current = { power: cur.startPower, temp: 60 + cur.startPower * 2.8, pressure: 20 + cur.startPower * 0.7, neutron: cur.startPower }
+      stateRef.current = equilibriumState(cur.startPower)
     }
     setMeltdown(false); setTaskState('doing'); taskStartRef.current = Date.now(); setPaused(null)
   }
@@ -189,7 +197,7 @@ export default function ReactorView({ settings: _settings, onAbandon, onFinish }
       answers: TASKS.map((_, i) => i < completed ? '完成' : '未完成'),
       perQuestionMs: TASKS.map(() => 30000),
       usedMs: Date.now() - startRef.current,
-      finishedBy: by === 'submit' ? 'submit' : 'timeout',
+      finishedBy: by,
       questions,
     }
   }, [done, score])

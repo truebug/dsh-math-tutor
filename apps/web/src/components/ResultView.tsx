@@ -144,7 +144,7 @@ export default function ResultView({ record, profile, scoreResult, guest, onRetr
       <div className="stats">
         <div className="stat"><b>{record.correct}</b><span>答对 / {record.total} 题</span></div>
         <div className="stat"><b>{Math.round(record.accuracy * 100)}%</b><span>正确率</span></div>
-        <div className="stat"><b>{fmt(record.usedMs)}</b><span>{record.finishedBy === 'timeout' ? '时间到' : '用时'}</span></div>
+        <div className="stat"><b>{fmt(record.usedMs)}</b><span>{record.finishedBy === 'timeout' ? '时间到' : record.finishedBy === 'fail' ? '挑战失败' : '用时'}</span></div>
         <div className="stat"><b>{avg}s</b><span>平均每题</span></div>
       </div>
 
