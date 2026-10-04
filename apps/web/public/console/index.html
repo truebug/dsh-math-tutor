@@ -14,10 +14,10 @@
       font-family: 'Courier New', monospace;
       background-color: #0a0f14;
       color: #00ff00;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow: auto;
     }
     header {
       background-color: #1a2530;
@@ -194,6 +194,7 @@
         height: auto;
         min-height: 200px;
       }
+      .panel .log-panel { max-height: 180px; }
     }
     /* ===== 关卡层（培训任务）——追加 ===== */
     #taskBox {
