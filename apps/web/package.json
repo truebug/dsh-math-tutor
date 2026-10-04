@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "cp ../../demo/chernobyl-escape/index.html public/escape/index.html",
+    "prebuild": "cp ../../demo/chernobyl-escape/index.html public/escape/index.html && cp ../../demo/nuclear-console/index.html public/console/index.html",
     "build": "vite build",
     "typecheck": "tsc --noEmit"
   },

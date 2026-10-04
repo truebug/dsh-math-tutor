@@ -7,6 +7,7 @@ import WordMatchView from './components/WordMatchView'
 import PoemChainView from './components/PoemChainView'
 import SnakeView from './components/SnakeView'
 import ReactorView from './components/ReactorView'
+import ConsoleView from './components/ConsoleView'
 import WhackView from './components/WhackView'
 import MemoryView from './components/MemoryView'
 import EscapeView from './components/EscapeView'
@@ -167,6 +168,7 @@ export default function App() {
       {view === 'race' && settings.kind === 'memory' && <MemoryView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'race' && settings.kind === 'escape' && <EscapeView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'race' && settings.kind === 'reactor' && <ReactorView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
+      {view === 'race' && settings.kind === 'console' && <ConsoleView key={raceKey} settings={settings} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'race' && !(ARCADE_KINDS as readonly string[]).includes(settings.kind ?? '') && <RaceView key={raceKey} settings={settings} nickname={me.nickname} grade={me.grade} onAbandon={() => setView('map')} onFinish={handleFinish} />}
       {view === 'result' && record && (
         <ResultView

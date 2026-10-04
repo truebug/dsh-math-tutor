@@ -249,6 +249,9 @@ body.touch .touchpad{display:flex}
       <span class="inv-tag" id="invGear">齿轮 0/2</span>
       <span class="inv-tag" id="invBucket">水桶 —</span>
       <span class="inv-tag" id="invWrench">扳手 —</span>
+      <span class="inv-tag" id="invSuit">防化服 —</span>
+      <span class="inv-tag" id="invHat">安全帽 —</span>
+      <span class="inv-tag" id="invFile">文件 0/4</span>
     </div>
   </div>
   <div class="module ops-module">
@@ -274,17 +277,18 @@ body.touch .touchpad{display:flex}
 
 <script>
 /* ================= 关卡数据 =================
-   44 列 x 26 行, 每格 26px, 相机 XY 双向跟随
+   72 列 x 32 行(6 层), 每格 26px, 相机 XY 双向跟随
    # 墙体  ^ 梯子  ~ 火焰  ! 蒸汽  S 废墟(蹲伏通过)
-   D 锁门  K 钥匙  G 齿轮  M 出生点  E 安全区出口  . 空 */
-var TILE = 26, COLS = 44, ROWS = 26;
+   D 锁门  K 钥匙  G 齿轮  M 出生点  E 安全区出口  . 空
+   P 防化服  H 安全帽  $ 机密文件(收集)  f 火苗小鬼  F 检查点旗 */
+var TILE = 26, COLS = 72, ROWS = 32;
 var WORLD_W = COLS*TILE, WORLD_H = ROWS*TILE;
 function shell(){
   var g=[], x, y;
   for(y=0;y<ROWS;y++){ var r=[]; for(x=0;x<COLS;x++) r.push('.'); g.push(r); }
   for(x=0;x<COLS;x++){ g[0][x]='#'; g[ROWS-1][x]='#'; }
   for(y=0;y<ROWS;y++){ g[y][0]='#'; g[y][COLS-1]='#'; }
-  [6,11,16,21].forEach(function(fy){ for(x=1;x<COLS-1;x++) g[fy][x]='#'; });
+  [6,11,16,21,26].forEach(function(fy){ for(x=1;x<COLS-1;x++) g[fy][x]='#'; });
   return g;
 }
 // 竖井: 梯子从上层楼面贯通到下层楼面, 楼层地板留洞口
@@ -295,54 +299,72 @@ function shaftG(g, sx, yTop, floorY, yBot){
 /* ===== 第 1 关: 逃离四号机组厂房 ===== */
 function buildMap1(){
   var g = shell();
-  shaftG(g,30,3,6,10); shaftG(g,10,8,11,15); shaftG(g,35,13,16,20);
-  shaftG(g,6,18,21,24); shaftG(g,20,18,21,24);
+  shaftG(g,34,3,6,10); shaftG(g,12,8,11,15); shaftG(g,44,13,16,20);
+  shaftG(g,7,18,21,24); shaftG(g,26,18,21,24); shaftG(g,52,23,26,29);
   g[4][2]  = 'M';
-  g[5][38] = 'K';
+  g[5][62] = 'K';
   g[10][3] = 'G';
-  g[20][41]= 'G';
-  g[19][38]= 'D'; g[20][38] = 'D';
+  g[20][58]= 'G';
+  g[19][54]= 'D'; g[20][54] = 'D';
   g[5][20] = '~';
   g[10][25]= '~'; g[10][26] = '~';
   g[15][30]= '~';
   g[20][28]= '~';
-  g[24][22]= '~';
-  g[15][15]='S'; g[15][16]='S'; g[15][17]='S';
-  for(var sy=22;sy<=24;sy++){ g[sy][15]='!'; g[sy][30]='!'; }
-  g[23][41]= 'E';
+  g[24][22]= '~'; g[29][36]= '~'; g[29][37]= '~';
+  g[15][15]='S'; g[15][16]='S'; g[15][17]='S'; g[25][40]='S'; g[25][41]='S';
+  for(var sy=22;sy<=24;sy++){ g[sy][15]='!'; g[sy][36]='!'; }
+  for(var sy2=27;sy2<=29;sy2++){ g[sy2][24]='!'; }
+  g[5][30] = 'P'; g[20][12]= 'H';
+  g[10][60]= '$'; g[15][4]= '$'; g[25][56]= '$'; g[29][66]= '$';
+  g[15][1] = 'F';
+  g[10][36]= 'f'; g[20][40]= 'f'; g[29][50]= 'f';
+  g[29][69]= 'E';
   return g;
 }
 /* ===== 第 2 关: 穿越厂区(水桶灭火/扳手闸门/水源续水) ===== */
 function buildMap2(){
   var g = shell();
-  shaftG(g,30,3,6,10); shaftG(g,10,8,11,15); shaftG(g,35,13,16,20); shaftG(g,6,18,21,24);
+  shaftG(g,34,3,6,10); shaftG(g,12,8,11,15); shaftG(g,44,13,16,20);
+  shaftG(g,7,18,21,24); shaftG(g,26,18,21,24); shaftG(g,52,23,26,29);
   g[4][2]  = 'M';
   g[5][5]  = 'B';            // 水桶(满)
-  g[5][15] = '~';            // 火墙挡路 → 用桶扑灭
+  g[5][15] = '*';            // 火墙挡路 → 用桶扑灭
   g[10][18]='S'; g[10][19]='S'; g[10][20]='S';
   g[15][6] = 'T';            // 扳手
   g[15][25]= '~'; g[15][26] = '~';  // 可跳过
-  g[20][15]= '~';            // 再挡 → 续水后扑灭
+  g[20][15]= '*';            // 再挡 → 续水后扑灭
   g[20][24]= '≈';            // 消防泵/水源(在火焰东侧, 免穿火取水)
-  g[22][30]= 'W'; g[23][30] = 'W'; g[24][30] = 'W';  // 扳手闸门(G层挡出口路)
+  g[22][38]= 'W'; g[23][38] = 'W'; g[24][38] = 'W';  // 扳手闸门(G层挡出口路)
   g[24][22]= '~';            // 可跳过
-  g[23][41]= 'E';
+  g[29][30]= '*';            // B1 挡路火 → 需在水源二次续水
+  g[15][34]= '~'; g[25][46]= '~'; g[25][47]= '~';
+  g[10][50]= 'P'; g[25][20]= 'H';
+  g[5][64] = '$'; g[15][52]= '$'; g[20][60]= '$'; g[29][12]= '$';
+  g[15][1] = 'F';
+  g[10][36]= 'f'; g[20][44]= 'f'; g[29][54]= 'f';
+  g[29][69]= 'E';
   return g;
 }
 /* ===== 第 3 关: 撤离普里皮亚季居民楼 ===== */
 function buildMap3(){
   var g = shell();
-  shaftG(g,30,3,6,10); shaftG(g,10,8,11,15); shaftG(g,35,13,16,20); shaftG(g,6,18,21,24);
+  shaftG(g,34,3,6,10); shaftG(g,12,8,11,15); shaftG(g,44,13,16,20);
+  shaftG(g,7,18,21,24); shaftG(g,26,18,21,24);
   g[4][2]  = 'M';
-  g[5][38] = 'K';            // 钥匙
+  g[5][62] = 'K';            // 钥匙
   g[10][3] = 'G';            // 齿轮1
-  g[22][8] = 'D'; g[23][8] = 'D'; g[24][8] = 'D';    // 钥匙门(G层全高, 下楼后第一重闸)
-  g[15][41]= 'G';            // 齿轮2(B1 东侧)
+  g[22][8] = 'D'; g[23][8] = 'D'; g[24][8] = 'D'; g[27][8]='D'; g[28][8]='D'; g[29][8]='D'; // 钥匙门(G+B1 全高)
+  g[15][66]= 'G';            // 齿轮2(B1 东侧)
   g[15][30]= '~';            // 可跳过
-  for(var sy=22;sy<=24;sy++) g[sy][15]='!';  // 蒸汽封G层楼道 → 控制台修供电
-  g[20][27]='S'; g[20][28]='S';
-  g[24][28]= '~';            // 可跳过
-  g[23][41]= 'E';            // 撤离巴士
+  for(var sy=22;sy<=24;sy++) g[sy][18]='!';  // 蒸汽封G层楼道 → 控制台修供电
+  for(var sy2=27;sy2<=29;sy2++) g[sy2][40]='!';  // B1 楼道蒸汽
+  g[20][27]='S'; g[20][28]='S'; g[25][30]='S'; g[25][31]='S';
+  g[24][28]= '~'; g[29][52]= '~';   // 可跳过
+  g[5][40] = 'P'; g[10][34]= 'H';
+  g[5][12] = '$'; g[20][56]= '$'; g[25][4] = '$'; g[29][60]= '$';
+  g[15][1] = 'F';
+  g[10][40]= 'f'; g[20][46]= 'f'; g[25][56]= 'f';
+  g[29][69]= 'E';            // 撤离巴士
   return g;
 }
 /* ===== 第 1 关: 种子化随机生成 + BFS 可达性验证 ===== */
@@ -356,6 +378,15 @@ function genLevel1(seed){
   }
   return buildMap1(); // 极端情况降级固定图
 }
+/* 新要素放置辅助: 在指定行的候选列找可站立空格 */
+function placeNew(g, rnd, ch, row, cands){
+  var sh = shuffleA(cands, rnd);
+  for(var i=0;i<sh.length;i++){
+    var c = sh[i];
+    if(g[row][c]==='.' && g[row-1] && g[row-1][c]==='.' && g[row+1] && g[row+1][c]==='#'){ g[row][c]=ch; return c; }
+  }
+  return 0;
+}
 function tryGenL1(seed){
   var rnd = mulberry32(seed);
   function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
@@ -363,12 +394,13 @@ function tryGenL1(seed){
   for(var t=0;t<40;t++){
     var g = shell();
     // 竖井位置: 各层随机(避开东西边缘)
-    var s1=pick([24,27,30,33]), s2=pick([7,10,13]), s3=pick([30,33,35,38]), s4=pick([4,6,8]), s5=pick([18,20,22]);
+    var s1=pick([28,31,34,37]), s2=pick([8,11,14]), s3=pick([40,44,48,52]), s4=pick([4,6,8]), s5=pick([20,23,26]), s6=pick([48,52,56,60]);
     shaftG(g,s1,3,6,10); shaftG(g,s2,8,11,15); shaftG(g,s3,13,16,20);
-    shaftG(g,s4,18,21,24); shaftG(g,s5,18,21,24);
+    shaftG(g,s4,18,21,24); shaftG(g,s5,18,21,24); shaftG(g,s6,23,26,29);
     // 蒸汽封路(全高3格, 不可跳过)
-    var v1=rand(10,20), v2=rand(26,36);
+    var v1=rand(10,22), v2=rand(30,44), v3=rand(20,32);
     for(var sy=22;sy<=24;sy++){ g[sy][v1]='!'; g[sy][v2]='!'; }
+    for(var sy2=27;sy2<=29;sy2++){ g[sy2][v3]='!'; }
     // 可跳过小火(每层最多2处, 间隔≥2)
     function firesOn(row, used, n){
       var cnt=0;
@@ -380,20 +412,21 @@ function tryGenL1(seed){
         g[row][c]='~'; used[c]=true; cnt++;
       }
     }
-    var u1={},u2={},u3={},u4={},u5={};
-    [s1,s2,s3,s4,s5,v1,v2].forEach(function(s){ u1[s]=u2[s]=u3[s]=u4[s]=u5[s]=true; });
+    var u1={},u2={},u3={},u4={},u5={},u6={};
+    [s1,s2,s3,s4,s5,s6,v1,v2,v3].forEach(function(s){ u1[s]=u2[s]=u3[s]=u4[s]=u5[s]=u6[s]=true; });
     var dense = DIFFS[diffIdx||0].dense;
-    firesOn(5,u1,rand(1,2)+dense); firesOn(10,u2,rand(1,2)+dense); firesOn(15,u3,rand(1,2)+dense); firesOn(20,u4,rand(1,2)+dense); firesOn(24,u5,rand(1,2)+dense);
+    firesOn(5,u1,rand(1,2)+dense); firesOn(10,u2,rand(1,2)+dense); firesOn(15,u3,rand(1,2)+dense);
+    firesOn(20,u4,rand(1,2)+dense); firesOn(24,u5,rand(1,2)+dense); firesOn(29,u6,rand(1,2)+dense);
     // 废墟(蹲伏, 2-3格) 放在随机两层
-    var rubRows = shuffleA([15,20], rnd).slice(0, rand(1,2));
+    var rubRows = shuffleA([15,20,25], rnd).slice(0, rand(1,2));
     rubRows.forEach(function(row){
-      var c = rand(8,34), len = rand(2,3), ok=true;
+      var c = rand(8,56), len = rand(2,3), ok=true;
       for(var i=-1;i<=len;i++) if(g[row][c+i]!=='.' || g[row-1][c+i]!=='.' || [s1,s2,s3,s4,s5].indexOf(c+i)>=0) ok=false;
       if(ok) for(var j=0;j<len;j++) g[row][c+j]='S';
     });
     // 门: 1F 随机列(避开竖井/蒸汽/门后留2格)
     var doorCol = 0;
-    var dcands = shuffleA([24,26,28,30,32,34,36,38,40], rnd);
+    var dcands = shuffleA([36,38,40,42,44,46,48,50,52,54], rnd);
     for(var di=0; di<dcands.length; di++){
       var dc = dcands[di];
       if([s3,s4,s5].indexOf(dc)>=0) continue;
@@ -405,7 +438,7 @@ function tryGenL1(seed){
     // 出生/钥匙/齿轮/出口
     g[4][2]  = 'M';
     var kCol = 0;
-    var kCands = shuffleA([31,32,33,34,35,36,37,38,39,40], rnd);
+    var kCands = shuffleA([54,56,58,60,62,64,66], rnd);
     for(var ki=0; ki<kCands.length; ki++){
       var kc = kCands[ki];
       if(g[5][kc]==='.' && g[4][kc]==='.' && g[6][kc]==='#'){ kCol = kc; break; }
@@ -419,7 +452,14 @@ function tryGenL1(seed){
     if(n4) g[20][n4] = '4';
     g[10][rand(2,5)] = 'G';
     g[20][rand(doorCol+1, Math.min(42, doorCol+3))] = 'G';
-    g[23][41]= 'E';
+    // 新要素: 防化服/安全帽/机密文件×4/检查点旗/火苗小鬼×3
+    placeNew(g, rnd, 'P', 5, [26,28,30,32]);
+    placeNew(g, rnd, 'H', 20, [10,12,14]);
+    placeNew(g, rnd, '$', 10, [56,58,60,62]); placeNew(g, rnd, '$', 15, [3,4,5]);
+    placeNew(g, rnd, '$', 25, [50,52,54,56]); placeNew(g, rnd, '$', 29, [62,64,66]);
+    g[15][1] = 'F';
+    placeNew(g, rnd, 'f', 10, [34,36,38]); placeNew(g, rnd, 'f', 20, [38,40,42]); placeNew(g, rnd, 'f', 29, [46,48,50]);
+    g[29][69]= 'E';
     // 门后齿轮不与火重叠则接受
     if(g[19][doorCol+1]==='~'||g[19][doorCol+2]==='~') continue;
     return g;
@@ -459,7 +499,7 @@ function verifyL1(g){
     return seen;
   }
   function near(seen,p){ for(var dx=-1;dx<=1;dx++) for(var dy=-1;dy<=1;dy++){ if(seen[(p.x+dx)+','+(p.y+dy)]) return true; } return false; }
-  function nearSteamClear(seen,p){ for(var dx=-2;dx<=2;dx++) for(var dy=-2;dy<=2;dy++){ var q={x:p.x+dx,y:p.y+dy}; if(seen[q.x+','+q.y] && !isSteam(q)) return true; } return false; }
+  function nearSteamClear(seen,p){ for(var dx=-6;dx<=6;dx++) for(var dy=-6;dy<=6;dy++){ var q={x:p.x+dx,y:p.y+dy}; if(seen[q.x+','+q.y] && !isSteam(q)) return true; } return false; }
   var s1=reach(false,false);
   if(!near(s1,K)||!near(s1,{x:G2[0].x,y:G2[0].fy})) return false;  // 钥匙 + 齿轮1(按站立格)
   if(!near(s1,DR[0])) return false;
@@ -485,12 +525,12 @@ function tryGen23(idx, seed){
   function rand(a,b){ return a + Math.floor(rnd()*(b-a+1)); }
   for(var t=0;t<40;t++){
     var g = shell();
-    var s1=pick([24,27,30,33]), s2=pick([7,10,13]), s3=pick([30,33,35,38]), s4=pick([4,6,8]), s5=pick([18,20,22]);
+    var s1=pick([28,31,34,37]), s2=pick([8,11,14]), s3=pick([40,44,48,52]), s4=pick([4,6,8]), s5=pick([20,23,26]), s6=pick([48,52,56,60]);
     if(idx===2) s5 = s3; // L3 不需要 G↔1F 返回梯
     shaftG(g,s1,3,6,10); shaftG(g,s2,8,11,15); shaftG(g,s3,13,16,20);
     shaftG(g,s4,18,21,24);
-    if(idx===1) shaftG(g,s5,18,21,24);
-    var shafts = [s1,s2,s3,s4,s5];
+    if(idx===1){ shaftG(g,s5,18,21,24); shaftG(g,s6,23,26,29); }
+    var shafts = [s1,s2,s3,s4,s5,s6];
     function clearAt(x,y){ return g[y] && g[y][x]==='.' && g[y+1] && g[y+1][x]==='#' && g[y-1][x]==='.'; }
     function placeOn(chars, row, cands, minGap){
       var sh = shuffleA(cands, rnd);
@@ -512,25 +552,40 @@ function tryGen23(idx, seed){
       if(!placeOn('T',15,[4,5,6,7,8,9])) continue;
       if(!placeOn('*',20,[13,15,17,19,21],2)) continue;
       if(!placeOn('≈',20,[24,26,28,30])) continue;
-      var wc = pick([28,30,32]);
+      var wc = pick([36,38,40]);
       g[22][wc]='W'; g[23][wc]='W'; g[24][wc]='W';
       if(!placeOn('2',10,[24,25,26,27,28])) continue;
       if(!placeOn('4',15,[30,31,32,33,34])) continue;
       i2 = rand(0,1); if(i2) { if(!placeOn('~',24,[20,21,22])) continue; }
       if(!placeOn('~',15,[24,25,26])) continue;
+      if(!placeOn('*',29,[28,30,32,34],2)) continue;
+      if(!placeOn('P',10,[48,50,52])) continue;
+      if(!placeOn('H',25,[18,20,22])) continue;
+      placeNew(g, rnd, '$', 5, [60,62,64]); placeNew(g, rnd, '$', 15, [50,52,54]);
+      placeNew(g, rnd, '$', 20, [56,58,60]); placeNew(g, rnd, '$', 29, [10,12,14]);
+      g[15][1] = 'F';
+      placeNew(g, rnd, 'f', 10, [34,36,38]); placeNew(g, rnd, 'f', 20, [42,44,46]); placeNew(g, rnd, 'f', 29, [52,54,56]);
     } else {
       // L3: 钥匙/双齿轮/G层钥匙门+蒸汽
-      if(!placeOn('K',5,[31,32,33,34,35,36,37,38,39,40])) continue;
+      if(!placeOn('K',5,[54,56,58,60,62,64,66])) continue;
       if(!placeOn('G',10,[2,3,4,5])) continue;
-      if(!placeOn('G',15,[38,39,40,41,42])) continue;
+      if(!placeOn('G',15,[62,64,66,68])) continue;
       var dc = pick([7,8,9]), vc = rand(13,18);
-      g[22][dc]='D'; g[23][dc]='D'; g[24][dc]='D';
+      g[22][dc]='D'; g[23][dc]='D'; g[24][dc]='D'; g[27][dc]='D'; g[28][dc]='D'; g[29][dc]='D';
       for(var sy=22;sy<=24;sy++) g[sy][vc]='!';
+      var vc2 = rand(36,44);
+      for(var sy2=27;sy2<=29;sy2++) g[sy2][vc2]='!';
       if(!placeOn('3',10,[15,16,17,18,19,20])) continue;
       if(!placeOn('~',15,[28,29,30,31])) continue;
       if(!placeOn('~',24,[26,28,30,32,34])) continue;
+      if(!placeOn('P',5,[38,40,42])) continue;
+      if(!placeOn('H',10,[32,34,36])) continue;
+      placeNew(g, rnd, '$', 5, [10,12,14]); placeNew(g, rnd, '$', 20, [54,56,58]);
+      placeNew(g, rnd, '$', 25, [3,4,5]); placeNew(g, rnd, '$', 29, [58,60,62]);
+      g[15][1] = 'F';
+      placeNew(g, rnd, 'f', 10, [38,40,42]); placeNew(g, rnd, 'f', 20, [44,46,48]); placeNew(g, rnd, 'f', 25, [54,56,58]);
     }
-    g[23][41] = 'E';
+    g[29][69] = 'E';
     return g;
   }
   return null;
@@ -593,10 +648,10 @@ function verifyLevel(idx, g){
 }
 
 var LEVELS = [
-  { name:'第1关 · 逃离四号机组厂房', time:300, alarmFastAt:130, build:function(){ return genLevel1(); },
+  { name:'第1关 · 逃离四号机组厂房', time:360, alarmFastAt:130, build:function(){ return genLevel1(); },
     btnLabel:'插入齿轮修复排汽阀', btnGears:2,
     boom:'01:23:46，4 号机组堆芯爆炸。你没能赶到安全区。',
-    bands:[{y1:1,y2:5,name:'反应堆大厅 B3'},{y1:7,y2:10,name:'反应堆大厅 B2'},{y1:12,y2:15,name:'汽轮机厂房 B1'},{y1:17,y2:20,name:'联合泵房 1F'},{y1:22,y2:24,name:'厂区通道 G'}],
+    bands:[{y1:1,y2:5,name:'反应堆大厅 B3'},{y1:7,y2:10,name:'反应堆大厅 B2'},{y1:12,y2:15,name:'汽轮机厂房 B1'},{y1:17,y2:20,name:'联合泵房 1F'},{y1:22,y2:24,name:'厂区通道 G'},{y1:27,y2:29,name:'地下管廊 B1'}],
     timeline:[
       {t:270, msg:'中控: 一回路压力 16.8 MPa, 超设计限值!', cls:'warn'},
       {t:230, msg:'中控: 安全阀动作, 蒸汽排放中', cls:'warn'},
@@ -605,10 +660,10 @@ var LEVELS = [
       {t:80,  msg:'中控: 氢气聚集, 爆炸风险极高!!', cls:'crit'},
       {t:40,  msg:'中控: 最后警告, 立即撤离!!!', cls:'crit'}
     ] },
-  { name:'第2关 · 穿越切尔诺贝利厂区', time:270, alarmFastAt:100, build:function(){ return genLevel23(1); }, pump:true,
+  { name:'第2关 · 穿越切尔诺贝利厂区', time:330, alarmFastAt:100, build:function(){ return genLevel23(1); }, pump:true,
     btnLabel:null, btnGears:0,
     boom:'最后的撤离车辆已经离开，你被落在了烟尘弥漫的厂区里。',
-    bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'}],
+    bands:[{y1:1,y2:5,name:'厂房废墟'},{y1:7,y2:10,name:'厂区东路'},{y1:12,y2:15,name:'冷却塔下'},{y1:17,y2:20,name:'消防站'},{y1:22,y2:24,name:'厂区大门'},{y1:27,y2:29,name:'地下管道层 B1'}],
     timeline:[
       {t:240, msg:'厂区广播: 余火未灭, 注意绕行', cls:'warn'},
       {t:200, msg:'你: 辐射剂量计读数在上升', cls:'warn'},
@@ -616,10 +671,10 @@ var LEVELS = [
       {t:60,  msg:'厂区广播: 最后撤离车辆 60 秒后离开!!', cls:'crit'},
       {t:30,  msg:'厂区广播: 车辆即将离开!!!', cls:'crit'}
     ] },
-  { name:'第3关 · 撤离普里皮亚季', time:270, alarmFastAt:100, build:function(){ return genLevel23(2); },
+  { name:'第3关 · 撤离普里皮亚季', time:330, alarmFastAt:100, build:function(){ return genLevel23(2); },
     btnLabel:'修复楼道供电(需2齿轮)', btnGears:2,
     boom:'撤离巴士发车了，你没能赶上。',
-    bands:[{y1:1,y2:5,name:'公寓 5F'},{y1:7,y2:10,name:'公寓 4F'},{y1:12,y2:15,name:'公寓 3F'},{y1:17,y2:20,name:'公寓 2F'},{y1:22,y2:24,name:'街道'}],
+    bands:[{y1:1,y2:5,name:'公寓 5F'},{y1:7,y2:10,name:'公寓 4F'},{y1:12,y2:15,name:'公寓 3F'},{y1:17,y2:20,name:'公寓 2F'},{y1:22,y2:24,name:'街道'},{y1:27,y2:29,name:'地下防空洞 B1'}],
     timeline:[
       {t:230, msg:'楼内广播: 请居民立即撤离, 不要收拾行李', cls:'warn'},
       {t:180, msg:'你: 楼道里的烟越来越大了', cls:'warn'},
@@ -652,6 +707,8 @@ var NPCS = {
           {t:'「我不信你。」', fx:'none', r:'工头冷笑一声走开了。自己的判断最可靠。'}]}
 };
 var shake, invulnT, started, ended, muted, valveFixed, doorOpen, hasKey, gears, hasBucket, hasWrench, pumpFixed;
+var suitT = 0, hatOn = false, filesGot = 0, filesTotal = 0, imps = [], flags = [], checkpoint = null;
+var groundT = 0, jumpBuf = 0, spaceHeld = false;
 var levelIdx = 0, level = null, diffIdx = 0, diff = null, totalMs = 0;
 var DIFFS = [
   { name:'简单', timeMul:1,    hp:4, invuln:1.1, dense:0 },
@@ -680,6 +737,11 @@ function reset(){
       else if(ch==='G') items.push({x:x,y:y,type:'gear',got:false});
       else if(ch==='B') items.push({x:x,y:y,type:'bucket',got:false});
       else if(ch==='T') items.push({x:x,y:y,type:'wrench',got:false});
+      else if(ch==='P') items.push({x:x,y:y,type:'suit',got:false});
+      else if(ch==='H') items.push({x:x,y:y,type:'helmet',got:false});
+      else if(ch==='$') items.push({x:x,y:y,type:'file',got:false});
+      else if(ch==='f'){ imps.push({x:x*TILE+4, y:y*TILE+TILE-16, w:18, h:16, dir:1, dead:false}); grid[y][x]='.'; }
+      else if(ch==='F') flags.push({x:x,y:y});
       else if(ch==='D') doors.push({x:x,y:y});
       else if(ch==='W') doors.push({x:x,y:y,wrench:true});
       else if(ch==='≈') waters.push({x:x,y:y});
@@ -692,6 +754,8 @@ function reset(){
   camX = 0; camY = 0; timer = level.time * diff.timeMul; shake = 0; invulnT = 0;
   ended = false; valveFixed = false; doorOpen = false;
   hasKey = false; gears = 0; hasBucket = false; hasWrench = false; pumpFixed = false;
+  suitT = 0; hatOn = false; filesGot = 0; checkpoint = null;
+  filesTotal = items.filter(function(i){ return i.type==='file'; }).length;
   logs = [];
   if(levelIdx===0){
     log('01:23:40 中控: 安全试验功率骤降后回升异常', 'warn');
@@ -707,10 +771,12 @@ function reset(){
 var keys = {};
 document.addEventListener('keydown', function(e){
   keys[e.code] = true;
+  if(e.code==='Space' && spaceHeld) keys['Space'] = false; // 长按不连跳: 边沿触发
+  if(e.code==='Space') spaceHeld = true;
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].indexOf(e.code)>=0) e.preventDefault();
   if(e.code==='Enter'){ if(!started) startGame(); else if(ended) startGame(); }
 });
-document.addEventListener('keyup', function(e){ keys[e.code] = false; });
+document.addEventListener('keyup', function(e){ keys[e.code] = false; if(e.code==='Space') spaceHeld = false; });
 /* 触屏虚拟按键 → 映射为方向键状态（支持多点同时按） */
 if('ontouchstart' in window || navigator.maxTouchPoints>0) document.body.classList.add('touch');
 document.querySelectorAll('.tp-btn').forEach(function(btn){
@@ -830,6 +896,9 @@ function update(dt){
   timer -= dt;
   if(timer <= 0){ explode(); return; }
   if(invulnT>0) invulnT -= dt;
+  if(suitT>0) suitT -= dt;
+  groundT = p.onGround ? 0.09 : Math.max(0, groundT - dt);   // 土狼时间
+  if(keys['Space']) jumpBuf = 0.12; else jumpBuf = Math.max(0, jumpBuf - dt); // 跳跃缓冲
   if(shake>0) shake = Math.max(0, shake - dt*30);
   if(timer<=80 && Math.random()<dt*1.2) shake = Math.max(shake, 4);
   if(timer<=55 && Math.random()<dt*2) shake = Math.max(shake, 7);
@@ -864,7 +933,7 @@ function update(dt){
   }
   if(!p.onLadder){
     p.vy += GRAV*dt;
-    if(keys['Space'] && p.onGround) p.vy = -JUMP;
+    if(jumpBuf>0 && (p.onGround || groundT>0)){ p.vy = -JUMP; jumpBuf = 0; groundT = 0; }
   } else if(keys['Space']){
     p.onLadder = false; p.vy = -JUMP*.7;
   }
@@ -905,7 +974,33 @@ function update(dt){
       else if(it.type==='gear'){ gears++; log('你: 拾取备用齿轮 ('+gears+'/'+level.btnGears+')', 'warn'); if(gears>=level.btnGears) log('中控: 齿轮齐了! 到操作台使用', 'warn'); }
       else if(it.type==='bucket'){ hasBucket = true; bucketSeen = true; log('你: 拎起一桶水 —— 可以扑灭一处火焰', 'warn'); }
       else if(it.type==='wrench'){ hasWrench = true; log('你: 拿到扳手 —— 可以撬开闸门', 'warn'); }
+      else if(it.type==='suit'){ suitT = 10; log('你: 穿上防化服 —— 10 秒内火焰蒸汽不伤你!', 'warn'); }
+      else if(it.type==='helmet'){ hatOn = true; log('你: 戴上安全帽 —— 可以替你挡一次伤害', 'warn'); }
+      else if(it.type==='file'){ filesGot++; log('你: 找到一份机密文件 ('+filesGot+'/'+filesTotal+')', 'warn'); }
       syncUI();
+    }
+  });
+  // 检查点旗: 触碰后成为重生点
+  flags.forEach(function(fl){
+    if(fl.lit) return;
+    if(Math.abs((fl.x+.5)*TILE - (p.x+p.w/2)) < TILE && Math.abs((fl.y+.5)*TILE - (p.y+p.h/2)) < TILE*2){
+      fl.lit = true; checkpoint = {x:fl.x*TILE+4, y:(fl.y-1)*TILE+2};
+      log('你: 经过检查点 —— 倒下的话会从这里继续', 'warn');
+    }
+  });
+  // 火苗小鬼: 水平巡逻, 触墙/边缘转向; 碰触造成伤害
+  var impSp = 70 * (1 + diff.dense*0.35);
+  imps.forEach(function(m){
+    if(m.dead) return;
+    var nx = m.x + m.dir*impSp*dt;
+    var aheadWall = solidAt(nx + (m.dir>0?m.w+2:-2), m.y+m.h/2, false);
+    var floorAhead = solidAt(nx + (m.dir>0?m.w+2:-2), m.y+m.h+4, false);
+    if(aheadWall || !floorAhead) m.dir *= -1;
+    else m.x = nx;
+    if(invulnT<=0 && suitT<=0 &&
+       p.x < m.x+m.w && p.x+p.w > m.x && p.y < m.y+m.h && p.y+p.h > m.y){
+      hurt(1, '你: 被火苗小鬼烫到了! 生命 -1');
+      p.vy = -200; p.vx = -p.face*160;
     }
   });
   // 消防泵: 持扳手靠近水源 → 修好, 之后才能续水
@@ -932,7 +1027,7 @@ function update(dt){
   }
 
   // 火焰 / 蒸汽伤害
-  if(invulnT<=0){
+  if(invulnT<=0 && suitT<=0){
     var hurtNow = fires.some(function(f){
       return p.x < (f.x+1)*TILE && p.x+p.w > f.x*TILE && p.y < (f.y+1)*TILE && p.y+p.h > f.y*TILE;
     }) || steams.some(function(s){
@@ -977,6 +1072,7 @@ function nearTile(p,t){ return Math.abs((t.x+.5)*TILE - (p.x+p.w/2)) < TILE*1.6 
 var hp = 4, exitWarned = false, bucketSeen = false;
 var doorMsg = {key:false, wrench:false};
 function hurt(dmg, msg){
+  if(hatOn && dmg>0){ hatOn = false; dmg--; invulnT = diff.invuln; shake = Math.max(shake, 6); log('安全帽替你挡下了伤害! (帽子碎了)', 'warn'); if(dmg===0){ syncUI(); return; } }
   hp -= dmg; invulnT = diff.invuln; shake = Math.max(shake, 6);
   log(msg, 'crit');
   if(hp<=0){ hp=0; die('你倒在了撤离途中。辐射与烈焰吞没了走廊。'); }
@@ -992,7 +1088,14 @@ function explode(){
     showEnd(levelIdx===0?'反应堆爆炸了':'撤离失败', level.boom + '\n—— 再试一次。');
   }, 600);
 }
-function die(msg){ ended = true; notifyParent(false); showEnd('撤离失败', msg); }
+function die(msg){
+  if(checkpoint){   // 检查点重生: 补到 2 血, 不判负
+    hp = Math.max(hp, 2); player.x = checkpoint.x; player.y = checkpoint.y;
+    player.vx = 0; player.vy = 0; invulnT = 2; shake = 10;
+    log('你在检查点醒来——继续跑! (生命回到 2)', 'warn'); syncUI(); return;
+  }
+  ended = true; notifyParent(false); showEnd('撤离失败', msg);
+}
 function win(){
   ended = true;
   runMs += Math.round((level.time*diff.timeMul - Math.max(0,timer)) * 1000);
@@ -1006,13 +1109,15 @@ function win(){
   } else {
     notifyParent(true);
     wonAll = true;
+    var starN = 1 + (filesGot >= filesTotal ? 1 : 0) + (hp >= (diff.hp-1) ? 1 : 0);
+    var starStr = '★★★'.slice(0, starN) + '☆☆☆'.slice(0, 3 - starN);
     var extra = '';
     if(runFromStart){
       var best = loadBest();
       if(!best || runMs < best){ saveBest(runMs); extra = '\n🏆 新纪录! 全程用时 ' + fmtMs(runMs) + ' (' + diff.name + ')'; }
       else extra = '\n全程用时 ' + fmtMs(runMs) + ' (' + diff.name + '), 最快纪录 ' + fmtMs(best);
     }
-    showEnd('你逃出来了!', '你登上撤离巴士, 回头望去, 地平线上的红光渐渐远去……\n'+timeStr+extra+'\n1986 年 4 月, 你活了下来。');
+    showEnd('你逃出来了! ' + starStr, '你登上撤离巴士, 回头望去, 地平线上的红光渐渐远去……\n'+timeStr+'机密文件 '+filesGot+'/'+filesTotal+'(集满加星)' + extra+'\n1986 年 4 月, 你活了下来。');
     document.getElementById('retryBtn').firstChild.textContent = '再 玩 一 次';
     pendingNext = false;
   }
@@ -1024,7 +1129,7 @@ function showEnd(title, text){
   document.getElementById('endOverlay').classList.remove('hidden');
 }
 function notifyParent(won){
-  try{ window.parent.postMessage({type:'chernobyl-escape', won:won, msLeft:Math.max(0,Math.round(timer*1000))}, '*'); }catch(e){}
+  try{ window.parent.postMessage({type:'chernobyl-escape', won:won, msLeft:Math.max(0,Math.round(timer*1000)), files:filesGot, filesTotal:filesTotal}, '*'); }catch(e){}
 }
 
 /* ================= 渲染 ================= */
@@ -1047,7 +1152,7 @@ function render(time){
   for(var y=0;y<ROWS;y++) for(var x=0;x<COLS;x++){
     drawTile(x,y,grid[y][x]==='*'?'~':grid[y][x],time);
   }
-  drawItems(time); drawNpcs(time); drawExit(time); drawPlayer(time);
+  drawItems(time); drawNpcs(time); drawImps(time); drawFlags(time); drawExit(time); drawPlayer(time);
   ctx.restore();
   ctx.save();
   // 头部照明
@@ -1208,7 +1313,42 @@ function drawItems(time){
       ctx.beginPath(); ctx.moveTo(cx-6, cy+6); ctx.lineTo(cx+4, cy-4); ctx.stroke();
       ctx.beginPath(); ctx.arc(cx+6, cy-6, 4, .6, 5.2); ctx.stroke();
       ctx.fillStyle = 'rgba(201,164,90,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 7); ctx.fill();
+    } else if(it.type==='suit'){
+      ctx.fillStyle = '#e8e23a'; ctx.fillRect(cx-6, cy-8, 12, 14);
+      ctx.fillStyle = '#4a4d2e'; ctx.fillRect(cx-4, cy-6, 8, 4);
+      ctx.fillStyle = 'rgba(232,226,58,.18)'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 7); ctx.fill();
+    } else if(it.type==='helmet'){
+      ctx.fillStyle = '#ffd977'; ctx.beginPath(); ctx.arc(cx, cy+2, 8, Math.PI, 0); ctx.fill();
+      ctx.fillRect(cx-10, cy+2, 20, 3);
+      ctx.fillStyle = 'rgba(255,217,119,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 7); ctx.fill();
+    } else if(it.type==='file'){
+      ctx.fillStyle = '#e6e1cd'; ctx.fillRect(cx-5, cy-7, 10, 13);
+      ctx.fillStyle = '#8a4030'; ctx.fillRect(cx-5, cy-7, 10, 3);
+      ctx.fillStyle = 'rgba(230,225,205,.15)'; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 7); ctx.fill();
     }
+  });
+}
+function drawImps(time){
+  imps.forEach(function(m){
+    if(m.dead) return;
+    var cx = m.x+m.w/2, cy = m.y+m.h;
+    var f = Math.sin(time*12 + m.x*.1)*3;
+    ctx.fillStyle = 'rgba(255,90,30,.2)'; ctx.beginPath(); ctx.arc(cx, cy-8, 14, 0, 7); ctx.fill();
+    ctx.fillStyle = '#d63a28'; tri(cx-8, cy, cx+f, cy-18, cx+8, cy);
+    ctx.fillStyle = '#ffb43a'; tri(cx-5, cy, cx-f*.7, cy-10, cx+5, cy);
+    ctx.fillStyle = '#1c1e15';
+    ctx.fillRect(cx-4 + m.dir*2, cy-13, 2.5, 2.5); ctx.fillRect(cx+2 + m.dir*2, cy-13, 2.5, 2.5);
+  });
+}
+function drawFlags(time){
+  flags.forEach(function(fl){
+    var px = fl.x*TILE, py = fl.y*TILE;
+    ctx.strokeStyle = '#8d9078'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px+4, py+TILE); ctx.lineTo(px+4, py-TILE); ctx.stroke();
+    ctx.fillStyle = fl.lit ? '#58d97a' : '#565945';
+    var wv = Math.sin(time*5)*2;
+    tri(px+4, py-TILE, px+4, py-TILE+10, px+20+wv, py-TILE+5);
+    if(fl.lit){ ctx.fillStyle = 'rgba(88,217,122,.12)'; ctx.beginPath(); ctx.arc(px+6, py, 16, 0, 7); ctx.fill(); }
   });
 }
 function drawNpcs(time){
@@ -1296,6 +1436,9 @@ function syncUI(){
   setTag('invGear', '齿轮 '+gears+'/'+level.btnGears, level.btnGears>0 && gears>=level.btnGears);
   setTag('invBucket', hasBucket ? '水桶 满' : (bucketSeen ? '水桶 空' : '水桶 —'), hasBucket);
   setTag('invWrench', hasWrench ? '扳手 ✓' : '扳手 —', hasWrench);
+  setTag('invSuit', suitT>0 ? '防化服 '+Math.ceil(suitT)+'s' : '防化服 —', suitT>0);
+  setTag('invHat', hatOn ? '安全帽 ✓' : '安全帽 —', hatOn);
+  setTag('invFile', '文件 '+filesGot+'/'+filesTotal, filesGot>=filesTotal && filesTotal>0);
   setLamp('lampKey', hasKey ? 'on amber' : '');
   setLamp('lampValve', valveFixed ? 'on green' : (steams.some(function(s){return s.on;}) ? 'on red blink' : ''));
   var exitOpen = level.btnLabel ? valveFixed : !fires.some(function(f){ return f.blocking; });
