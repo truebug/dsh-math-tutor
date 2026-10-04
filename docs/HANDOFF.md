@@ -75,9 +75,13 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 
 ## 四、功能现状（全部已上线）
 
-- 寻宝地图四大陆：数学/语文/英语（二年级，各 16 关）+ 游乐场（13 关 7 玩法：
-  单词消消乐/古诗词接龙/数字贪吃蛇/打地鼠/翻牌记忆/逃离切尔诺贝利(escape,10-03)/
-  核电站主控实践(reactor,10-03，与 escape 组成叙事二部曲，纯前端确定性物理模型零 LLM)）
+- 寻宝地图四大陆：数学/语文/英语（二年级，各 16 关）+ 游乐场（14 关 8 玩法：
+  单词消消乐/古诗词接龙/数字贪吃蛇/打地鼠/翻牌记忆 +
+  **切尔诺贝利三部曲**（10-03/10-04）：控制室上岗培训(console,序章4培训任务) →
+  核电站主控实践(reactor,5任务拟真棒控) → 逃离切尔诺贝利(escape,动作逃生)，
+  均纯前端确定性零 LLM）
+- 逃离切尔诺贝利 10-04 大扩容：地图 44×26→72×32 六层、防化服/安全帽/机密文件收集/
+  检查点重生/火苗小鬼巡逻敌/土狼时间+跳跃缓冲/三星评价
 - 闯关页视口适配、首屏 shader 背景、按钮微交互、返回首页按钮
 - 每日挑战（多科目轮换）、错题本+重练（热力图）、积分/排行榜（掩码昵称）/勋章墙/周目标
 - 家长看板：成长报告（可打印 A4）、14 天指标趋势图、画像错因分析
@@ -88,9 +92,10 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
   术语纠错映射（"正推卫"→"进退位"等）；语音埋点 chat-metrics.jsonl（voice/text 计数）
 
 ### 已知遗留（勿修，非本次范围）
-- 前端 tsc 剩 5 个历史遗留报错（10-03 另一 agent 顺手修掉 10 个）：
-  App.tsx newBadges×2、AdventureMap/MapView max 重复指定、ResultView Subject 收窄。
-  不影响构建运行（vite build 通过），修复需动组件契约属独立小工程
+- 前端 tsc 剩 6 个历史遗留报错（10-03 另一 agent 顺手修掉 10 个，10-04 ConsoleView
+  沿用 EscapeView 的 StageDef 契约又多一例同类）：App.tsx newBadges×1、
+  App.tsx RaceSettings→StageDef×2（escape/console）、AdventureMap/MapView max 重复、
+  ResultView Subject 收窄。不影响构建运行（vite build 通过），修复需动组件契约属独立小工程
 
 ## 五、未尽事宜（按优先级）
 
@@ -133,6 +138,7 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 | `apps/web/src/lib/visit.ts` | 访客 UUID 上报 |
 | `apps/web/src/components/ReactorView.tsx` + `lib/reactorPhysics.ts` | 核电站主控实践（物理纯函数+5任务+熔毁特效） |
 | `apps/web/src/components/EscapeView.tsx` + `demo/chernobyl-escape/index.html` | 逃离切尔诺贝利（demo/ 为唯一源，prebuild 自动同步到 public/escape/） |
+| `apps/web/src/components/ConsoleView.tsx` + `demo/nuclear-console/index.html` | 控制室上岗培训（ziming 版唯一源，prebuild 同步 public/console/；4 培训任务+冷却故障事件） |
 | `apps/web/scripts/reactor-smoke.mjs` | 反应堆 5 场景回归冒烟 |
 | `docs/progress.md` | 交付流水账（倒序，含线上状态） |
 | `docs/roadmap-agent.md` | agent 化路线 + dsh 迁移清单 + 语音助手方向 |
