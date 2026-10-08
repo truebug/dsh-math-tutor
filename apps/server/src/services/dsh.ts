@@ -19,8 +19,12 @@ export interface DshRequest {
 // 最小结构类型：与 0.1.5 SDK client 公共 API 对齐（运行时实例从 dsh-runtime 动态加载，
 // 不走主应用 node_modules，避免与残留旧版 client 类型/版本混淆）
 interface DshHarness {
-  run(prompt: string, opts?: { sessionId?: string }): Promise<{ finalResponse?: string }>
+  run(prompt: string, opts?: { sessionId?: string }): Promise<DshRunResult>
   close(): Promise<void>
+}
+interface DshRunResult {
+  finalResponse?: string
+  events?: Array<{ type?: string; data?: unknown }>
 }
 type DshHarnessCtor = new (opts: Record<string, unknown>) => DshHarness
 
@@ -75,7 +79,15 @@ export async function dshRespond(req: DshRequest): Promise<string> {
     const result = await h.run(prompt, {
       sessionId: req.familyId ? `tutor-${req.familyId}` : undefined,
     })
-    if (!result.finalResponse) throw new Error('dsh 返回为空')
+    if (!result.finalResponse) {
+      // 空返回时把 turn/end 原因带上（如上游 403 周配额），否则 journalctl 里无法定位根因
+      const turnEnd = [...(result.events ?? [])].reverse().find((e) => e?.type === 'turn/end')
+      const reason = turnEnd?.data && typeof turnEnd.data === 'object'
+        ? (turnEnd.data as { reason?: unknown }).reason
+        : undefined
+      const detail = reason ? ` reason=${JSON.stringify(reason).slice(0, 300)}` : ''
+      throw new Error(`dsh 返回为空${detail}`)
+    }
     return result.finalResponse
   } catch (err) {
     // transport 级错误重孵一次再抛（模型错误已在事件流里，不吞）
