@@ -4,6 +4,9 @@
 
 ## 2026-10-09
 
+- **dsh 例行跟踪**：latest 仍 0.2.0-rc.2；上游活跃线 0.2.1-alpha.2（当日发布，
+  新增 session-search/worktree/cot-translation 等 9 个 experimental 包、移除 webhook/hooks 系，
+  功能重组中）——0.2.0 正式版未到，维持 0.1.5-rc.3 不动。下次例行 10-12。
 - **10-06 降级根因定位（bc597b8 已部署）**：挖 dsh 会话持久化 jsonl（zstd 多帧追加格式），
   10-06 10:38-11:01 与 10-07 18:31 的「dsh 返回为空」全部为 **Kimi 网关周配额 403**
   （"weekly (7-day) usage limit"，AUTH/403）——上游配额撞墙，非 dsh bug；kimi 降级兜底生效孩子无感知。
