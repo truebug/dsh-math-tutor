@@ -2,6 +2,18 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-10-09
+
+- **10-06 降级根因定位（bc597b8 已部署）**：挖 dsh 会话持久化 jsonl（zstd 多帧追加格式），
+  10-06 10:38-11:01 与 10-07 18:31 的「dsh 返回为空」全部为 **Kimi 网关周配额 403**
+  （"weekly (7-day) usage limit"，AUTH/403）——上游配额撞墙，非 dsh bug；kimi 降级兜底生效孩子无感知。
+  dsh.ts 空返回日志现携带 turn/end reason（截断 300 字），下次同类事件 journalctl 直接可见根因。
+  另发现：重启后对重启前创建的会话锚点首次调用报「session already exists」降级一次，
+  历史日志仅 2 例（均为本次调试触发），老锚点回黏机制不受影响，暂不处理。
+- **dsh 生态扫描**（docs/ref/dsh-ecosystem-scan-20261009.md）：latest 仍 0.2.0-rc.2，
+  0.2.1-alpha.1 已出、正式版临近；插件热度排行与可应用性评估（token-meter 用量预警、
+  goal round driver 列入 0.2.0 迁移验证项；voice-input-bundle 观察名单）。维持等正式版策略。
+
 ## 2026-10-04
 
 - **逃生游戏复查深挖（bebb42e 已部署，线上 MD5 与源一致）**：
