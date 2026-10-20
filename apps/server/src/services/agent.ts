@@ -13,6 +13,7 @@ export interface AgentRequest {
   messages: ChatMessage[]
   maxTokens?: number
   familyId?: string   // 已开启云端同步的孩子（dsh 模式下用于会话记忆锚点）
+  learnerId?: string  // 匿名学习 ID（未开同步也能有连续记忆）
   provider?: string   // 请求级覆盖（灰度用：?provider=dsh 只切当前请求）
 }
 
@@ -22,7 +23,13 @@ export async function respond(req: AgentRequest): Promise<string> {
   switch (provider) {
     case 'dsh':
       try {
-        return await dshRespond({ messages: req.messages, maxTokens: req.maxTokens, familyId: req.familyId })
+        return await dshRespond({
+          messages: req.messages,
+          maxTokens: req.maxTokens,
+          familyId: req.familyId,
+          learnerId: req.learnerId,
+          scene: req.scene,
+        })
       } catch (err) {
         // 全量放开后的兜底：dsh 失败（崩溃/超时/额度）自动降级 kimi，不让孩子看见报错
         console.warn('[agent] dsh 失败降级 kimi:', err instanceof Error ? err.message : err)

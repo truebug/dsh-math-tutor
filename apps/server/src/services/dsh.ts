@@ -14,12 +14,15 @@ export interface DshRequest {
   messages: Array<{ role: 'system' | 'user'; content: string }>
   maxTokens?: number
   familyId?: string   // 会话锚点：同一孩子的会话复用（agent 记得孩子）
+  learnerId?: string  // 匿名本地学习 ID（不依赖云同步）
+  scene?: string      // 场景隔离：hint/review/sprite/chat/weekly
 }
 
 // 最小结构类型：与 0.1.5 SDK client 公共 API 对齐（运行时实例从 dsh-runtime 动态加载，
 // 不走主应用 node_modules，避免与残留旧版 client 类型/版本混淆）
 interface DshHarness {
   run(prompt: string, opts?: { sessionId?: string }): Promise<DshRunResult>
+  resumeSession?(sessionId: string): Promise<unknown>
   close(): Promise<void>
 }
 interface DshRunResult {
@@ -30,6 +33,7 @@ type DshHarnessCtor = new (opts: Record<string, unknown>) => DshHarness
 
 let harness: DshHarness | null = null
 let booting: Promise<DshHarness> | null = null
+const resumed = new Set<string>()
 
 async function getHarness(): Promise<DshHarness> {
   if (harness) return harness
@@ -66,18 +70,42 @@ async function getHarness(): Promise<DshHarness> {
 async function resetHarness(): Promise<void> {
   const h = harness
   harness = null
+  resumed.clear()
   if (h) await h.close().catch(() => {})
 }
+
+// 会话锚点：tutor-<匿名ID>-<场景>-<ISO周>。场景隔离避免五场景互相污染；
+// 按周轮换让上下文有界（周目标/近期趋势本来就在画像里）。
+export function sessionIdFor(req: DshRequest): string | undefined {
+  const raw = req.learnerId ?? req.familyId
+  if (!raw) return undefined
+  const id = raw.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40)
+  if (id.length < 6) return undefined
+  const scene = (req.scene ?? 'chat').replace(/[^a-z]/g, '')
+  const now = new Date()
+  const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 1))
+  const week = Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getUTCDay() + 1) / 7)
+  return `tutor-${id}-${scene}-${now.getUTCFullYear()}w${String(week).padStart(2, '0')}`
+}
+
+const PROMPT_LIMIT = 8 * 1024
 
 // dsh 模式回复：system+user 拼成单条 prompt（persona 由 tutor.patch.yml 的 system-prompt 提供）
 export async function dshRespond(req: DshRequest): Promise<string> {
   const system = req.messages.find((m) => m.role === 'system')?.content ?? ''
   const user = req.messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n')
-  const prompt = system ? `${system}\n\n${user}` : user
+  const full = system ? `${system}\n\n${user}` : user
+  const prompt = full.length > PROMPT_LIMIT ? full.slice(0, PROMPT_LIMIT) : full
   const h = await getHarness()
+  const sessionId = sessionIdFor(req)
+  // 重启后恢复历史：只在每个 session 的首次调用尝试，失败即当作新会话
+  if (sessionId && !resumed.has(sessionId)) {
+    resumed.add(sessionId)
+    await h.resumeSession?.(sessionId).catch(() => {})
+  }
   try {
     const result = await h.run(prompt, {
-      sessionId: req.familyId ? `tutor-${req.familyId}` : undefined,
+      sessionId,
     })
     if (!result.finalResponse) {
       // 空返回时把 turn/end 原因带上（如上游 403 周配额），否则 journalctl 里无法定位根因

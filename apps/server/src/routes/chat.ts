@@ -24,6 +24,8 @@ export interface ChatRequest {
   grade: 2 | 3 | 4 | 5
   message: string         // 语音转写文本（可能含同音错字）
   familyId?: string       // 已开启云端同步时，会话锚点（小精灵记得这孩子）
+  learnerId?: string      // 匿名学习 ID（未开同步也记得）
+  history?: string        // 前端本地画像摘要（匿名）
   viaVoice?: boolean      // 语音输入（true）或打字降级（false）
 }
 
@@ -55,12 +57,14 @@ export async function buildChatReply(req: ChatRequest, provider?: string): Promi
   const goal = req.familyId ? goalProgress(req.familyId) : null
   const user = [
     `孩子对你说：${fixed}`,
+    req.history ? `孩子近期情况：${req.history}` : '',
     ctx ? `孩子近期情况：${ctx}` : '',
     goal ? `周目标进度：${goal}` : '',
   ].filter(Boolean).join('\n')
   return respond({
     scene: 'chat',
     familyId: req.familyId,
+    learnerId: req.learnerId,
     provider,
     maxTokens: 300,
     messages: [

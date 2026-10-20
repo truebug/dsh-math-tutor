@@ -16,7 +16,7 @@ interface SessionLite {
 
 const SUBJECT_NAMES: Record<string, string> = { math: '数学', chinese: '语文', english: '英语' }
 
-export async function buildWeeklyReport(familyId: string): Promise<string | null> {
+export async function buildWeeklyReport(familyId: string, learnerId?: string): Promise<string | null> {
   const doc = loadProfile(familyId)
   if (!doc) return null
   const sessions = ((doc.sessions ?? []) as SessionLite[]).filter((s) => {
@@ -52,6 +52,8 @@ export async function buildWeeklyReport(familyId: string): Promise<string | null
 
   return respond({
     scene: 'weekly',
+    familyId,
+    learnerId,
     maxTokens: 400,
     messages: [
       { role: 'system', content: `你是孩子的学习成长顾问，给家长写本周简报。要求：先说进步和亮点，再温和指出一个最值得关注的薄弱点和一条具体可执行的家庭配合建议。不超过 150 字，语气温和专业，不用 markdown，不提 AI。` },
@@ -64,6 +66,7 @@ export const name = 'weekly'
 export function apply(ctx: ServerContext) {
   ctx.routes.register('/api/weekly-report', 'GET', async (req, res, url) => {
     const familyId = url.searchParams.get('familyId') ?? ''
+    const learnerId = url.searchParams.get('learnerId') ?? undefined
     const json = (status: number, b: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(b)) }
     if (!familyId) { json(400, { error: 'family_id_required' }); return true }
     if (!requireAuth(req, familyId)) { json(401, { error: 'unauthorized' }); return true }
@@ -74,7 +77,7 @@ export function apply(ctx: ServerContext) {
       return true
     }
     try {
-      const text = await buildWeeklyReport(familyId)
+      const text = await buildWeeklyReport(familyId, learnerId)
       text ? json(200, { text }) : json(404, { error: 'no_data_this_week' })
     } catch (e) {
       json(502, { error: e instanceof Error ? e.message : 'llm_error' })

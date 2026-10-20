@@ -4,6 +4,15 @@
 
 ## 2026-10-20
 
+- **P0-4A DSH 0.2.1 canary（已上线）**：`dsh-runtime` 升到 `0.2.1-rc.2`（需清空 node_modules
+  解决 cordis peer 冲突）；新增 `tool-working-directory`/`web-deepseek-api` 关闭项，冒烟仍
+  `header=232B`、`tools=0`；会话格式变为 `session.v4.jsonl.zstd`（冒烟脚本已兼容 v3/v4）。
+  旧运行时 package/lock/patch 与 `sessions.bak-0.1.5-20261020-102308` 已备份，可回滚。
+- **P0-4B 记忆闭环（已上线）**：新增匿名 `learnerId`（localStorage，不依赖云同步）；
+  dsh 会话 ID 改为 `tutor-<learnerId>-<scene>-<ISO周>`，五场景隔离；0.2.1 `resumeSession`
+  在每会话首次调用恢复历史（失败即新会话）；prompt 上限 8KB；`profileSummary()` 在所有场景
+  无条件携带（此前默认用户被 `syncEnabled()` 挡掉）。验证：重启后同 learnerId 会话继续追加。
+
 - **P0-3 鉴权与限流（已部署）**：`/api/auth/{register,login,status,setup,rotate}` +
   `v1.<fid>.<exp>.<hmac>` token（`AUTH_SECRET`，30 天），PIN 从 sha256 静态盐迁移到 scrypt；
   旧 5 份画像逐档导入 `auth/accounts.json`（同名自动 `-2/-3`），各发一次性迁移码

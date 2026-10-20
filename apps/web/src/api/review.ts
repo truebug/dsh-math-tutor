@@ -3,6 +3,7 @@ export interface ReviewRequest {
   level: 1 | 2 | 3
   subject?: 'math' | 'chinese' | 'english'
   familyId?: string        // P1：开启同步时服务端注入画像上下文
+  learnerId?: string       // 匿名学习 ID（会话锚点）
   total: number
   correct: number
   usedSec: number

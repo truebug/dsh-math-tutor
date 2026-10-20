@@ -2,7 +2,8 @@
 // 隐私红线：音频不出设备（识别在浏览器内完成），只上传转写文本
 // 降级：不支持语音识别的浏览器自动切换为文字输入
 import { useState, useRef } from 'react'
-import { getFamilyId, syncEnabled, authHeaders } from '../lib/sync'
+import { getFamilyId, getLearnerId, syncEnabled, authHeaders } from '../lib/sync'
+import { profileSummary } from '../lib/profile'
 
 interface Props { grade: 2 | 3 | 4 | 5 }
 
@@ -53,6 +54,8 @@ export default function VoiceChat({ grade }: Props) {
           message,
           viaVoice: fromVoice,
           familyId: syncEnabled() ? getFamilyId() ?? undefined : undefined,
+          learnerId: getLearnerId(),
+          history: profileSummary(),
         }),
         signal: AbortSignal.timeout(60_000),
       })

@@ -42,7 +42,8 @@ function findSessionFile(id) {
       let st
       try { st = statSync(p) } catch { continue }
       if (st.isDirectory()) walk(p, depth + 1)
-      else if (name === 'session.v3.jsonl.zstd') hits.push({ p, mtime: st.mtimeMs })
+      // 0.1.5 用 session.v3，0.2.1 起为 session.v4
+      else if (/^session\.v\d+\.jsonl\.zstd$/.test(name)) hits.push({ p, mtime: st.mtimeMs })
     }
   }
   try { walk(root) } catch { return null }

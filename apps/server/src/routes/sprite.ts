@@ -13,6 +13,8 @@ export interface SpriteAdviceRequest {
   dailyDays?: number        // 累计打卡天数
   recommendReason?: string  // 当前推荐关及原因（规则层产出）
   familyId?: string         // 已开启云端同步时，服务端注入画像 + 会话锚点
+  learnerId?: string        // 匿名学习 ID（未开同步也能连续记忆）
+  history?: string          // 前端本地画像摘要（匿名）
 }
 
 const SYSTEM = `你是藏在寻宝地图里的小精灵，陪孩子（{grade}年级）一起学语文、数学和英语。
@@ -40,6 +42,7 @@ function buildUser(req: SpriteAdviceRequest, ctx: string | null): string {
     patternLine,
     `今日打卡：${req.dailyDone ? '已完成' : '未完成'}，累计打卡 ${req.dailyDays ?? 0} 天`,
     req.recommendReason ? `当前推荐：${req.recommendReason}` : '',
+    req.history ? `孩子近期情况：${req.history}` : '',
     ctx ? `孩子近期情况：${ctx}` : '',
   ].filter(Boolean).join('\n')
 }
@@ -55,7 +58,7 @@ export async function buildSpriteAdvice(req: SpriteAdviceRequest, provider?: str
         { role: 'system' as const, content: system },
         { role: 'user' as const, content: buildUser(req, ctx) + (goal ? `\n周目标进度：${goal}` : '') },
       ]
-      const text = await respond({ scene: 'sprite', familyId: req.familyId, provider: p, maxTokens: 200, messages })
+      const text = await respond({ scene: 'sprite', familyId: req.familyId, learnerId: req.learnerId, provider: p, maxTokens: 200, messages })
       if (text && !text.includes('沉默')) return text.trim()
       return null
     } catch { /* 降级下一 provider */ }

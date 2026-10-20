@@ -6,6 +6,19 @@ import { loadProfileData } from './profile'
 
 const FAMILY_KEY = 'dsh-math-tutor:family'
 const TOKEN_KEY = 'dsh-math-tutor:token'
+const LEARNER_KEY = 'dsh-math-tutor:learner'
+
+// 匿名学习 ID：不依赖云同步/监护人同意，首次调用即生成。
+// 用作 dsh 会话锚点，让未开同步的孩子也有连续记忆。
+export function getLearnerId(): string {
+  let id = localStorage.getItem(LEARNER_KEY)
+  if (!id) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8))
+    id = 'l-' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+    localStorage.setItem(LEARNER_KEY, id)
+  }
+  return id
+}
 
 export function getFamilyId(): string | null {
   return localStorage.getItem(FAMILY_KEY)

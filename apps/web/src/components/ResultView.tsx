@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { encodeRaceCode } from '../lib/raceCode'
 import { fetchReview } from '../api/review'
 import { saveReview, profileSummary } from '../lib/profile'
-import { syncEnabled, getFamilyId } from '../lib/sync'
+import { getFamilyId, getLearnerId } from '../lib/sync'
 import { starsFor, totalStars, petStage } from '../lib/adventure'
 import { sfx } from '../lib/sound'
 import { useEffect } from 'react'
@@ -96,7 +96,8 @@ export default function ResultView({ record, profile, scoreResult, guest, onRetr
         usedSec: Math.round(record.usedMs / 1000),
         carryWrong,
         plainWrong: record.wrong.length - carryWrong,
-        history: syncEnabled() ? profileSummary() : undefined,
+        history: profileSummary(),
+        learnerId: getLearnerId(),
         wrongExamples: [
           ...record.wrong.slice(0, 8).map((w) =>
             `${kindTag}${w.question.text} 正确${w.question.answerText ?? w.question.answer}，孩子答 ${w.given ?? '未作答'}`),

@@ -16,6 +16,7 @@ export interface ReviewRequest {
   wrongExamples: string[] // 如 "48 + 37 = 正确85，孩子答 75"（最多 5 条）
   history?: string        // 开启云端同步后携带的历史画像摘要（不含身份信息）
   familyId?: string       // P1：传 familyId 时服务端注入画像上下文（agent 记得孩子）
+  learnerId?: string      // 匿名学习 ID
 }
 
 const SYSTEM_MATH = `你是一位温柔的小学数学老师，正在给{grade}年级的孩子做口算练习点评。
@@ -67,6 +68,7 @@ export async function buildReview(req: ReviewRequest, provider?: string): Promis
   return respond({
     scene: 'review',
     familyId: req.familyId,
+    learnerId: req.learnerId,
     provider,
     messages: [
       { role: 'system', content: SYSTEMS[subject].replace('{grade}', String(req.grade)) },

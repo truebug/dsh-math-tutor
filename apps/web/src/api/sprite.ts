@@ -1,6 +1,6 @@
 // 小精灵今日建议（服务端 agent 决策）：画像上下文进，开口内容出
 // 失败/沉默返回 null，前端用本地规则兜底（sprite.ts spriteAdvice）
-import { syncEnabled, getFamilyId, authHeaders } from '../lib/sync'
+import { syncEnabled, getFamilyId, getLearnerId, authHeaders } from '../lib/sync'
 
 export interface SpriteAdviceReq {
   grade: number
@@ -16,7 +16,7 @@ export async function fetchSpriteAdvice(req: SpriteAdviceReq): Promise<string | 
     const res = await fetch('/api/sprite-advice', {
       method: 'POST',
       headers: authHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify({ ...req, familyId: familyId ?? undefined }),
+      body: JSON.stringify({ ...req, familyId: familyId ?? undefined, learnerId: getLearnerId() }),
       signal: AbortSignal.timeout(30_000),
     })
     if (!res.ok) return null

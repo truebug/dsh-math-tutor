@@ -53,6 +53,10 @@
   disabled: true
 - id: tool-web
   disabled: true
+- id: web-deepseek-api
+  disabled: true            # 0.2.1 新增行：会读 DEEPSEEK_API_KEY（这里是 Kimi key）
+- id: tool-working-directory
+  disabled: true            # 0.2.1 新增工具：模型可读/切 cwd，家教场景不需要
 
 # ===== 技能 / 命令 / 目标 / 计划 / 子代理 / 工作流：全部关闭 =====
 - id: skill

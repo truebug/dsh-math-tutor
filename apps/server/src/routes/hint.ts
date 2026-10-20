@@ -9,6 +9,8 @@ export interface HintRequest {
   wrongAnswer: string     // 孩子给的答案
   correctAnswer: string
   familyId?: string       // P1：画像注入（agent 记得孩子的易错类型）
+  learnerId?: string      // 匿名学习 ID（未开同步也能连续记忆）
+  history?: string        // 前端本地画像摘要（匿名）
 }
 
 const SYSTEM = `你是一位温柔的小学{grade}年级助教小精灵。孩子答错了一道题。
@@ -19,6 +21,7 @@ export async function buildHint(req: HintRequest): Promise<string> {
   return respond({
     scene: 'hint',
     familyId: req.familyId,
+    learnerId: req.learnerId,
     maxTokens: 300,
     messages: [
       { role: 'system', content: SYSTEM.replace('{grade}', String(req.grade)) },
@@ -38,6 +41,7 @@ function hintUser(req: HintRequest): string {
   const ctx = req.familyId ? buildLearnerContext(req.familyId) : null
   return [
     `题目：${req.question}\n孩子答：${req.wrongAnswer}\n正确答案：${req.correctAnswer}`,
+    req.history ? `孩子近期情况：${req.history}` : '',
     ctx ? `孩子近期情况：${ctx}（讲解时照顾其薄弱点）` : '',
   ].join('\n')
 }
