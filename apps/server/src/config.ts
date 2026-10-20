@@ -14,11 +14,20 @@ export const config = {
     enforce: (process.env.AUTH_ENFORCE ?? 'false') === 'true',
     ttlDays: Number(process.env.AUTH_TTL_DAYS ?? 30),
   },
+  // 语音入口开关：默认关闭；上线告知文案并经回归后由 systemd 打开
+  voiceEnabled: (process.env.VOICE_ENABLED ?? 'false') === 'true',
   // LLM 接入（OpenAI 兼容端点，换厂商只改 env；key 不出服务端）
   llm: {
     provider: process.env.LLM_PROVIDER ?? 'deepseek',
     baseUrl: (process.env.LLM_BASE_URL ?? 'https://api.deepseek.com').replace(/\/$/, ''),
     apiKey: process.env.LLM_API_KEY ?? '',
     model: process.env.LLM_MODEL ?? 'deepseek-chat',
+  },
+  // 独立第二供应商（独立 key/配额）。未配置时熔断链只有主供应商，
+  // deep health 会显式返回 fallback:"unconfigured"，不假装有兜底。
+  fallback: {
+    baseUrl: (process.env.LLM_FALLBACK_BASE_URL ?? '').replace(/\/$/, ''),
+    apiKey: process.env.LLM_FALLBACK_API_KEY ?? '',
+    model: process.env.LLM_FALLBACK_MODEL ?? '',
   },
 }

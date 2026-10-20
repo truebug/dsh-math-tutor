@@ -1,7 +1,8 @@
-// 语音对话小精灵：长按说话 → 浏览器内语音识别 → 文字发 /api/chat → TTS 朗读回复
-// 隐私红线：音频不出设备（识别在浏览器内完成），只上传转写文本
+// 语音对话小精灵：长按说话 → 浏览器语音识别 → 转写文字发 /api/chat → TTS 朗读回复
+// 隐私事实：识别由浏览器/操作系统提供，Chrome/Edge 等通常会把音频送到浏览器厂商云端；
+// 本服务只接收转写文字，不保存音频。首次使用前必须显示告知并取得确认。
 // 降级：不支持语音识别的浏览器自动切换为文字输入
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getFamilyId, getLearnerId, syncEnabled, authHeaders } from '../lib/sync'
 import { profileSummary } from '../lib/profile'
 
@@ -38,8 +39,17 @@ export default function VoiceChat({ grade }: Props) {
   const [reply, setReply] = useState('')
   const [busy, setBusy] = useState(false)
   const [textInput, setTextInput] = useState('')
+  const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [disclosed, setDisclosed] = useState(() => localStorage.getItem('dsh-math-tutor:voice-ok') === '1')
   const recRef = useRef<SpeechRecognitionLike | null>(null)
   const voiceOk = !!SR
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then((r) => r.json())
+      .then((d: { voiceEnabled?: boolean }) => setVoiceEnabled(!!d.voiceEnabled))
+      .catch(() => setVoiceEnabled(false))
+  }, [])
 
   const send = async (message: string, fromVoice = false) => {
     if (!message.trim() || busy) return
@@ -114,7 +124,15 @@ export default function VoiceChat({ grade }: Props) {
         <span>和小精灵说话</span>
         <button className="voice-close" onClick={() => { stopListen(); setOpen(false) }} aria-label="关闭">✕</button>
       </div>
-      {voiceOk ? (
+      {voiceEnabled && voiceOk && !disclosed && (
+        <div className="voice-note">
+          <p>语音识别由浏览器提供，部分浏览器会把音频发送到浏览器厂商服务器；本服务只接收转写文字，不保存音频。</p>
+          <button className="ghost" onClick={() => { localStorage.setItem('dsh-math-tutor:voice-ok', '1'); setDisclosed(true) }}>
+            我知道了，开始使用
+          </button>
+        </div>
+      )}
+      {voiceEnabled && voiceOk && disclosed ? (
         <button
           className={`voice-mic${listening ? ' listening' : ''}`}
           onPointerDown={startListen}
@@ -126,7 +144,7 @@ export default function VoiceChat({ grade }: Props) {
           {busy ? '小精灵思考中…' : listening ? '正在听…松开发送' : '按住说话'}
         </button>
       ) : (
-        <p className="voice-note">这个浏览器不支持语音输入，打字也可以哦</p>
+        <p className="voice-note">{!voiceEnabled ? '语音输入暂未开放，打字也可以哦' : voiceOk ? '请先阅读上面的语音说明' : '这个浏览器不支持语音输入，打字也可以哦'}</p>
       )}
       <form className="voice-text" onSubmit={(e) => { e.preventDefault(); void send(textInput, false); setTextInput('') }}>
         <input value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder="也可以打字…" maxLength={200} />
@@ -134,7 +152,7 @@ export default function VoiceChat({ grade }: Props) {
       </form>
       {heard && <p className="voice-heard">你说：{heard}</p>}
       {reply && <p className="voice-reply">🧚 {reply}</p>}
-      <p className="voice-note">语音只在这台设备上听，不会上传哦</p>
+      <p className="voice-note">本服务不保存音频，只处理语音转写出的文字。</p>
     </div>
   )
 }

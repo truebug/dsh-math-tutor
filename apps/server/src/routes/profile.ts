@@ -1,9 +1,9 @@
 // 画像云端存储：家庭 ID 即访问凭证（分享即授权，符合最小化原则）
 // 存储：data/profiles/<familyId>.json（MVP 用 JSON 文件，后续可换 SQLite）
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { config } from '../config.ts'
-import { getAccount, hashPin, putAccount, requireAuth } from '../services/auth.ts'
+import { deleteAccountsByFamilyId, getAccount, hashPin, putAccount, requireAuth } from '../services/auth.ts'
 
 const DIR = join(config.dataDir, 'profiles')
 const NICK_FILE = join(config.dataDir, 'nicknames.json')
@@ -116,6 +116,34 @@ export function apply(ctx: ServerContext) {
       updatedAt: '',
     })
     json(res, 200, { ok: true })
+    return true
+  })
+
+  // 删档：家长行使删除权。删除画像、昵称绑定、账号与积分；token 随即失效。
+  ctx.routes.register('/api/profile/*', 'DELETE', async (req, res, url) => {
+    const familyId = decodeURIComponent(url.pathname.split('/')[3] ?? '')
+    if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return true }
+    if (!requireAuth(req, familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
+    const removed: string[] = []
+    const profileFile = join(DIR, `${familyId}.json`)
+    if (existsSync(profileFile)) { unlinkSync(profileFile); removed.push('profile') }
+    const idx = loadNicks()
+    let idxChanged = false
+    for (const [n, e] of Object.entries(idx)) {
+      if (e.familyId === familyId) { delete idx[n]; idxChanged = true; removed.push(`nickname:${n}`) }
+    }
+    if (idxChanged) saveNicks(idx)
+    for (const n of deleteAccountsByFamilyId(familyId)) removed.push(`account:${n}`)
+    const scoreFile = join(config.dataDir, 'scores.json')
+    if (existsSync(scoreFile)) {
+      try {
+        const store = JSON.parse(readFileSync(scoreFile, 'utf8')) as { entries?: Array<{ familyId?: string }> }
+        const before = store.entries?.length ?? 0
+        store.entries = (store.entries ?? []).filter((e) => e.familyId !== familyId)
+        if (store.entries.length !== before) { writeFileSync(scoreFile, JSON.stringify(store, null, 2)); removed.push('score') }
+      } catch { /* 积分文件损坏时不阻塞删档 */ }
+    }
+    json(res, 200, { ok: true, removed })
     return true
   })
 

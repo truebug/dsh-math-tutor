@@ -9,6 +9,7 @@
 // - 会话锚点落盘 $DSH_HOME/sessions/（systemd 注入 DSH_HOME=/var/lib/dsh-tutor）
 // - stdout 即协议：子进程诊断全走 stderr（tutor.patch.yml 不得引入 stdout logger）
 import { config } from '../config.ts'
+import { logLlmUsage } from './metrics.ts'
 
 export interface DshRequest {
   messages: Array<{ role: 'system' | 'user'; content: string }>
@@ -67,7 +68,7 @@ async function getHarness(): Promise<DshHarness> {
 }
 
 // 崩溃重孵：transport 断开后丢弃实例，下次调用重新 spawn
-async function resetHarness(): Promise<void> {
+export async function resetHarness(): Promise<void> {
   const h = harness
   harness = null
   resumed.clear()
@@ -107,6 +108,14 @@ export async function dshRespond(req: DshRequest): Promise<string> {
     const result = await h.run(prompt, {
       sessionId,
     })
+    // token 用量：dsh 的 usage 事件字段随版本变化，做宽松提取，失败不影响回复
+    for (const e of result.events ?? []) {
+      const d = (e?.data ?? {}) as { usage?: { input?: number; output?: number; total?: number } }
+      if (d.usage) {
+        logLlmUsage({ scene: req.scene ?? 'chat', provider: 'dsh', ...d.usage })
+        break
+      }
+    }
     if (!result.finalResponse) {
       // 空返回时把 turn/end 原因带上（如上游 403 周配额），否则 journalctl 里无法定位根因
       const turnEnd = [...(result.events ?? [])].reverse().find((e) => e?.type === 'turn/end')
@@ -129,7 +138,8 @@ export async function dshRespond(req: DshRequest): Promise<string> {
 export async function dshHealthCheck(): Promise<{ ok: boolean; error?: string }> {
   try {
     const h = await getHarness()
-    const r = await h.run('hi', { sessionId: 'health-check' })
+    // 唯一 session id：复用固定 id 会撞上“session already exists”
+    const r = await h.run('hi', { sessionId: `health-${Date.now().toString(36)}` })
     if (!r.finalResponse) return { ok: false, error: 'empty_response' }
     return { ok: true }
   } catch (e) {

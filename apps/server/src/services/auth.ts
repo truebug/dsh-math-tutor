@@ -178,3 +178,14 @@ export function consumeSetupCode(nickname: string, code: string): boolean {
 export function listSetupTargets(): string[] {
   return Object.keys(loadAccounts())
 }
+
+/** 删除某家庭的全部账号绑定（删档时用），返回被删除的昵称 */
+export function deleteAccountsByFamilyId(familyId: string): string[] {
+  const store = loadAccounts()
+  const removed: string[] = []
+  for (const [nick, account] of Object.entries(store)) {
+    if (account.familyId === familyId) { delete store[nick]; removed.push(nick) }
+  }
+  if (removed.length > 0) saveAccounts(store)
+  return removed
+}

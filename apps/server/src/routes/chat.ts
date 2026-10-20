@@ -1,6 +1,7 @@
 // 语音对话场景：孩子对小精灵说话（浏览器语音转文字），小精灵口语化回应
 // 复用 agent 网关（dsh 默认 + kimi 降级）+ 会话锚点（familyId→sessionId，小精灵记得孩子）
-// 红线：音频不出设备（浏览器内识别）；只上传转写文本
+// 隐私：语音识别由浏览器提供（Chrome/Edge 可能把音频发往浏览器厂商云端）；
+// 本服务只接收转写文本，不保存音频。
 import { respond } from '../services/agent.ts'
 import { buildLearnerContext, goalProgress } from '../services/learnerCtx.ts'
 import type { ServerContext } from '../host.ts'

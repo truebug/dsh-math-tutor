@@ -17,6 +17,8 @@ Environment=DSH_HOME=/var/lib/dsh-tutor
 Environment=DATA_DIR=/var/lib/dsh-tutor/data
 # 兜底：即使提示注入拿到模型侧写文件能力，也只能只读
 Environment=DSH_PERMISSION_MODE=read-only
+# 语音入口：告知文案已上线；如需紧急关闭改为 false 并 restart
+Environment=VOICE_ENABLED=true
 ExecStart=/opt/node22/bin/node --experimental-strip-types src/index.ts
 Restart=always
 RestartSec=3

@@ -4,6 +4,18 @@
 
 ## 2026-10-20
 
+- **P0-5 可靠性（已上线）**：调用链改为 `dsh → 主供应商 → 独立 fallback`；
+  `services/circuit.ts` 连续 3 次失败熔断 10 分钟（half-open 放一次探活）；
+  dsh 25s 超时并重置 harness，chat 25s / stream 45s；`llm-metrics.jsonl` 记录
+  provider/耗时/错误码（不含内容），`llm-usage.jsonl` 提取 dsh usage；
+  `/api/health?deep=1` 仅本机、2 次/分钟，返回 dsh/主备配置/熔断快照。
+  **现状：`LLM_FALLBACK_*` 未配置（今晚第二 key 到位后填入），deep health 如实返回
+  `fallback:{configured:false}`，不假装有兜底。**
+- **P0-6 语音隐私（已上线）**：`VoiceChat` 首次使用前展示“浏览器厂商可能上云、本服务不保存音频”
+  告知并需确认；`VOICE_ENABLED` 开关（systemd 已设 true，可随时改 false）；
+  修正 chat.ts 注释；新增 `scripts/prune-data.mjs`（默认 dry-run，30 天会话清理 + 埋点轮转）；
+  `DELETE /api/profile/:id`（需 auth）删除画像/昵称/账号/积分，验证删后 404、昵称可重新注册。
+
 - **P0-4A DSH 0.2.1 canary（已上线）**：`dsh-runtime` 升到 `0.2.1-rc.2`（需清空 node_modules
   解决 cordis peer 冲突）；新增 `tool-working-directory`/`web-deepseek-api` 关闭项，冒烟仍
   `header=232B`、`tools=0`；会话格式变为 `session.v4.jsonl.zstd`（冒烟脚本已兼容 v3/v4）。
