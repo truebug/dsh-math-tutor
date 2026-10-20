@@ -1,6 +1,15 @@
 # dsh-math-tutor patch 叠加层（dsh 0.1.5 线，profile 'sdk' + --patch 机制）
 # base profile 自带 llm/session/持久化/工具/凭证全套，本文件只覆盖差异项。
 # Kimi 网关/key 由宿主进程经 DEEPSEEK_BASE_URL / DEEPSEEK_API_KEY env 注入（零 patch）。
+#
+# 安全边界：本服务是儿童家教场景，模型只需要“读提示词、回文本”，不需要
+# bash/文件/网页/子代理/目标/计划等通用 Agent 工具。关闭这些行可同时：
+#   1) 把每个请求的 request/header 从 ~25KB 降到 1-2KB；
+#   2) 消除提示注入后读取 .env / 外联的路径；
+#   3) 避免模型把一次 60 字讲解变成多轮工具调用。
+# 注意：保留 tools 注册表本身、session、持久化、system-prompt、token-meter 与
+# compaction-basic；不要改用 dsh-sdk-minimal（它仍挂 terminal/persistent-bash，
+# 且 sandbox 默认 danger-full-access）。
 - id: llm-deepseek
   config:
     thinking: disabled            # Kimi coding 端点不支持 thinking
@@ -8,14 +17,93 @@
       - id: k3
         name: Kimi-K3
         contextWindow: 262144
+    # 儿童家教请求要快：只对网络/服务端瞬时错误重试一次；
+    # RATE_LIMIT（配额 403/429）与 EMPTY_RESPONSE 不重试，交给上层降级，
+    # 避免 5 次指数退避把 15s 延迟和配额打满。
+    retryPolicy:
+      mode: normal
+      maxRetries: 1
+      retryableCodes: [SERVER, TIMEOUT, TRANSPORT]
+      backoff:
+        initialDelayMs: 300
+        maxDelayMs: 2000
+        jitterRatio: 0.1
 - id: system-prompt
   config:
     # 小精灵人格（默认是 coding agent 人格，必须覆盖；personaSuffix 清空 cwd 提示）
     personaPrefix: 你是藏在寻宝地图里的小精灵，陪孩子一起学语文、数学和英语。
     personaSuffix: ''
-# web 搜索/抓取工具：抓取（fetch）无需 key 直接可用；
-# 搜索走 DeepSeek Anthropic 兼容端点，用独立 env 传 DeepSeek key——
-# 注意不可复用 DEEPSEEK_API_KEY（它被我们注入的是 Kimi key，会 401）
+
+# ===== 命令 / 文件 / 网络工具：全部关闭 =====
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: tool-fs
+  disabled: true
+- id: tool-fs-search
+  disabled: true
+- id: web
+  disabled: true
 - id: web-search-deepseek
-  config:
-    apiKeyEnv: DEEPSEEK_SEARCH_API_KEY
+  disabled: true
+- id: web-fetch-http
+  disabled: true
+- id: tool-web
+  disabled: true
+
+# ===== 技能 / 命令 / 目标 / 计划 / 子代理 / 工作流：全部关闭 =====
+- id: skill
+  disabled: true
+- id: skill-filesystem
+  disabled: true
+- id: skill-badge
+  disabled: true
+- id: tool-skill
+  disabled: true
+- id: commands
+  disabled: true
+- id: command-feedback
+  disabled: true
+- id: command-compact
+  disabled: true
+- id: goal
+  disabled: true
+- id: goal-round-driver
+  disabled: true
+- id: command-goal
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: plan-mode
+  disabled: true
+- id: user-questions
+  disabled: true
+- id: subagent
+  disabled: true
+- id: subagent-spawn-in-process
+  disabled: true
+- id: subagent-fork-in-process
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: workflow-worker-thread
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-todo
+  disabled: true
+- id: tool-ralph
+  disabled: true
+- id: repeat-tool-reminder
+  disabled: true
+- id: agent-instructions
+  disabled: true
