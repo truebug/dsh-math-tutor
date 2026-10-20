@@ -9,6 +9,8 @@ User=dshtutor
 Group=dshtutor
 WorkingDirectory=/opt/dsh-math-tutor/server
 EnvironmentFile=/etc/dsh-math-tutor.env
+# 注意：systemd 的 EnvironmentFile 不剥行尾注释，也不认 export。
+# 该文件必须是干净的 KEY=value（值里不能带空格/`#`），否则 key 会被污染。
 Environment=NODE_ENV=production
 Environment=HOME=/var/lib/dsh-tutor
 Environment=DSH_HOME=/var/lib/dsh-tutor
@@ -34,6 +36,13 @@ RestrictSUIDSGID=yes
 RestrictNamespaces=yes
 RestrictRealtime=yes
 LockPersonality=yes
+ProtectProc=invisible
+ProcSubset=pid
+UMask=0027
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
 SystemCallArchitectures=native
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 ReadWritePaths=/var/lib/dsh-tutor

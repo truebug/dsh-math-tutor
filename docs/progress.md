@@ -2,6 +2,22 @@
 
 > 倒序记录每次交付，与 git log 互补（含线上状态）。
 
+## 2026-10-20
+
+- **P0-1 DSH 工具面收口（359c277 已部署）**：`tutor.patch.yml` 按 id 关闭
+  bash/pwsh/fs/fs-search/web/skill/commands/goal/plan/subagent/workflow/todo/ralph/agent-instructions 共 29 行；
+  重试收敛为 1 次（不再对 RATE_LIMIT/EMPTY_RESPONSE 指数退避）。
+  线上新会话 `request/header` 从 ~25KB 降到 **232–234B**，`tools` 字段缺省（即 0 个工具），
+  配额耗尽时首轮 1.5s 返回而非 15s。遗留：`command-compact` 必须与 `commands` 同时关，否则启动卡在
+  `pending (waiting for service: commands)`。
+- **P0-2 降权与文件隔离（ad07bbd 已部署）**：新增 `DATA_DIR`（线上 `/var/lib/dsh-tutor/data`），
+  chat/profile/visit/score 去 `process.cwd()` 硬编码；systemd 改为 `User=dshtutor` +
+  `ProtectSystem=strict`/`PrivateTmp`/`NoNewPrivileges`/`RestrictAddressFamilies`/`SystemCallFilter=@system-service`，
+  仅 `ReadWritePaths=/var/lib/dsh-tutor`，`DSH_PERMISSION_MODE=read-only`。
+  暴露面评分从 9+ 降到 **1.7 OK**；`.env` 移至 `/etc/dsh-math-tutor.env`（root:dshtutor 0640），
+  仓库目录已无 `.env`。踩坑：`.env` 原带行尾注释，Node `--env-file` 会剥、systemd `EnvironmentFile` 不会，
+  导致 `DEEPSEEK_API_KEY` 混入注释文本报 `INVALID_CREDENTIAL`——环境文件必须是裸 `KEY=value`。
+
 ## 2026-10-12
 
 - **escape NPC 待机动画（方案A，58b665a 已部署，线上 MD5 与源一致）**：
