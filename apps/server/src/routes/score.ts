@@ -1,9 +1,10 @@
 // 每日加分 + 破纪录奖励 + 排行榜：匿名积分系统
 // 存储：data/scores.json（MVP 用 JSON，后续可换 SQLite）
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { config } from '../config.ts'
 import { join } from 'node:path'
 
-const FILE = join(process.cwd(), 'data', 'scores.json')
+const FILE = join(config.dataDir, 'scores.json')
 
 export interface ScoreEntry {
   familyId: string
@@ -31,7 +32,7 @@ function load(): ScoreStore {
 }
 
 function save(store: ScoreStore): void {
-  mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+  mkdirSync(config.dataDir, { recursive: true })
   writeFileSync(FILE, JSON.stringify(store, null, 2))
 }
 

@@ -4,15 +4,16 @@
 import { respond } from '../services/agent.ts'
 import { buildLearnerContext, goalProgress } from '../services/learnerCtx.ts'
 import type { ServerContext } from '../host.ts'
+import { config } from '../config.ts'
 import { mkdirSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const METRICS_FILE = join(process.cwd(), 'data', 'chat-metrics.jsonl')
+const METRICS_FILE = join(config.dataDir, 'chat-metrics.jsonl')
 
 // 语音链路埋点：只记次数与输入方式（voice/text），不含对话内容
 function trackChat(viaVoice: boolean): void {
   try {
-    mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+    mkdirSync(config.dataDir, { recursive: true })
     appendFileSync(METRICS_FILE, JSON.stringify({ d: new Date().toISOString().slice(0, 10), v: viaVoice ? 1 : 0 }) + '\n')
   } catch { /* 埋点失败不影响对话 */ }
 }

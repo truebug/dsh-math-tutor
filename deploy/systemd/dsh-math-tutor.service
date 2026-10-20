@@ -1,0 +1,42 @@
+[Unit]
+Description=dsh-math-tutor API server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dshtutor
+Group=dshtutor
+WorkingDirectory=/opt/dsh-math-tutor/server
+EnvironmentFile=/etc/dsh-math-tutor.env
+Environment=NODE_ENV=production
+Environment=HOME=/var/lib/dsh-tutor
+Environment=DSH_HOME=/var/lib/dsh-tutor
+Environment=DATA_DIR=/var/lib/dsh-tutor/data
+# 兜底：即使提示注入拿到模型侧写文件能力，也只能只读
+Environment=DSH_PERMISSION_MODE=read-only
+ExecStart=/opt/node22/bin/node --experimental-strip-types src/index.ts
+Restart=always
+RestartSec=3
+
+# ===== 沙箱：非 root + 只读根文件系统 + 仅数据目录可写 =====
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/dsh-tutor
+
+[Install]
+WantedBy=multi-user.target

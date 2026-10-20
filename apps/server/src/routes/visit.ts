@@ -1,10 +1,11 @@
 // 匿名访客画像：区分试玩访客 vs 建档孩子，统计每日新增/回访
 // 隐私红线：只记随机 UUID + 日期粒度 + 是否建档，不记 IP/UA/身份
 import { mkdirSync, appendFileSync, readFileSync, existsSync } from 'node:fs'
+import { config } from '../config.ts'
 import { join } from 'node:path'
 import type { ServerContext } from '../host.ts'
 
-const FILE = join(process.cwd(), 'data', 'visits.jsonl')
+const FILE = join(config.dataDir, 'visits.jsonl')
 
 interface VisitRow { v: string; d: string; reg: boolean }  // visitorId / 日期 / 已建档
 
@@ -18,7 +19,7 @@ export function apply(ctx: ServerContext) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end('{"error":"bad_request"}'); return true
     }
     try {
-      mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+      mkdirSync(config.dataDir, { recursive: true })
       appendFileSync(FILE, JSON.stringify({ v: b.visitorId, d: today(), reg: !!b.registered }) + '\n')
     } catch { /* 记录失败不影响访问 */ }
     res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"ok":true}')

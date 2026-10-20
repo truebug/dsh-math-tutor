@@ -3,9 +3,10 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
+import { config } from '../config.ts'
 
-const DIR = join(process.cwd(), 'data', 'profiles')
-const NICK_FILE = join(process.cwd(), 'data', 'nicknames.json')
+const DIR = join(config.dataDir, 'profiles')
+const NICK_FILE = join(config.dataDir, 'nicknames.json')
 
 // ===== 昵称索引：昵称 → 绑定（familyId + 可选 PIN 哈希）=====
 // 昵称是可绑定的展示属性，familyId(UUID) 才是数据主键；重名时冲突由用户选择合并/新开
@@ -18,7 +19,7 @@ function loadNicks(): NickIndex {
 }
 
 function saveNicks(idx: NickIndex): void {
-  mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+  mkdirSync(config.dataDir, { recursive: true })
   writeFileSync(NICK_FILE, JSON.stringify(idx))
 }
 
