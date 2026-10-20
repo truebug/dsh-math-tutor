@@ -7,6 +7,13 @@ export const config = {
   // 运行期可写目录。systemd ProtectSystem=strict 下代码目录只读，
   // 只有 DATA_DIR 会通过 ReadWritePaths 放开；本地开发默认 ./data。
   dataDir: process.env.DATA_DIR ?? join(process.cwd(), 'data'),
+  auth: {
+    // token 签名密钥；为空时只能跑 shadow 模式
+    secret: process.env.AUTH_SECRET ?? '',
+    // 灰度：false 时只校验不拦截；前端全部带 token 后切 true
+    enforce: (process.env.AUTH_ENFORCE ?? 'false') === 'true',
+    ttlDays: Number(process.env.AUTH_TTL_DAYS ?? 30),
+  },
   // LLM 接入（OpenAI 兼容端点，换厂商只改 env；key 不出服务端）
   llm: {
     provider: process.env.LLM_PROVIDER ?? 'deepseek',

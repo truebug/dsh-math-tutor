@@ -1,5 +1,6 @@
 import { respond } from '../services/agent.ts'
 import type { ServerContext } from '../host.ts'
+import { llmGuard } from '../services/guard.ts'
 import { buildLearnerContext } from '../services/learnerCtx.ts'
 
 // 匿名错题摘要（不含昵称等身份信息；grade 用于措辞适龄化）
@@ -77,10 +78,16 @@ export async function buildReview(req: ReviewRequest, provider?: string): Promis
 // ===== DSH 插件壳：注册 HTTP 路由（行为与重构前一致） =====
 export const name = 'review'
 export function apply(ctx: ServerContext) {
-  ctx.routes.register('/api/review', 'POST', async (_req, res, url, body) => {
+  ctx.routes.register('/api/review', 'POST', async (req, res, url, body) => {
     const b = body as ReviewRequest
     if (!b || typeof b.total !== 'number' || !Array.isArray(b.wrongExamples)) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    const rate = llmGuard(req)
+    if (!rate.ok) {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rate.retryAfter) })
+      res.end(JSON.stringify({ error: 'rate_limited' }))
       return true
     }
     // 灰度：?provider=dsh 仅当前请求走 dsh 运行时（review 场景第二步灰度）

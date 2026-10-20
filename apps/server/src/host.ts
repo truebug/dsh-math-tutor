@@ -20,6 +20,10 @@ export interface Plugin {
 
 interface RouteEntry { pattern: RegExp; method: string; handler: RouteHandler }
 
+// 业务请求都很小（最长的画像 PUT 约几十 KB）；64KB 以上的 body 一律拒绝，
+// 避免单连接把内存打满（nginx 侧同样限制 client_max_body_size）。
+const MAX_BODY_BYTES = 64 * 1024
+
 export function createHost(): { ctx: ServerContext; dispatch: (req: IncomingMessage, res: ServerResponse) => Promise<void> } {
   const routes: RouteEntry[] = []
   const ctx: ServerContext = {
@@ -39,10 +43,31 @@ export function createHost(): { ctx: ServerContext; dispatch: (req: IncomingMess
       if (r.method !== req.method || !r.pattern.test(url.pathname)) continue
       let body: unknown
       if (req.method === 'POST' || req.method === 'PUT') {
+        const declared = Number(req.headers['content-length'] ?? 0)
+        if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+          res.writeHead(413, { 'content-type': 'application/json' })
+          res.end('{"error":"payload_too_large"}')
+          return
+        }
         const chunks: Buffer[] = []
-        for await (const c of req) chunks.push(c as Buffer)
+        let size = 0
+        for await (const c of req) {
+          size += (c as Buffer).length
+          if (size > MAX_BODY_BYTES) {
+            res.writeHead(413, { 'content-type': 'application/json' })
+            res.end('{"error":"payload_too_large"}')
+            return
+          }
+          chunks.push(c as Buffer)
+        }
         const raw = Buffer.concat(chunks).toString('utf8')
-        body = raw ? JSON.parse(raw) : {}
+        try {
+          body = raw ? JSON.parse(raw) : {}
+        } catch {
+          res.writeHead(400, { 'content-type': 'application/json' })
+          res.end('{"error":"invalid_json"}')
+          return
+        }
       }
       const handled = await r.handler(req, res, url, body)
       if (handled !== false) return

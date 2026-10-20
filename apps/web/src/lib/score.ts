@@ -1,5 +1,5 @@
 // 积分系统客户端：提交成绩/排行榜/全服最高
-import { getFamilyId } from './sync'
+import { getFamilyId, authHeaders } from './sync'
 
 export interface ScoreResult {
   dailyBonus: number
@@ -25,7 +25,7 @@ export async function submitScore(req: {
   try {
     const res = await fetch('/api/score/submit', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({ familyId, ...req }),
     })
     if (!res.ok) return null

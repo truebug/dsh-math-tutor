@@ -3,6 +3,8 @@
 import { respond } from '../services/agent.ts'
 import { buildLearnerContext, goalProgress } from '../services/learnerCtx.ts'
 import type { ServerContext } from '../host.ts'
+import { llmGuard } from '../services/guard.ts'
+import { requireAuth } from '../services/auth.ts'
 
 export interface SpriteAdviceRequest {
   grade: 2 | 3 | 4 | 5
@@ -63,10 +65,20 @@ export async function buildSpriteAdvice(req: SpriteAdviceRequest, provider?: str
 
 export const name = 'sprite'
 export function apply(ctx: ServerContext) {
-  ctx.routes.register('/api/sprite-advice', 'POST', async (_req, res, url, body) => {
+  ctx.routes.register('/api/sprite-advice', 'POST', async (req, res, url, body) => {
     const b = body as SpriteAdviceRequest
     if (!b || typeof b.grade !== 'number') {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    if (b.familyId && !requireAuth(req, b.familyId)) {
+      res.writeHead(401, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'unauthorized' }))
+      return true
+    }
+    const rate = llmGuard(req, b.familyId)
+    if (!rate.ok) {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rate.retryAfter) })
+      res.end(JSON.stringify({ error: 'rate_limited' }))
       return true
     }
     const text = await buildSpriteAdvice(b, url.searchParams.get('provider') ?? undefined)

@@ -5,6 +5,8 @@ import { respond } from '../services/agent.ts'
 import { buildLearnerContext, goalProgress } from '../services/learnerCtx.ts'
 import type { ServerContext } from '../host.ts'
 import { config } from '../config.ts'
+import { llmGuard } from '../services/guard.ts'
+import { requireAuth } from '../services/auth.ts'
 import { mkdirSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -70,10 +72,20 @@ export async function buildChatReply(req: ChatRequest, provider?: string): Promi
 
 export const name = 'chat'
 export function apply(ctx: ServerContext) {
-  ctx.routes.register('/api/chat', 'POST', async (_req, res, url, body) => {
+  ctx.routes.register('/api/chat', 'POST', async (req, res, url, body) => {
     const b = body as ChatRequest
     if (!b || typeof b.grade !== 'number' || typeof b.message !== 'string' || !b.message.trim() || b.message.length > 500) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end('{"error":"bad_request"}')
+      return true
+    }
+    if (b.familyId && !requireAuth(req, b.familyId)) {
+      res.writeHead(401, { 'content-type': 'application/json' }); res.end('{"error":"unauthorized"}')
+      return true
+    }
+    const rate = llmGuard(req, b.familyId)
+    if (!rate.ok) {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rate.retryAfter) })
+      res.end('{"error":"rate_limited"}')
       return true
     }
     trackChat(!!b.viaVoice)

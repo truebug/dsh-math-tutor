@@ -44,12 +44,24 @@ function hintUser(req: HintRequest): string {
 
 // ===== DSH 插件壳 =====
 import type { ServerContext } from '../host.ts'
+import { llmGuard } from '../services/guard.ts'
+import { requireAuth } from '../services/auth.ts'
 export const name = 'hint'
 export function apply(ctx: ServerContext) {
-  ctx.routes.register('/api/hint/stream', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/hint/stream', 'POST', async (req, res, _url, body) => {
     const b = body as HintRequest
     if (!b?.question || b.correctAnswer === undefined) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    if (b.familyId && !requireAuth(req, b.familyId)) {
+      res.writeHead(401, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'unauthorized' }))
+      return true
+    }
+    const rate = llmGuard(req, b.familyId)
+    if (!rate.ok) {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rate.retryAfter) })
+      res.end(JSON.stringify({ error: 'rate_limited' }))
       return true
     }
     // SSE：x-accel-buffering: no 让 nginx 不缓冲，逐字推送
@@ -70,10 +82,20 @@ export function apply(ctx: ServerContext) {
     res.end()
     return true
   })
-  ctx.routes.register('/api/hint', 'POST', async (_req, res, url, body) => {
+  ctx.routes.register('/api/hint', 'POST', async (req, res, url, body) => {
     const b = body as HintRequest
     if (!b?.question || b.correctAnswer === undefined) {
       res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'bad_request' }))
+      return true
+    }
+    if (b.familyId && !requireAuth(req, b.familyId)) {
+      res.writeHead(401, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'unauthorized' }))
+      return true
+    }
+    const rate = llmGuard(req, b.familyId)
+    if (!rate.ok) {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rate.retryAfter) })
+      res.end(JSON.stringify({ error: 'rate_limited' }))
       return true
     }
     // 灰度：?provider=dsh 仅当前请求走 dsh 运行时（hint 场景先行）

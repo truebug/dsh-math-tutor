@@ -1,6 +1,6 @@
 // 辅助小精灵：与孩子养的宠物合体——宠物即学习伙伴，随星星进化、越来越会教
 import { useState } from 'react'
-import { getFamilyId } from '../lib/sync'
+import { getFamilyId, authHeaders } from '../lib/sync'
 import { petStage, totalStars } from '../lib/adventure'
 import type { Question } from '@dsh-math-tutor/math-generator/core'
 
@@ -44,7 +44,7 @@ export default function Sprite({ question, wrongGiven, grade, bubble }: Props) {
     try {
       const res = await fetch('/api/hint/stream', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: authHeaders({ 'content-type': 'application/json' }),
         body: payload(),
       })
       if (!res.ok || !res.body) throw new Error('stream_unavailable')
@@ -77,7 +77,7 @@ export default function Sprite({ question, wrongGiven, grade, bubble }: Props) {
       try {
         const res = await fetch('/api/hint', {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: authHeaders({ 'content-type': 'application/json' }),
           body: payload(),
         })
         const data = (await res.json()) as { text?: string }

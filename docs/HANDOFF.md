@@ -17,11 +17,13 @@
 - 线上地址：`https://120.27.200.203:2008/dsh-math-tutor/`（09-30 起启用 HTTPS，自签名 IP 证书，
   首次访问浏览器有警告属预期；旧 HTTP 链接 302 自动跳转）
 - 服务器：coolje00（120.27.200.203），nginx 2008 端口，systemd 守护 `dsh-math-tutor`
-- 后端：`/opt/dsh-math-tutor/server/`（src + .env + dsh-runtime/）
+- 后端：`/opt/dsh-math-tutor/server/`（src + dsh-runtime/）；**env 已移出代码目录**，见
+  `/etc/dsh-math-tutor.env`（root:dshtutor 0640）——systemd `EnvironmentFile` **不剥行尾注释**，
+  该文件必须是裸 `KEY=value`
 - dsh 会话锚点：`/var/lib/dsh-tutor/sessions/`（DSH_HOME 由 systemd Environment= 注入，
   **不能放 .env**，dsh 0.1.5 会拒绝启动环境变量从 env 文件读取）
-- 数据：`server/data/`（profiles/ 云端画像、nicknames.json 昵称索引、visits.jsonl 访客、
-  chat-metrics.jsonl 语音埋点）——**均在 .gitignore，不入库**
+- 数据：`/var/lib/dsh-tutor/data/`（profiles/ 云端画像、auth/ 账号与迁移码、visits.jsonl 访客、
+  chat-metrics.jsonl 语音埋点）——服务以 `dshtutor` 运行，仅该目录可写（`ProtectSystem=strict`）
 - Node：服务器 `/opt/node22/bin/node` v22.19（dsh 持久化需 ≥22.15）；
   本机 `/Users/bug/.nvm/versions/node/v24.21.0/bin/node`（验证用）
 

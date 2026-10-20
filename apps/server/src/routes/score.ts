@@ -3,6 +3,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { config } from '../config.ts'
 import { join } from 'node:path'
+import { requireAuth } from '../services/auth.ts'
 
 const FILE = join(config.dataDir, 'scores.json')
 
@@ -168,11 +169,12 @@ export function apply(ctx: ServerContext) {
   const json = (res: import('node:http').ServerResponse, status: number, b: unknown) => {
     res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(b))
   }
-  ctx.routes.register('/api/score/submit', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/score/submit', 'POST', async (req, res, _url, body) => {
     const b = body as SubmitScoreRequest
     if (!b?.familyId || !b?.nickname || typeof b.total !== 'number' || typeof b.correct !== 'number') {
       json(res, 400, { error: 'bad_request' }); return true
     }
+    if (!requireAuth(req, b.familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     json(res, 200, submitScore(b))
     return true
   })

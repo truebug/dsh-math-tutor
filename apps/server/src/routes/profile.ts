@@ -2,8 +2,8 @@
 // 存储：data/profiles/<familyId>.json（MVP 用 JSON 文件，后续可换 SQLite）
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { createHash } from 'node:crypto'
 import { config } from '../config.ts'
+import { getAccount, hashPin, putAccount, requireAuth } from '../services/auth.ts'
 
 const DIR = join(config.dataDir, 'profiles')
 const NICK_FILE = join(config.dataDir, 'nicknames.json')
@@ -25,10 +25,6 @@ function saveNicks(idx: NickIndex): void {
 
 function normNick(n: string): string {
   return n.trim().toLowerCase().slice(0, 20)
-}
-
-function hashPin(pin: string): string {
-  return createHash('sha256').update(`dsh-tutor-pin:${pin}`).digest('hex')
 }
 
 export interface ProfileDoc {
@@ -75,9 +71,10 @@ export function apply(ctx: ServerContext) {
     res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(b))
   }
   // 周目标：设置/查询（必须在 /api/profile/* 通配符之前注册，否则被先匹配）
-  ctx.routes.register('/api/profile/goal', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/profile/goal', 'POST', async (req, res, _url, body) => {
     const b = body as { familyId?: string; goal?: GoalDoc | null }
     if (!b?.familyId || !FAMILY_RE.test(b.familyId)) { json(res, 400, { error: 'bad_request' }); return true }
+    if (!requireAuth(req, b.familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     const doc = loadProfile(b.familyId)
     if (!doc) { json(res, 404, { error: 'not_found' }); return true }
     doc.goal = b.goal ?? null
@@ -85,24 +82,27 @@ export function apply(ctx: ServerContext) {
     json(res, 200, { ok: true })
     return true
   })
-  ctx.routes.register('/api/profile/goal', 'GET', async (_req, res, url) => {
+  ctx.routes.register('/api/profile/goal', 'GET', async (req, res, url) => {
     const familyId = url.searchParams.get('familyId') ?? ''
     if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return true }
+    if (!requireAuth(req, familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     const doc = loadProfile(familyId)
     doc?.goal ? json(res, 200, doc.goal) : json(res, 404, { error: 'no_goal' })
     return true
   })
 
-  ctx.routes.register('/api/profile/*', 'GET', async (_req, res, url) => {
+  ctx.routes.register('/api/profile/*', 'GET', async (req, res, url) => {
     const familyId = decodeURIComponent(url.pathname.split('/')[3] ?? '')
     if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return true }
+    if (!requireAuth(req, familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     const doc = loadProfile(familyId)
     doc ? json(res, 200, doc) : json(res, 404, { error: 'not_found' })
     return true
   })
-  ctx.routes.register('/api/profile/*', 'PUT', async (_req, res, url, body) => {
+  ctx.routes.register('/api/profile/*', 'PUT', async (req, res, url, body) => {
     const familyId = decodeURIComponent(url.pathname.split('/')[3] ?? '')
     if (!FAMILY_RE.test(familyId)) { json(res, 400, { error: 'bad_family_id' }); return true }
+    if (!requireAuth(req, familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     const doc = body as ProfileDoc
     if (!doc?.consent) { json(res, 403, { error: 'consent_required' }); return true }
     // 只接受白名单字段，防止任意写入
@@ -120,10 +120,11 @@ export function apply(ctx: ServerContext) {
   })
 
   // 绑定昵称：开启同步时登记。同昵称已被他人绑定 → 409 冲突（前端弹选择）
-  ctx.routes.register('/api/profile/claim-nickname', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/profile/claim-nickname', 'POST', async (req, res, _url, body) => {
     const b = body as { nickname?: string; familyId?: string }
     const nick = normNick(b?.nickname ?? '')
     if (!nick || !b?.familyId || !FAMILY_RE.test(b.familyId)) { json(res, 400, { error: 'bad_request' }); return true }
+    if (!requireAuth(req, b.familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     const idx = loadNicks()
     const existing = idx[nick]
     if (existing && existing.familyId !== b.familyId) {
@@ -132,36 +133,46 @@ export function apply(ctx: ServerContext) {
     }
     idx[nick] = { familyId: b.familyId, pinHash: existing?.pinHash }
     saveNicks(idx)
+    // accounts.json 是登录的唯一事实来源；这里补齐索引（PIN 由 set-pin 设置）
+    if (!getAccount(nick)) {
+      const now = new Date().toISOString()
+      putAccount(nick, { familyId: b.familyId, needsSetup: true, createdAt: now, updatedAt: now })
+    }
     json(res, 200, { ok: true, nickname: nick })
     return true
   })
 
-  // 昵称解析（换设备找回）：昵称+PIN → familyId；PIN 错误 403，未设 PIN 直接放行
+  // 昵称存在性查询：只回 exists/hasPin，绝不回 familyId（familyId 不再当 bearer token）
   ctx.routes.register('/api/profile/resolve-nickname', 'POST', async (_req, res, _url, body) => {
-    const b = body as { nickname?: string; pin?: string }
+    const b = body as { nickname?: string }
     const nick = normNick(b?.nickname ?? '')
     if (!nick) { json(res, 400, { error: 'bad_request' }); return true }
     const entry = loadNicks()[nick]
     if (!entry) { json(res, 404, { error: 'not_found' }); return true }
-    if (entry.pinHash && entry.pinHash !== hashPin(b?.pin ?? '')) {
-      json(res, 403, { error: 'pin_required_or_wrong' })
-      return true
-    }
-    json(res, 200, { familyId: entry.familyId })
+    json(res, 200, { exists: true, hasPin: !!entry.pinHash })
     return true
   })
 
   // 设置/更新 PIN（可选，在看板设置；设置后换设备必须输码）
-  ctx.routes.register('/api/profile/set-pin', 'POST', async (_req, res, _url, body) => {
+  ctx.routes.register('/api/profile/set-pin', 'POST', async (req, res, _url, body) => {
     const b = body as { familyId?: string; nickname?: string; pin?: string }
     const nick = normNick(b?.nickname ?? '')
     if (!b?.familyId || !FAMILY_RE.test(b.familyId) || !nick) { json(res, 400, { error: 'bad_request' }); return true }
+    if (!requireAuth(req, b.familyId)) { json(res, 401, { error: 'unauthorized' }); return true }
     const pin = (b.pin ?? '').trim()
-    if (pin && !/^\d{4,6}$/.test(pin)) { json(res, 400, { error: 'pin_must_be_4_6_digits' }); return true }
+    if (pin && !/^\d{6}$/.test(pin)) { json(res, 400, { error: 'pin_must_be_6_digits' }); return true }
     const idx = loadNicks()
-    const entry = idx[nick]
-    if (!entry || entry.familyId !== b.familyId) { json(res, 403, { error: 'not_bound' }); return true }
-    idx[nick] = pin ? { ...entry, pinHash: hashPin(pin) } : { familyId: entry.familyId }  // 空 pin = 清除
+    const account = getAccount(nick)
+    if (!account || account.familyId !== b.familyId) { json(res, 403, { error: 'not_bound' }); return true }
+    // 空 pin = 清除（账号保留，但下次恢复需重新 setup）
+    putAccount(nick, {
+      ...account,
+      pin: pin ? hashPin(pin) : undefined,
+      needsSetup: !pin,
+      updatedAt: new Date().toISOString(),
+    })
+    // 旧索引只保留 familyId，旧 sha256 PIN 不再写入
+    idx[nick] = { familyId: account.familyId }
     saveNicks(idx)
     json(res, 200, { ok: true, hasPin: !!pin })
     return true

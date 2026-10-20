@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { loadSessions, loadProfile } from '../lib/storage'
 import type { SessionRecord } from '../lib/types'
 import { STAGES, stagesOf } from '../lib/adventure'
-import { getFamilyId } from '../lib/sync'
+import { getFamilyId, authHeaders } from '../lib/sync'
 
 const ALL_STAGES = [...STAGES, ...stagesOf('chinese'), ...stagesOf('english')]
 const SUBJECT_LABEL: Record<string, string> = { math: '数学', chinese: '语文', english: '英语' }
@@ -91,7 +91,7 @@ export default function GrowthReport() {
   const askAi = async () => {
     setAiState('loading')
     try {
-      const res = await fetch(`/api/weekly-report?familyId=${encodeURIComponent(getFamilyId() ?? '')}`)
+      const res = await fetch(`/api/weekly-report?familyId=${encodeURIComponent(getFamilyId() ?? '')}`, { headers: authHeaders() })
       if (res.status === 404) { setAiState('empty'); return }
       if (!res.ok) throw new Error()
       setAiText(((await res.json()) as { text?: string }).text ?? null)

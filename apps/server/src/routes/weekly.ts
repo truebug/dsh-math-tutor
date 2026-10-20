@@ -2,6 +2,8 @@
 import { respond } from '../services/agent.ts'
 import type { ServerContext } from '../host.ts'
 import { loadProfile } from './profile.ts'
+import { llmGuard } from '../services/guard.ts'
+import { requireAuth } from '../services/auth.ts'
 
 interface SessionLite {
   date?: string
@@ -60,10 +62,17 @@ export async function buildWeeklyReport(familyId: string): Promise<string | null
 
 export const name = 'weekly'
 export function apply(ctx: ServerContext) {
-  ctx.routes.register('/api/weekly-report', 'GET', async (_req, res, url) => {
+  ctx.routes.register('/api/weekly-report', 'GET', async (req, res, url) => {
     const familyId = url.searchParams.get('familyId') ?? ''
     const json = (status: number, b: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(b)) }
     if (!familyId) { json(400, { error: 'family_id_required' }); return true }
+    if (!requireAuth(req, familyId)) { json(401, { error: 'unauthorized' }); return true }
+    const rate = llmGuard(req, familyId)
+    if (!rate.ok) {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rate.retryAfter) })
+      res.end(JSON.stringify({ error: 'rate_limited' }))
+      return true
+    }
     try {
       const text = await buildWeeklyReport(familyId)
       text ? json(200, { text }) : json(404, { error: 'no_data_this_week' })

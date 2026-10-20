@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Question } from '@dsh-math-tutor/math-generator/core'
 import { loadSessions, loadProfile } from '../lib/storage'
-import { getFamilyId, newFamilyId, pullProfile, disableSync, pushProfile, syncEnabled, claimNickname, nicknameHasPin, resolveNickname, setNicknamePin } from '../lib/sync'
+import { getFamilyId, pullProfile, disableSync, pushProfile, syncEnabled, setNicknamePin, registerAccount, loginAccount, setupAccount, authStatus } from '../lib/sync'
 import { loadProfileData } from '../lib/profile'
 import { metricRates } from '../lib/profile'
 import { metricTrend } from '../lib/profile'
@@ -253,62 +253,98 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
   const [restoreId, setRestoreId] = useState('')
   const [msg, setMsg] = useState('')
   // 昵称绑定冲突态：null=无冲突；{nick, hasPin}=昵称已被占用，等用户选择
-  const [nickConflict, setNickConflict] = useState<{ nick: string; hasPin: boolean } | null>(null)
+  const [nickConflict, setNickConflict] = useState<{ nick: string; hasPin: boolean; needsSetup?: boolean } | null>(null)
   const [pin, setPin] = useState('')
   const [newPin, setNewPin] = useState('')
+  const [enablePin, setEnablePin] = useState('')
+  const [setupCode, setSetupCode] = useState('')
 
   const enable = async () => {
-    const id = newFamilyId()
-    setSync(true)
-    pushProfile()
-    // 昵称绑定：同昵称已绑 → 弹冲突选择；否则直接登记
     const nick = loadProfile()?.nickname ?? ''
-    if (nick) {
-      const r = await claimNickname(nick, id)
-      if (r === 'conflict') {
-        setNickConflict({ nick, hasPin: (await nicknameHasPin(nick)) ?? false })
-        setMsg(`已开启。昵称「${nick}」已被绑定，请确认是否为本人换设备`)
-        return
-      }
+    if (!nick) { setMsg('请先完善昵称，再开启云端同步'); return }
+    if (!/^\d{6}$/.test(enablePin)) { setMsg('请设置 6 位数字 PIN（换设备恢复时使用）'); return }
+    const r = await registerAccount(nick, enablePin)
+    if (r.ok) {
+      setSync(true)
+      pushProfile()
+      setEnablePin('')
+      setMsg(`已开启。换设备时用昵称「${nick}」+ PIN 恢复`)
+      return
     }
-    setMsg(`已开启。家庭ID：${id}（也可用昵称「${nick}」在其他设备恢复）`)
+    if (r.reason === 'conflict') {
+      const st = await authStatus(nick)
+      setNickConflict({ nick, hasPin: !!st?.hasPin, needsSetup: !!st?.needsSetup })
+      setMsg(`昵称「${nick}」已有云端档案，请确认是否为本人`)
+      return
+    }
+    setMsg(r.reason === 'rate_limited' ? '尝试过于频繁，请稍后再试' : '开启失败，请稍后再试')
   }
   // 冲突处理 A：我是本人（换设备）→ 解析昵称（可能要 PIN）→ 拉取云端数据
   const claimAsSelf = async () => {
     if (!nickConflict) return
-    const fid = await resolveNickname(nickConflict.nick, pin || undefined)
-    if (!fid) { setMsg(nickConflict.hasPin ? 'PIN 不对，请重试' : '解析失败，请重试'); return }
-    const ok = await pullProfile(fid)
-    setMsg(ok ? '已恢复云端数据，刷新页面生效' : '找到了绑定但拉取数据失败')
+    if (nickConflict.needsSetup) { setMsg('该档案需迁移：请填写一次性迁移码，并设置新的 6 位 PIN'); return }
+    const r = await loginAccount(nickConflict.nick, pin)
+    if (!r.ok) {
+      if (r.reason === 'setup_required') { setNickConflict({ ...nickConflict, needsSetup: true }); setMsg('该档案需迁移：请填写迁移码 + 新 PIN') }
+      else if (r.reason === 'rate_limited') setMsg('尝试过于频繁，请 10 分钟后再试')
+      else setMsg('PIN 不对，请重试')
+      return
+    }
+    const ok = await pullProfile(r.familyId)
+    setSync(true)
+    setMsg(ok ? '已恢复云端数据，刷新页面生效' : '已登录，但拉取数据失败')
     setNickConflict(null)
+  }
+  // 旧档案迁移：一次性迁移码 + 新 6 位 PIN
+  const migrate = async () => {
+    if (!nickConflict) return
+    if (!/^\d{6}$/.test(enablePin)) { setMsg('新 PIN 需为 6 位数字'); return }
+    const r = await setupAccount(nickConflict.nick, setupCode, enablePin)
+    if (!r.ok) {
+      setMsg(r.reason === 'bad_code' ? '迁移码不对或已过期' : r.reason === 'rate_limited' ? '尝试过于频繁' : '迁移失败，请重试')
+      return
+    }
+    const ok = await pullProfile(r.familyId)
+    setSync(true)
+    setNickConflict(null)
+    setSetupCode('')
+    setEnablePin('')
+    setMsg(ok ? '迁移完成，已恢复云端数据' : '迁移完成，但拉取数据失败')
   }
   // 冲突处理 B：我是重名新人 → 保留新 ID，昵称加后缀再登记
   const claimAsNew = async () => {
     if (!nickConflict) return
-    const fid = getFamilyId()!
-    await claimNickname(`${nickConflict.nick}-2`, fid)
-    setMsg(`已作为新用户登记（昵称显示为「${nickConflict.nick}-2」），数据互不影响`)
+    if (!/^\d{6}$/.test(enablePin)) { setMsg('请先设置 6 位数字 PIN'); return }
+    const alt = `${nickConflict.nick.slice(0, 18)}-2`
+    const r = await registerAccount(alt, enablePin)
+    if (!r.ok) { setMsg('登记失败，请重试'); return }
+    setSync(true)
+    pushProfile()
+    setMsg(`已作为新用户登记（昵称「${alt}」），数据互不影响`)
     setNickConflict(null)
   }
-  // 可选 PIN：设置后换设备需输码
+  // 修改/清除恢复 PIN（6 位）
   const savePin = async () => {
     const nick = loadProfile()?.nickname ?? ''
     const fid = getFamilyId()
     if (!nick || !fid) return
+    if (newPin && !/^\d{6}$/.test(newPin)) { setMsg('PIN 需为 6 位数字'); return }
     const r = await setNicknamePin(nick, fid, newPin)
-    setMsg(r === 'ok' ? (newPin ? 'PIN 已设置，换设备恢复时需输入' : 'PIN 已清除') : r === 'bad' ? 'PIN 需为 4-6 位数字' : '设置失败，请重试')
+    setMsg(r === 'ok' ? (newPin ? 'PIN 已更新' : 'PIN 已清除，换设备将无法恢复') : r === 'bad' ? 'PIN 需为 6 位数字' : '设置失败，请重试')
     setNewPin('')
   }
   const restore = async () => {
-    // 支持两种输入：f- 开头按家庭ID恢复；否则按昵称解析（可能要求 PIN）
-    let fid = restoreId.trim()
-    if (!fid.startsWith('f-')) {
-      const hasPin = await nicknameHasPin(fid)
-      const p = hasPin ? (window.prompt('该昵称设有 PIN，请输入 4-6 位数字：') ?? '') : undefined
-      fid = (await resolveNickname(fid, p)) ?? ''
-    }
-    const ok = fid ? await pullProfile(fid) : false
-    setMsg(ok ? '已从云端恢复，刷新页面生效' : '未找到该 ID/昵称（或 PIN 不对）')
+    const nick = restoreId.trim()
+    if (!nick) return
+    const st = await authStatus(nick)
+    if (!st?.exists) { setMsg('未找到该昵称的云端档案'); return }
+    if (st.needsSetup) { setNickConflict({ nick, hasPin: false, needsSetup: true }); setMsg('该档案需迁移：请填写迁移码 + 新 PIN'); return }
+    if (!st.hasPin) { setMsg('该昵称尚未设置 PIN，无法恢复'); return }
+    const p = window.prompt('请输入 6 位 PIN：') ?? ''
+    const r = await loginAccount(nick, p)
+    if (!r.ok) { setMsg(r.reason === 'rate_limited' ? '尝试过于频繁，请稍后再试' : '昵称或 PIN 不对'); return }
+    const ok = await pullProfile(r.familyId)
+    setMsg(ok ? '已从云端恢复，刷新页面生效' : '已登录，但拉取数据失败')
     if (ok) setSync(true)
   }
   const sessions = loadSessions()
@@ -427,7 +463,7 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
         <h3 className="chart-title">☁️ 云端同步（家长设置）</h3>
         {sync ? (
           <>
-            <p className="adv-sub">已开启 · 家庭ID：<code>{getFamilyId()}</code> · 换设备输入此 ID 即可恢复</p>
+            <p className="adv-sub">已开启 · 换设备时用昵称 + 6 位 PIN 恢复（家庭ID 不再作为访问凭证）</p>
             {/* 昵称冲突选择：同昵称已被绑定时的两条路 */}
             {nickConflict && (
               <div className="nick-conflict">
@@ -436,15 +472,23 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
                 {nickConflict.hasPin && (
                   <input placeholder="该昵称设有 PIN，请输入" value={pin} onChange={(e) => setPin(e.target.value)} inputMode="numeric" maxLength={6} />
                 )}
+                {nickConflict.needsSetup && (
+                  <>
+                    <input placeholder="一次性迁移码（管理员提供）" value={setupCode} onChange={(e) => setSetupCode(e.target.value)} />
+                    <input placeholder="设置新的 6 位 PIN" value={enablePin} onChange={(e) => setEnablePin(e.target.value)} inputMode="numeric" maxLength={6} />
+                  </>
+                )}
                 <div className="btn-row">
-                  <button className="primary" onClick={claimAsSelf}>是我本人，恢复数据</button>
+                  {nickConflict.needsSetup
+                    ? <button className="primary" onClick={migrate}>完成迁移并恢复</button>
+                    : <button className="primary" onClick={claimAsSelf}>是我本人，恢复数据</button>}
                   <button className="ghost" onClick={claimAsNew}>重名新人，新开档案</button>
                 </div>
               </div>
             )}
             {/* 可选 PIN：给昵称加把锁（换设备恢复时需输入） */}
             <div className="code-row">
-              <input placeholder="可选：设置恢复 PIN（4-6位数字）" value={newPin} onChange={(e) => setNewPin(e.target.value)} inputMode="numeric" maxLength={6} />
+              <input placeholder="修改恢复 PIN（6 位数字）" value={newPin} onChange={(e) => setNewPin(e.target.value)} inputMode="numeric" maxLength={6} />
               <button className="ghost" onClick={savePin}>{newPin ? '设置' : '清除'} PIN</button>
             </div>
             <button className="ghost" onClick={() => { disableSync(); setSync(false); setMsg('已停止同步，数据保留在本机') }}>停止同步</button>
@@ -455,11 +499,14 @@ export default function DashboardView({ onRetryMistakes }: { onRetryMistakes: (q
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
               <span>我是孩子的监护人，同意将练习数据（昵称、成绩、错题、画像统计）上传到本服务器存储，用于跨设备同步与个性化学习。数据不会提供给第三方，可随时停止同步。</span>
             </label>
+            <div className="code-row">
+              <input placeholder="设置 6 位数字 PIN（换设备恢复用）" value={enablePin} onChange={(e) => setEnablePin(e.target.value)} inputMode="numeric" maxLength={6} />
+            </div>
             <div className="btn-row">
               <button className="primary" disabled={!consent} onClick={enable}>开启云端同步</button>
             </div>
             <div className="code-row">
-              <input placeholder="已有家庭ID？输入以恢复" value={restoreId} onChange={(e) => setRestoreId(e.target.value)} />
+              <input placeholder="已有档案？输入昵称以恢复" value={restoreId} onChange={(e) => setRestoreId(e.target.value)} />
               <button className="ghost" onClick={restore} disabled={!restoreId.trim()}>恢复</button>
             </div>
           </>

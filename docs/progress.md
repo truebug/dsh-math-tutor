@@ -4,6 +4,15 @@
 
 ## 2026-10-20
 
+- **P0-3 鉴权与限流（已部署）**：`/api/auth/{register,login,status,setup,rotate}` +
+  `v1.<fid>.<exp>.<hmac>` token（`AUTH_SECRET`，30 天），PIN 从 sha256 静态盐迁移到 scrypt；
+  旧 5 份画像逐档导入 `auth/accounts.json`（同名自动 `-2/-3`），各发一次性迁移码
+  （`/root/dsh-setup-codes.txt`，7 天）；# `GET/PUT /api/profile/*`、goal、score、weekly 均校验 token。
+  限流：nginx `dsh_api` 10r/s + `dsh_llm` 2r/s、64k body；应用层 `guard.ts` IP/家庭双桶、
+  错误 PIN 5 次/10 分钟、10 次锁定 30 分钟。前端 token 存 localStorage + CSP（`script-src 'self'`）。
+  验证：无 token 401 / 带 token 200 / 第 5 次错 PIN 起 429 / 迁移码 setup 200、复用 403。
+  注意：注册后昵称不再写旧 `nicknames.json` 索引；`resolve-nickname` 只回存在性，不回 familyId。
+
 - **P0-1 DSH 工具面收口（359c277 已部署）**：`tutor.patch.yml` 按 id 关闭
   bash/pwsh/fs/fs-search/web/skill/commands/goal/plan/subagent/workflow/todo/ralph/agent-instructions 共 29 行；
   重试收敛为 1 次（不再对 RATE_LIMIT/EMPTY_RESPONSE 指数退避）。
