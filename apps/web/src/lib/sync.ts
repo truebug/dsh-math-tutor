@@ -68,7 +68,8 @@ function payload() {
 let timer: ReturnType<typeof setTimeout> | null = null
 export function pushProfile(): void {
   const id = getFamilyId()
-  if (!id) return
+  // 仅有 familyId 但无 token（旧登录态/已过期）时不要发无效请求
+  if (!id || !getToken()) return
   if (timer) clearTimeout(timer)
   timer = setTimeout(async () => {
     try {

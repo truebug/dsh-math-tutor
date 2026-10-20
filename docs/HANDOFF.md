@@ -47,6 +47,21 @@ ssh coolje00 "export PATH=/opt/node22/bin:\$PATH; cd /opt/dsh-math-tutor/server/
 2. 只允许部署 git HEAD 的构建产物；部署后在 `docs/progress.md` 记一行（commit hash + 时间）
 3. 前端 build 会自动 `prebuild` 同步逃生游戏源文件（demo/ → public/），不要手工 cp
 
+### P0 加固后的运维要点（2026-10-20）
+
+- **鉴权**：`/etc/dsh-math-tutor.env` 的 `AUTH_SECRET` 一旦更换等于全员重新登录；`AUTH_ENFORCE=true`。
+  token 存浏览器 localStorage（30 天），泄露时用 `POST /api/auth/rotate` 换发（旧 token 到期前仍有效）。
+- **旧档案迁移**：`scripts/auth-import-legacy-profiles.mjs` 已把 5 份画像导入 `auth/accounts.json`
+  （同名自动 `-2/-3`）；`scripts/auth-issue-setup-codes.mjs --data /var/lib/dsh-tutor/data`
+  生成一次性迁移码，明文在 `/root/dsh-setup-codes.txt`（7 天有效）。迁移码只在 sha256 落库，
+  补发直接重跑脚本即可（会覆盖未使用的旧码）。
+- **第二供应商**：`LLM_FALLBACK_BASE_URL/API_KEY/MODEL`，必须独立账号/配额；未配置时
+  `deep health` 返回 `fallback:{configured:false}`，此时 Kimi 配额耗尽仍无兜底。
+- **语音开关**：systemd `Environment=VOICE_ENABLED=true|false`，改完 `daemon-reload + restart`。
+- **数据保留**：`scripts/prune-data.mjs` 默认 dry-run；建议每日跑 dry-run、每周 `--apply`。
+- **体检**：`curl 'http://127.0.0.1:8787/api/health?deep=1'`（仅本机、2 次/分钟），
+  返回 dsh/主备配置/熔断快照；轻量版 `/api/health` 不触发模型调用。
+
 ## 三、dsh 集成现状（本项目的核心特色）
 
 - **版本**：0.1.5-rc.3（09-27 从 0.1.1-rc.2 升级，进入小步跟踪模式：新 RC/正式版 → 冒烟 → 小步升级）
